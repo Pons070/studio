@@ -92,8 +92,8 @@ export const orders: Order[] = [
     status: 'Completed',
     total: 32.48,
     items: [
-      { id: '3', name: 'Spaghetti Carbonara', price: 15.99, quantity: 1, imageUrl: '' },
-      { id: '6', name: 'Tiramisu', price: 7.50, quantity: 2, imageUrl: '' },
+      { id: '3', name: 'Spaghetti Carbonara', price: 15.99, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+      { id: '6', name: 'Tiramisu', price: 7.50, quantity: 2, imageUrl: 'https://placehold.co/600x400.png' },
     ],
   },
   {
@@ -103,8 +103,8 @@ export const orders: Order[] = [
     status: 'Confirmed',
     total: 25.00,
     items: [
-      { id: '4', name: 'Margherita Pizza', price: 14.50, quantity: 1, imageUrl: '' },
-      { id: '2', name: 'Caprese Salad', price: 10.50, quantity: 1, imageUrl: '' },
+      { id: '4', name: 'Margherita Pizza', price: 14.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+      { id: '2', name: 'Caprese Salad', price: 10.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
   },
   {
@@ -114,8 +114,8 @@ export const orders: Order[] = [
     status: 'Pending',
     total: 27.50,
     items: [
-      { id: '5', name: 'Grilled Salmon', price: 22.00, quantity: 1, imageUrl: '' },
-      { id: '9', name: 'Fresh Orange Juice', price: 5.50, quantity: 1, imageUrl: '' },
+      { id: '5', name: 'Grilled Salmon', price: 22.00, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+      { id: '9', name: 'Fresh Orange Juice', price: 5.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
   },
    {
@@ -125,9 +125,9 @@ export const orders: Order[] = [
     status: 'Cancelled',
     total: 19.49,
     items: [
-      { id: '1', name: 'Bruschetta', price: 8.99, quantity: 1, imageUrl: '' },
-      { id: '7', name: 'Panna Cotta', price: 6.99, quantity: 1, imageUrl: '' },
-      { id: '8', name: 'Mineral Water', price: 3.00, quantity: 1, imageUrl: '' },
+      { id: '1', name: 'Bruschetta', price: 8.99, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+      { id: '7', name: 'Panna Cotta', price: 6.99, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+      { id: '8', name: 'Mineral Water', price: 3.00, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
   },
 ];
