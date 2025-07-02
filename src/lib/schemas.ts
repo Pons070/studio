@@ -17,3 +17,17 @@ export const OrderSchema = z.object({
   items: z.array(CartItemSchema),
   reviewId: z.string().optional(),
 });
+
+const NotificationTypeSchema = z.enum([
+  'customerConfirmation',
+  'adminNotification',
+  'customerCancellation',
+]);
+
+export const OrderNotificationInputSchema = z.object({
+  order: OrderSchema,
+  notificationType: NotificationTypeSchema,
+  customerEmail: z.string().email().default('customer@example.com'),
+  adminEmail: z.string().email().default('admin@example.com'),
+});
+export type OrderNotificationInput = z.infer<typeof OrderNotificationInputSchema>;

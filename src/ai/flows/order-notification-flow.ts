@@ -7,22 +7,8 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { OrderSchema } from '@/lib/schemas';
-import type { Order } from '@/lib/types';
-
-const NotificationTypeSchema = z.enum([
-  'customerConfirmation',
-  'adminNotification',
-  'customerCancellation',
-]);
-
-export const OrderNotificationInputSchema = z.object({
-  order: OrderSchema,
-  notificationType: NotificationTypeSchema,
-  customerEmail: z.string().email().default('customer@example.com'), // Default for prototype
-  adminEmail: z.string().email().default('admin@example.com'), // Default for prototype
-});
-export type OrderNotificationInput = z.infer<typeof OrderNotificationInputSchema>;
+import { OrderNotificationInputSchema } from '@/lib/schemas';
+import type { OrderNotificationInput } from '@/lib/schemas';
 
 const EmailOutputSchema = z.object({
   subject: z.string().describe('The subject line of the email.'),
