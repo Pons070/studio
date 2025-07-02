@@ -38,14 +38,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             sendOrderNotification({
                 order: newOrder,
                 notificationType: 'customerConfirmation',
-                customerEmail: 'customer@example.com', // In real app, get from user session
-                adminEmail: 'admin@example.com'
+                customerEmail: 'pons070@yahoo.in', // In real app, get from user session
+                adminEmail: 'sangkar111@gmail.com'
             }),
             sendOrderNotification({
                 order: newOrder,
                 notificationType: 'adminNotification',
-                customerEmail: 'customer@example.com',
-                adminEmail: 'admin@example.com' // In real app, get from config
+                customerEmail: 'pons070@yahoo.in',
+                adminEmail: 'sangkar111@gmail.com' // In real app, get from config
             })
         ]);
         
@@ -81,8 +81,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             await sendOrderNotification({
                 order: { ...orderToUpdate, status: 'Cancelled' },
                 notificationType: 'customerCancellation',
-                customerEmail: 'customer@example.com',
-                adminEmail: 'admin@example.com'
+                customerEmail: 'pons070@yahoo.in',
+                adminEmail: 'sangkar111@gmail.com'
             });
             toast({
                 title: "Order Cancelled",

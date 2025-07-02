@@ -27,7 +27,7 @@ const NotificationTypeSchema = z.enum([
 export const OrderNotificationInputSchema = z.object({
   order: OrderSchema,
   notificationType: NotificationTypeSchema,
-  customerEmail: z.string().email().default('customer@example.com'),
-  adminEmail: z.string().email().default('admin@example.com'),
+  customerEmail: z.string().email().default('pons070@yahoo.in'),
+  adminEmail: z.string().email().default('sangkar111@gmail.com'),
 });
 export type OrderNotificationInput = z.infer<typeof OrderNotificationInputSchema>;
