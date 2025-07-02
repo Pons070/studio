@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -11,15 +12,20 @@ import { useOrders } from '@/store/orders';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { useBrand } from '@/store/brand';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
   const { addOrder } = useOrders();
+  const { brandInfo } = useBrand();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const isClosed = brandInfo.businessHours.status === 'closed';
 
   const handlePlaceOrder = async () => {
     if (!date || !time) {
@@ -50,6 +56,23 @@ export default function CheckoutPage() {
   };
   
   const availableTimes = ["12:00", "12:30", "13:00", "18:00", "18:30", "19:00", "19:30", "20:00"];
+
+  if (isClosed) {
+    return (
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Restaurant Closed</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive" className="items-center">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>We are currently closed for pre-orders</AlertTitle>
+            <AlertDescription>{brandInfo.businessHours.message}</AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div>
@@ -116,7 +139,7 @@ export default function CheckoutPage() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button onClick={handlePlaceOrder} disabled={isProcessing} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                        <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                             {isProcessing ? 'Processing...' : 'Place Pre-Order'}
                         </Button>
                     </CardFooter>

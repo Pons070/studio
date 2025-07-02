@@ -43,4 +43,8 @@ export type BrandInfo = {
   phone: string;
   address: string;
   about: string;
+  businessHours: {
+    status: 'open' | 'closed';
+    message: string;
+  };
 };

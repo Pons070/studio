@@ -1,9 +1,11 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMenu } from "@/store/menu";
 import { useCart } from "@/store/cart";
+import { useBrand } from "@/store/brand";
 import { PlusCircle, Utensils, Soup, Cookie, GlassWater } from "lucide-react";
 import Image from "next/image";
 import type { Metadata } from "next";
@@ -25,7 +27,9 @@ const categoryIcons = {
 export default function MenuPage() {
   const { addItem } = useCart();
   const { menuItems } = useMenu();
+  const { brandInfo } = useBrand();
   const categories = ['Appetizers', 'Main Courses', 'Desserts', 'Drinks'];
+  const isClosed = brandInfo.businessHours.status === 'closed';
 
   return (
     <div className="space-y-12">
@@ -62,7 +66,7 @@ export default function MenuPage() {
                   </CardContent>
                   <CardFooter className="flex justify-between items-center mt-auto pt-4">
                     <p className="text-xl font-bold text-primary">Rs.{item.price.toFixed(2)}</p>
-                    <Button onClick={() => addItem(item)} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                    <Button onClick={() => addItem(item)} className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isClosed}>
                       <PlusCircle className="mr-2 h-5 w-5" />
                       Add
                     </Button>

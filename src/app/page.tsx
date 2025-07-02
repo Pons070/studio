@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star, Quote } from 'lucide-react';
+import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star, Quote, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { reviews } from '@/lib/mock-data';
@@ -11,15 +11,24 @@ import { useMenu } from '@/store/menu';
 import { useBrand } from '@/store/brand';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function Home() {
   const { menuItems } = useMenu();
   const { brandInfo } = useBrand();
   const featuredItems = menuItems.filter(item => item.category === 'Main Courses').slice(0, 3);
   const featuredReviews = reviews.slice(0, 5);
+  const isClosed = brandInfo.businessHours.status === 'closed';
 
   return (
     <div className="space-y-20">
+      {isClosed && (
+        <Alert variant="destructive" className="items-center">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>We are currently closed for pre-orders</AlertTitle>
+          <AlertDescription>{brandInfo.businessHours.message}</AlertDescription>
+        </Alert>
+      )}
       <section className="text-center bg-card p-8 md:p-12 rounded-lg shadow-lg">
         <h1 className="text-4xl md:text-6xl font-headline font-bold text-foreground mb-4 leading-tight">
           Savor the Moment, <span className="text-primary">Skip the Wait.</span>
@@ -27,7 +36,7 @@ export default function Home() {
         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
           Welcome to CulinaPreOrder, where exceptional flavors meet ultimate convenience. Pre-order your favorite dishes and enjoy a seamless dining experience.
         </p>
-        <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg">
+        <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg" disabled={isClosed}>
           <Link href="/menu">
             Order Now <ArrowRight className="ml-2 h-5 w-5" />
           </Link>

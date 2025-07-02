@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from './ui/button';
 import { useCart } from '@/store/cart';
+import { useBrand } from '@/store/brand';
 import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { Input } from './ui/input';
@@ -19,6 +21,8 @@ import { Separator } from './ui/separator';
 
 export function CartSheet({ children }: { children: React.ReactNode }) {
   const { items, removeItem, updateQuantity, totalPrice } = useCart();
+  const { brandInfo } = useBrand();
+  const isClosed = brandInfo.businessHours.status === 'closed';
 
   return (
     <Sheet>
@@ -78,8 +82,13 @@ export function CartSheet({ children }: { children: React.ReactNode }) {
                         <span>Total:</span>
                         <span>Rs.{totalPrice.toFixed(2)}</span>
                     </div>
+                    {isClosed && (
+                      <p className="text-sm text-destructive text-center">
+                        We are currently not accepting pre-orders.
+                      </p>
+                    )}
                     <SheetClose asChild>
-                        <Button asChild size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                        <Button asChild size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isClosed}>
                             <Link href="/checkout">Proceed to Checkout</Link>
                         </Button>
                     </SheetClose>

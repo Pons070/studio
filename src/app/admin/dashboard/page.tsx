@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle } from 'lucide-react';
 import { reviews as mockReviews } from '@/lib/mock-data';
 import type { Order, MenuItem, Review, BrandInfo } from '@/lib/types';
 import {
@@ -42,6 +42,7 @@ import { Separator } from '@/components/ui/separator';
 import { useOrders } from '@/store/orders';
 import { useMenu } from '@/store/menu';
 import { useBrand } from '@/store/brand';
+import { Switch } from '@/components/ui/switch';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -605,6 +606,8 @@ function BrandManagement() {
   const [phone, setPhone] = useState(brandInfo.phone);
   const [address, setAddress] = useState(brandInfo.address);
   const [about, setAbout] = useState(brandInfo.about || '');
+  const [businessStatus, setBusinessStatus] = useState(brandInfo.businessHours.status);
+  const [closureMessage, setClosureMessage] = useState(brandInfo.businessHours.message);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -626,6 +629,10 @@ function BrandManagement() {
       phone,
       address,
       about,
+      businessHours: {
+        status: businessStatus,
+        message: closureMessage
+      }
     });
     setIsSaving(false);
   }
@@ -667,6 +674,34 @@ function BrandManagement() {
                 )}
                 <Input id="logo" type="file" onChange={handleFileChange} accept="image/*" className="max-w-xs" />
             </div>
+        </div>
+        <Separator className="my-6" />
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Business Hours</h3>
+          <div className="flex items-center space-x-2 rounded-lg border p-4">
+            <Switch
+              id="business-status"
+              checked={businessStatus === 'open'}
+              onCheckedChange={(checked) => setBusinessStatus(checked ? 'open' : 'closed')}
+            />
+            <Label htmlFor="business-status" className="text-base flex-grow">
+              {businessStatus === 'open' ? 'Open for Pre-Orders' : 'Closed for Pre-Orders'}
+            </Label>
+          </div>
+          {businessStatus === 'closed' && (
+            <div className="space-y-2">
+              <Label htmlFor="closure-message">Closure Message</Label>
+              <Textarea
+                id="closure-message"
+                value={closureMessage}
+                onChange={(e) => setClosureMessage(e.target.value)}
+                placeholder="E.g., Closed for a private event."
+              />
+              <p className="text-sm text-muted-foreground">
+                This message will be shown to customers when you are closed.
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter>
