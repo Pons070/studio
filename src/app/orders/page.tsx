@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { reviews as mockReviews } from '@/lib/mock-data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +33,6 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Order, Review } from '@/lib/types';
 import Image from 'next/image';
@@ -43,6 +41,7 @@ import { Star } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useOrders } from '@/store/orders';
+import { useReviews } from '@/store/reviews';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
@@ -229,9 +228,8 @@ function ReviewDialog(
 }
 
 export default function OrdersPage() {
-  const { toast } = useToast();
-  const { orders, updateOrderStatus, addReviewToOrder } = useOrders();
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const { orders, updateOrderStatus } = useOrders();
+  const { reviews, addReview } = useReviews();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
 
@@ -240,22 +238,8 @@ export default function OrdersPage() {
   }
 
   const handleReviewSubmit = (orderId: string, rating: number, comment: string) => {
-    const newReview: Review = {
-        id: `REV-${Date.now()}`,
-        orderId,
-        customerName: 'Guest User', // Hardcoded for prototype
-        rating,
-        comment,
-        date: new Date().toISOString().split('T')[0],
-    };
-    setReviews([...reviews, newReview]);
-    addReviewToOrder(orderId, newReview.id);
+    addReview(orderId, rating, comment);
     setReviewOrder(null);
-    toast({
-        title: "Review Submitted!",
-        description: "Thank you for your valuable feedback.",
-        className: "bg-green-500 text-white"
-    });
   };
 
   return (

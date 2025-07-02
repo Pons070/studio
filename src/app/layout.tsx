@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -7,6 +8,7 @@ import { CartProvider } from '@/store/cart';
 import { OrderProvider } from '@/store/orders';
 import { MenuProvider } from '@/store/menu';
 import { BrandProvider } from '@/store/brand';
+import { ReviewProvider } from '@/store/reviews';
 
 export const metadata: Metadata = {
   title: 'CulinaPreOrder - Delicious Meals, Ordered Ahead',
@@ -33,14 +35,16 @@ export default function RootLayout({
           <MenuProvider>
             <CartProvider>
               <OrderProvider>
-                <div className="flex flex-col min-h-screen">
-                  <Header />
-                  <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {children}
-                  </main>
-                  <Footer />
-                </div>
-                <Toaster />
+                <ReviewProvider>
+                  <div className="flex flex-col min-h-screen">
+                    <Header />
+                    <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      {children}
+                    </main>
+                    <Footer />
+                  </div>
+                  <Toaster />
+                </ReviewProvider>
               </OrderProvider>
             </CartProvider>
           </MenuProvider>

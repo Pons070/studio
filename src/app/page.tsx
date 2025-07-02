@@ -6,16 +6,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star, Quote, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { reviews } from '@/lib/mock-data';
 import { useMenu } from '@/store/menu';
 import { useBrand } from '@/store/brand';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useReviews } from '@/store/reviews';
 
 export default function Home() {
   const { menuItems } = useMenu();
   const { brandInfo } = useBrand();
+  const { reviews } = useReviews();
   const featuredItems = menuItems.filter(item => item.category === 'Main Courses').slice(0, 3);
   const featuredReviews = reviews.slice(0, 5);
   const isClosed = brandInfo.businessHours.status === 'closed';

@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle } from 'lucide-react';
-import { reviews as mockReviews } from '@/lib/mock-data';
 import type { Order, MenuItem, Review, BrandInfo } from '@/lib/types';
 import {
   Dialog,
@@ -22,17 +21,6 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from '@/components/ui/textarea';
@@ -43,6 +31,7 @@ import { useOrders } from '@/store/orders';
 import { useMenu } from '@/store/menu';
 import { useBrand } from '@/store/brand';
 import { Switch } from '@/components/ui/switch';
+import { useReviews } from '@/store/reviews';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -198,7 +187,7 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[]
 
 function OrderManagement() {
   const { orders, updateOrderStatus } = useOrders();
-  const [reviews] = useState<Review[]>(mockReviews);
+  const { reviews } = useReviews();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Confirmed').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -510,14 +499,9 @@ function ReplyDialog({ review, isOpen, onOpenChange, onSave }: { review: Review 
 }
 
 function ReviewManagement() {
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const { reviews, addAdminReply } = useReviews();
   const [isReplyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedReviewForReply, setSelectedReviewForReply] = useState<Review | null>(null);
-
-  const handleDelete = (reviewId: string) => {
-    setReviews(reviews.filter(r => r.id !== reviewId));
-    // In a real app, you would also update the corresponding order to remove the reviewId
-  };
 
   const handleReplyClick = (review: Review) => {
     setSelectedReviewForReply(review);
@@ -525,7 +509,7 @@ function ReviewManagement() {
   };
 
   const handleSaveReply = (reviewId: string, reply: string) => {
-    setReviews(reviews.map(r => (r.id === reviewId ? { ...r, adminReply: reply } : r)));
+    addAdminReply(reviewId, reply);
     setReplyDialogOpen(false);
   };
 
@@ -561,27 +545,6 @@ function ReviewManagement() {
                       <Button variant="ghost" size="icon" onClick={() => handleReplyClick(review)}>
                           <MessageSquare className={cn("h-4 w-4", review.adminReply ? "text-primary fill-primary/20" : "")} />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this review.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(review.id)}>
-                              Yes, delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
