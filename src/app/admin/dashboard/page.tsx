@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,75 +38,178 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
+const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+        case 'Completed': return 'default';
+        case 'Confirmed': return 'secondary';
+        case 'Pending':   return 'outline';
+        case 'Cancelled': return 'destructive';
+        default:          return 'outline';
+    }
+};
+
+function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[] }) {
+    if (!order) return null;
+
+    const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Order Details</DialogTitle>
+                    <DialogDescription>
+                        Order ID: {order.id} | Customer: Guest User
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p className="font-medium">Order Date</p>
+                            <p className="text-muted-foreground">{new Date(order.date).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <p className="font-medium">Pickup Time</p>
+                            <p className="text-muted-foreground">{order.pickupTime}</p>
+                        </div>
+                         <div>
+                            <p className="font-medium">Status</p>
+                            <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
+                        </div>
+                        <div>
+                            <p className="font-medium">Order Total</p>
+                            <p className="font-bold">Rs.{order.total.toFixed(2)}</p>
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    <h4 className="font-medium">Items in this order</h4>
+                    <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+                        {order.items.map(item => (
+                            <div key={item.id} className="flex justify-between items-center">
+                                <div className="flex items-center gap-4">
+                                    <Image src={item.imageUrl || "https://placehold.co/64x64.png"} alt={item.name} width={48} height={48} className="rounded-md" />
+                                    <div>
+                                        <p className="font-semibold">{item.name}</p>
+                                        <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                                    </div>
+                                </div>
+                                <p>Rs.{(item.price * item.quantity).toFixed(2)}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {review && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-medium mb-2">Customer Review</h4>
+                                <div className="space-y-3 text-sm p-4 bg-muted/50 rounded-lg border">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold">Rating:</span>
+                                            <StarDisplay rating={review.rating} />
+                                        </div>
+                                         <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <p className="italic">"{review.comment}"</p>
+                                    {review.adminReply && (
+                                        <div className="p-3 bg-background rounded-md mt-2 border-l-4 border-primary">
+                                            <p className="font-semibold text-sm text-primary">Restaurant's Reply</p>
+                                            <p className="text-muted-foreground text-sm italic">"{review.adminReply}"</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">
+                            Close
+                        </Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [reviews] = useState<Review[]>(mockReviews);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
 
   const updateOrderStatus = (orderId: string, status: Order['status']) => {
     setOrders(orders.map(o => o.id === orderId ? { ...o, status } : o));
   };
-  
-  const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'Completed': return 'default';
-      case 'Confirmed': return 'secondary';
-      case 'Pending':   return 'outline';
-      case 'Cancelled': return 'destructive';
-      default:          return 'outline';
-    }
-  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>All Orders</CardTitle>
-        <CardDescription>View and manage all customer orders.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell>Guest User</TableCell>
-                <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
-                </TableCell>
-                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Cancelled')}>Set as Cancelled</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>All Orders</CardTitle>
+          <CardDescription>View and manage all customer orders.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order ID</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {orders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">{order.id}</TableCell>
+                  <TableCell>Guest User</TableCell>
+                  <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>View Details</Button>
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Cancelled')}>Set as Cancelled</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <OrderDetailsDialog 
+        order={selectedOrder}
+        isOpen={!!selectedOrder}
+        onOpenChange={(open) => !open && setSelectedOrder(null)}
+        reviews={reviews}
+      />
+    </>
   );
 }
 
