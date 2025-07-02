@@ -6,6 +6,7 @@ export const brandInfo: BrandInfo = {
   logoUrl: '',
   phone: '123-456-7890',
   address: '123 Foodie Lane, Flavor Town, 12345',
+  about: 'CulinaPreOrder was born from a passion for exquisite food and a desire to make fine dining accessible. We believe in quality ingredients, handcrafted recipes, and the convenience of pre-ordering, allowing you to enjoy gourmet meals without the wait.',
 };
 
 export const menuItems: MenuItem[] = [

@@ -42,4 +42,5 @@ export type BrandInfo = {
   logoUrl: string;
   phone: string;
   address: string;
+  about: string;
 };

@@ -1,17 +1,20 @@
+
 "use client";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star } from 'lucide-react';
+import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star, Quote } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { reviews } from '@/lib/mock-data';
 import { useMenu } from '@/store/menu';
+import { useBrand } from '@/store/brand';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
   const { menuItems } = useMenu();
+  const { brandInfo } = useBrand();
   const featuredItems = menuItems.filter(item => item.category === 'Main Courses').slice(0, 3);
   const featuredReviews = reviews.slice(0, 5);
 
@@ -88,6 +91,16 @@ export default function Home() {
             <h3 className="text-xl font-headline font-semibold mb-2">3. Enjoy Your Meal</h3>
             <p className="text-muted-foreground">Your order will be freshly prepared and ready for you, right on schedule. Enjoy!</p>
           </div>
+        </div>
+      </section>
+      
+      <section>
+        <h2 className="text-3xl font-headline font-bold text-center mb-10">About {brandInfo.name}</h2>
+        <div className="max-w-3xl mx-auto text-center bg-card p-8 rounded-lg shadow-lg">
+            <Quote className="h-10 w-10 text-primary/50 mx-auto mb-4" />
+            <p className="text-lg text-muted-foreground italic whitespace-pre-line">
+                {brandInfo.about}
+            </p>
         </div>
       </section>
 

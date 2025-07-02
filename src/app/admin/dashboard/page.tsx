@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote } from 'lucide-react';
 import { reviews as mockReviews } from '@/lib/mock-data';
 import type { Order, MenuItem, Review, BrandInfo } from '@/lib/types';
 import {
@@ -604,6 +604,7 @@ function BrandManagement() {
   const [logoUrl, setLogoUrl] = useState(brandInfo.logoUrl);
   const [phone, setPhone] = useState(brandInfo.phone);
   const [address, setAddress] = useState(brandInfo.address);
+  const [about, setAbout] = useState(brandInfo.about || '');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -624,6 +625,7 @@ function BrandManagement() {
       logoUrl,
       phone,
       address,
+      about,
     });
     setIsSaving(false);
   }
@@ -648,6 +650,10 @@ function BrandManagement() {
         <div className="space-y-2">
             <Label htmlFor="brand-address">Address</Label>
             <Textarea id="brand-address" value={address} onChange={(e) => setAddress(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="brand-about">About Section</Label>
+            <Textarea id="brand-about" value={about} onChange={(e) => setAbout(e.target.value)} placeholder="Tell your customers about your restaurant..." rows={4} />
         </div>
         <div className="space-y-2">
             <Label htmlFor="logo">Logo</Label>
