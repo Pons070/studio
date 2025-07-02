@@ -60,7 +60,7 @@ export default function MenuPage() {
                     <CardDescription className="mt-1 text-muted-foreground text-sm">{item.description}</CardDescription>
                   </CardContent>
                   <CardFooter className="flex justify-between items-center mt-auto pt-4">
-                    <p className="text-xl font-bold text-primary">${item.price.toFixed(2)}</p>
+                    <p className="text-xl font-bold text-primary">Rs.{item.price.toFixed(2)}</p>
                     <Button onClick={() => addItem(item)} className="bg-accent hover:bg-accent/90 text-accent-foreground">
                       <PlusCircle className="mr-2 h-5 w-5" />
                       Add

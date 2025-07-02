@@ -109,7 +109,7 @@ export default function CheckoutPage() {
                                             <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                                         </div>
                                     </div>
-                                    <p>${(item.price * item.quantity).toFixed(2)}</p>
+                                    <p>Rs.{(item.price * item.quantity).toFixed(2)}</p>
                                 </div>
                             ))
                         ) : (
@@ -118,7 +118,7 @@ export default function CheckoutPage() {
                         <Separator />
                         <div className="flex justify-between font-bold text-xl">
                             <p>Total</p>
-                            <p>${totalPrice.toFixed(2)}</p>
+                            <p>Rs.{totalPrice.toFixed(2)}</p>
                         </div>
                     </CardContent>
                     <CardFooter>

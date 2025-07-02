@@ -84,7 +84,7 @@ export default function OrdersPage() {
                     {order.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
                   {order.status === 'Pending' || order.status === 'Confirmed' ? (
                      <AlertDialog>

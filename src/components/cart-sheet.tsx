@@ -38,7 +38,7 @@ export function CartSheet({ children }: { children: React.ReactNode }) {
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold">{item.name}</h3>
-                      <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">Rs.{item.price.toFixed(2)}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Button
                           variant="outline"
@@ -76,7 +76,7 @@ export function CartSheet({ children }: { children: React.ReactNode }) {
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total:</span>
-                        <span>${totalPrice.toFixed(2)}</span>
+                        <span>Rs.{totalPrice.toFixed(2)}</span>
                     </div>
                     <SheetClose asChild>
                         <Button asChild size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">

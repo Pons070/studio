@@ -45,7 +45,7 @@ export default function Home() {
                 <CardDescription className="mt-2 text-muted-foreground">{item.description}</CardDescription>
               </CardContent>
               <CardFooter className="flex justify-between items-center">
-                <p className="text-lg font-bold text-primary">${item.price.toFixed(2)}</p>
+                <p className="text-lg font-bold text-primary">Rs.{item.price.toFixed(2)}</p>
                 <Button asChild variant="ghost" className="text-accent hover:bg-accent/10 hover:text-accent">
                    <Link href="/menu">
                     View Menu <ArrowRight className="ml-2 h-4 w-4" />
