@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
 import { Utensils, User, ShoppingCart, LogOut, History, LogIn, UserPlus } from 'lucide-react';
 import {
@@ -15,9 +16,14 @@ import { CartSheet } from './cart-sheet';
 import { useCart } from '@/store/cart';
 
 export function Header() {
+  const pathname = usePathname();
   const { items } = useCart();
   const cartItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const isAuthenticated = false; // Placeholder for auth logic
+
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <header className="bg-card shadow-md sticky top-0 z-40">
