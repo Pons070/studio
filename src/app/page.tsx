@@ -101,16 +101,24 @@ export default function Home() {
             {featuredReviews.map((review) => (
               <CarouselItem key={review.id} className="md:basis-1/2 lg:basis-1/3">
                 <div className="p-1 h-full">
-                  <Card className="flex flex-col h-full">
-                    <CardContent className="flex-grow flex flex-col items-start justify-center p-6 space-y-4">
+                  <Card className="flex flex-col h-full justify-between">
+                    <CardContent className="p-6 space-y-4">
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
                           <Star key={i} className={cn("h-5 w-5", i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
                         ))}
                       </div>
                       <p className="text-muted-foreground text-sm italic grow">"{review.comment}"</p>
-                      <p className="font-bold self-end">- {review.customerName}</p>
+                       {review.adminReply && (
+                         <div className="p-3 bg-muted/50 rounded-md mt-2 border-l-2 border-primary/50">
+                            <p className="font-semibold text-xs text-primary">Restaurant's Reply</p>
+                            <p className="text-muted-foreground text-xs italic">"{review.adminReply}"</p>
+                        </div>
+                      )}
                     </CardContent>
+                     <CardFooter className="p-6 pt-0">
+                         <p className="font-bold text-sm self-end w-full text-right">- {review.customerName}</p>
+                    </CardFooter>
                   </Card>
                 </div>
               </CarouselItem>

@@ -165,6 +165,7 @@ export const reviews: Review[] = [
     rating: 5,
     comment: 'The Spaghetti Carbonara was absolutely divine! Best I have ever had. Will be ordering again soon!',
     date: '2023-10-27',
+    adminReply: 'Thank you so much, Alice! We are thrilled you enjoyed it and look forward to serving you again.',
   },
   {
     id: 'REV-002',
@@ -189,6 +190,7 @@ export const reviews: Review[] = [
     rating: 4,
     comment: 'The food was amazing, as always. A bit of a wait during pickup, but it was a busy night. Overall, a great experience.',
     date: '2023-11-16',
+    adminReply: 'Thank you for your feedback, Diana! We apologize for the delay and are working to improve our pickup times during peak hours.',
   },
   {
     id: 'REV-005',

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare } from 'lucide-react';
 import { orders as mockOrders, menuItems as mockMenuItems, reviews as mockReviews } from '@/lib/mock-data';
 import type { Order, MenuItem, Review } from '@/lib/types';
 import {
@@ -285,69 +285,150 @@ function StarDisplay({ rating }: { rating: number }) {
   );
 }
 
+function ReplyDialog({ review, isOpen, onOpenChange, onSave }: { review: Review | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onSave: (reviewId: string, reply: string) => void }) {
+    const [reply, setReply] = useState('');
+
+    useEffect(() => {
+        if (isOpen && review) {
+            setReply(review.adminReply || '');
+        }
+    }, [review, isOpen]);
+
+    const handleSubmit = () => {
+        if (review) {
+            onSave(review.id, reply);
+        }
+    }
+
+    if (!review) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Reply to Review</DialogTitle>
+                    <DialogDescription>
+                        Respond to {review.customerName}'s feedback for order {review.orderId}.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <Card className="bg-muted/50">
+                        <CardHeader className="pb-2">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <CardTitle className="text-base">{review.customerName}</CardTitle>
+                                    <CardDescription className="text-xs">{new Date(review.date).toLocaleDateString()}</CardDescription>
+                                </div>
+                                <StarDisplay rating={review.rating} />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm italic">"{review.comment}"</p>
+                        </CardContent>
+                    </Card>
+                    <div className="grid w-full gap-2">
+                        <Label htmlFor="reply">Your Reply</Label>
+                        <Textarea id="reply" value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Type your response here..." />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button type="submit" onClick={handleSubmit}>Save Reply</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 function ReviewManagement() {
   const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const [isReplyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [selectedReviewForReply, setSelectedReviewForReply] = useState<Review | null>(null);
 
   const handleDelete = (reviewId: string) => {
     setReviews(reviews.filter(r => r.id !== reviewId));
     // In a real app, you would also update the corresponding order to remove the reviewId
   };
 
+  const handleReplyClick = (review: Review) => {
+    setSelectedReviewForReply(review);
+    setReplyDialogOpen(true);
+  };
+
+  const handleSaveReply = (reviewId: string, reply: string) => {
+    setReviews(reviews.map(r => (r.id === reviewId ? { ...r, adminReply: reply } : r)));
+    setReplyDialogOpen(false);
+  };
+
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Customer Reviews</CardTitle>
-        <CardDescription>View and manage all customer feedback.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Comment</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {reviews.map((review) => (
-              <TableRow key={review.id}>
-                <TableCell className="font-medium">{review.orderId}</TableCell>
-                <TableCell>{review.customerName}</TableCell>
-                <TableCell>
-                  <StarDisplay rating={review.rating} />
-                </TableCell>
-                <TableCell className="max-w-[300px] truncate">{review.comment}</TableCell>
-                <TableCell className="text-right">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this review.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(review.id)}>
-                            Yes, delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer Reviews</CardTitle>
+          <CardDescription>View and manage all customer feedback.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order ID</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Comment</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {reviews.map((review) => (
+                <TableRow key={review.id}>
+                  <TableCell className="font-medium">{review.orderId}</TableCell>
+                  <TableCell>{review.customerName}</TableCell>
+                  <TableCell>
+                    <StarDisplay rating={review.rating} />
+                  </TableCell>
+                  <TableCell className="max-w-[300px] truncate">{review.comment}</TableCell>
+                  <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleReplyClick(review)}>
+                          <MessageSquare className={cn("h-4 w-4", review.adminReply ? "text-primary fill-primary/20" : "")} />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete this review.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(review.id)}>
+                              Yes, delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <ReplyDialog 
+        review={selectedReviewForReply}
+        isOpen={isReplyDialogOpen}
+        onOpenChange={setReplyDialogOpen}
+        onSave={handleSaveReply}
+      />
+    </>
   );
 }
 

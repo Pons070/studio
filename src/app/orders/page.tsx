@@ -58,8 +58,10 @@ const getBadgeVariant = (status: string): "default" | "secondary" | "destructive
   }
 };
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[] }) {
     if (!order) return null;
+
+    const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -110,6 +112,35 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: Order | nu
                             </div>
                         ))}
                     </div>
+
+                    {review && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-medium mb-2">Your Review</h4>
+                                <div className="space-y-3 text-sm p-4 bg-muted/50 rounded-lg border">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold">Your Rating:</span>
+                                            <div className="flex">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star key={i} className={cn("h-4 w-4", i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                         <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <p className="italic">"{review.comment}"</p>
+                                    {review.adminReply && (
+                                        <div className="p-3 bg-background rounded-md mt-2 border-l-4 border-primary">
+                                            <p className="font-semibold text-sm text-primary">Restaurant's Reply</p>
+                                            <p className="text-muted-foreground text-sm italic">"{review.adminReply}"</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
@@ -307,6 +338,7 @@ export default function OrdersPage() {
             setSelectedOrder(null);
           }
         }}
+        reviews={reviews}
       />
       <ReviewDialog
         order={reviewOrder}

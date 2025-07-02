@@ -34,4 +34,5 @@ export type Review = {
   rating: number; // 1-5
   comment: string;
   date: string;
+  adminReply?: string;
 };
