@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home } from 'lucide-react';
 import { orders as mockOrders, menuItems as mockMenuItems } from '@/lib/mock-data';
 import type { Order, MenuItem } from '@/lib/types';
 import {
@@ -264,6 +265,12 @@ export default function AdminDashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
           <h1 className="text-4xl font-headline font-bold">Admin Dashboard</h1>
+          <Button asChild variant="outline">
+            <Link href="/">
+              <Home className="mr-2 h-4 w-4" />
+              Go to Home
+            </Link>
+          </Button>
       </div>
       <Tabs defaultValue="orders" className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
