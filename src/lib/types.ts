@@ -1,3 +1,4 @@
+
 export type MenuItem = {
   id: string;
   name: string;
@@ -17,10 +18,20 @@ export type CartItem = {
 };
 
 export type Order = {
-  id: string;
+  id:string;
   date: string;
   pickupTime: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
   total: number;
   items: CartItem[];
+  reviewId?: string;
+};
+
+export type Review = {
+  id: string;
+  orderId: string;
+  customerName: string;
+  rating: number; // 1-5
+  comment: string;
+  date: string;
 };

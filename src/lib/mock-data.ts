@@ -1,4 +1,5 @@
-import type { MenuItem, Order } from './types';
+
+import type { MenuItem, Order, Review } from './types';
 
 export const menuItems: MenuItem[] = [
   {
@@ -93,8 +94,9 @@ export const orders: Order[] = [
     total: 32.48,
     items: [
       { id: '3', name: 'Spaghetti Carbonara', price: 15.99, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
-      { id: '6', name: 'Tiramisu', price: 7.50, quantity: 2, imageUrl: 'https://placehold.co/600x400.png' },
+      { id: '6', name: 'Tiramisu', price: 7.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
+    reviewId: 'REV-001'
   },
   {
     id: 'ORD-002',
@@ -130,4 +132,70 @@ export const orders: Order[] = [
       { id: '8', name: 'Mineral Water', price: 3.00, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
   },
+  {
+    id: 'ORD-005',
+    date: '2024-02-10',
+    pickupTime: '13:00',
+    status: 'Completed',
+    total: 25.00,
+    items: [
+       { id: '4', name: 'Margherita Pizza', price: 14.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+       { id: '2', name: 'Caprese Salad', price: 10.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+    ],
+    reviewId: 'REV-002',
+  },
+  {
+    id: 'ORD-006',
+    date: '2024-03-20',
+    pickupTime: '19:30',
+    status: 'Completed',
+    total: 27.50,
+    items: [
+      { id: '5', name: 'Grilled Salmon', price: 22.00, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+      { id: '9', name: 'Fresh Orange Juice', price: 5.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
+    ],
+  },
 ];
+
+export const reviews: Review[] = [
+  {
+    id: 'REV-001',
+    orderId: 'ORD-001',
+    customerName: 'Alice',
+    rating: 5,
+    comment: 'The Spaghetti Carbonara was absolutely divine! Best I have ever had. Will be ordering again soon!',
+    date: '2023-10-27',
+  },
+  {
+    id: 'REV-002',
+    orderId: 'ORD-005',
+    customerName: 'Bob',
+    rating: 4,
+    comment: 'Great pizza and the Caprese salad was very fresh. The pickup process was quick and easy. Would recommend.',
+    date: '2024-02-11',
+  },
+  {
+    id: 'REV-003',
+    orderId: 'ORD-003',
+    customerName: 'Charlie',
+    rating: 5,
+    comment: 'Delicious food and excellent service. The pre-order system is so convenient!',
+    date: '2023-12-02',
+  },
+    {
+    id: 'REV-004',
+    orderId: 'ORD-002',
+    customerName: 'Diana',
+    rating: 4,
+    comment: 'The food was amazing, as always. A bit of a wait during pickup, but it was a busy night. Overall, a great experience.',
+    date: '2023-11-16',
+  },
+  {
+    id: 'REV-005',
+    orderId: 'ORD-004',
+    customerName: 'Eve',
+    rating: 3,
+    comment: 'Food was decent, but my order was slightly delayed. The staff was apologetic and friendly.',
+    date: '2024-01-06',
+  }
+]

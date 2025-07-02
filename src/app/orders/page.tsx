@@ -1,7 +1,8 @@
+
 "use client";
 
-import { useState } from 'react';
-import { orders as mockOrders } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { orders as mockOrders, reviews as mockReviews } from '@/lib/mock-data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,9 +36,12 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import type { Order } from '@/lib/types';
+import type { Order, Review } from '@/lib/types';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
+import { Star } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
@@ -119,18 +123,112 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: Order | nu
     )
 }
 
+function StarRating({ rating, setRating }: { rating: number; setRating: (rating: number) => void }) {
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => setRating(star)}
+          className="focus:outline-none"
+          aria-label={`Rate ${star} stars`}
+        >
+          <Star className={cn(
+            "h-8 w-8 transition-colors",
+            star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300 hover:text-yellow-300"
+          )} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReviewDialog(
+    { order, isOpen, onOpenChange, onSubmit }: 
+    { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onSubmit: (orderId: string, rating: number, comment: string) => void }
+) {
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            setRating(0);
+            setComment('');
+        }
+    }, [isOpen]);
+
+    const handleSubmit = () => {
+        if (order) {
+            onSubmit(order.id, rating, comment);
+        }
+    };
+
+    if (!order) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Leave a review for Order #{order.id}</DialogTitle>
+                    <DialogDescription>
+                        Your feedback helps us improve. Please rate your experience.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label>Your Rating</Label>
+                        <StarRating rating={rating} setRating={setRating} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="comment">Your Comments</Label>
+                        <Textarea id="comment" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Tell us about your experience..." />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleSubmit} disabled={rating === 0}>Submit Review</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function OrdersPage() {
   const { toast } = useToast();
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [reviews, setReviews] = useState<Review[]>(mockReviews);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
 
   const handleCancelOrder = (orderId: string) => {
-    // In a real app, this would be an API call
     console.log(`Cancelling order ${orderId}`);
     toast({
         title: "Order Cancelled",
         description: `Your order #${orderId} has been successfully cancelled.`,
     })
   }
+
+  const handleReviewSubmit = (orderId: string, rating: number, comment: string) => {
+    const newReview: Review = {
+        id: `REV-${Date.now()}`,
+        orderId,
+        customerName: 'Guest User', // Hardcoded for prototype
+        rating,
+        comment,
+        date: new Date().toISOString().split('T')[0],
+    };
+    setReviews([...reviews, newReview]);
+    setOrders(orders.map(o => o.id === orderId ? { ...o, reviewId: newReview.id } : o));
+    setReviewOrder(null);
+    toast({
+        title: "Review Submitted!",
+        description: "Thank you for your valuable feedback.",
+        className: "bg-green-500 text-white"
+    });
+  };
 
   return (
     <>
@@ -147,11 +245,11 @@ export default function OrdersPage() {
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockOrders.map((order) => (
+              {orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="hidden sm:table-cell font-medium">{order.id}</TableCell>
                   <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
@@ -166,6 +264,13 @@ export default function OrdersPage() {
                   <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>View Details</Button>
+                    {order.status === 'Completed' && (
+                      !order.reviewId ? (
+                        <Button variant="default" size="sm" onClick={() => setReviewOrder(order)}>Leave Review</Button>
+                      ) : (
+                        <Button variant="outline" size="sm" disabled>Review Submitted</Button>
+                      )
+                    )}
                     {(order.status === 'Pending' || order.status === 'Confirmed') ? (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -202,6 +307,12 @@ export default function OrdersPage() {
             setSelectedOrder(null);
           }
         }}
+      />
+      <ReviewDialog
+        order={reviewOrder}
+        isOpen={!!reviewOrder}
+        onOpenChange={(open) => !open && setReviewOrder(null)}
+        onSubmit={handleReviewSubmit}
       />
     </>
   );

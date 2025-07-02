@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home } from 'lucide-react';
-import { orders as mockOrders, menuItems as mockMenuItems } from '@/lib/mock-data';
-import type { Order, MenuItem } from '@/lib/types';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star } from 'lucide-react';
+import { orders as mockOrders, menuItems as mockMenuItems, reviews as mockReviews } from '@/lib/mock-data';
+import type { Order, MenuItem, Review } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -20,13 +21,23 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
-// For the prototype, we'll manage state locally.
-// In a real app, you'd use a state management library or fetch from an API.
 
 function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>(mockOrders);
@@ -121,10 +132,8 @@ function MenuManagement() {
   
   const handleSave = (itemData: MenuItemFormData) => {
      if (itemData.id) {
-       // Edit
        setMenuItems(menuItems.map(item => item.id === itemData.id ? { ...item, ...itemData } : item));
      } else {
-       // Add
        const newItem: MenuItem = {
          ...itemData,
          id: `MENU-${Date.now()}`,
@@ -260,9 +269,92 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
     )
 }
 
+function StarDisplay({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          className={cn(
+            "h-4 w-4",
+            i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ReviewManagement() {
+  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+
+  const handleDelete = (reviewId: string) => {
+    setReviews(reviews.filter(r => r.id !== reviewId));
+    // In a real app, you would also update the corresponding order to remove the reviewId
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Customer Reviews</CardTitle>
+        <CardDescription>View and manage all customer feedback.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Order ID</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Rating</TableHead>
+              <TableHead>Comment</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reviews.map((review) => (
+              <TableRow key={review.id}>
+                <TableCell className="font-medium">{review.orderId}</TableCell>
+                <TableCell>{review.customerName}</TableCell>
+                <TableCell>
+                  <StarDisplay rating={review.rating} />
+                </TableCell>
+                <TableCell className="max-w-[300px] truncate">{review.comment}</TableCell>
+                <TableCell className="text-right">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this review.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(review.id)}>
+                            Yes, delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+
 export default function AdminDashboardPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-4 md:p-8">
       <div className="flex items-center justify-between">
           <h1 className="text-4xl font-headline font-bold">Admin Dashboard</h1>
           <Button asChild variant="outline">
@@ -273,15 +365,19 @@ export default function AdminDashboardPage() {
           </Button>
       </div>
       <Tabs defaultValue="orders" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 md:w-[600px]">
           <TabsTrigger value="orders">Manage Orders</TabsTrigger>
           <TabsTrigger value="menu">Manage Menu</TabsTrigger>
+          <TabsTrigger value="reviews">Manage Reviews</TabsTrigger>
         </TabsList>
         <TabsContent value="orders">
           <OrderManagement />
         </TabsContent>
         <TabsContent value="menu">
           <MenuManagement />
+        </TabsContent>
+         <TabsContent value="reviews">
+          <ReviewManagement />
         </TabsContent>
       </Tabs>
     </div>

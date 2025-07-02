@@ -1,12 +1,16 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone } from 'lucide-react';
+import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { menuItems } from '@/lib/mock-data';
+import { menuItems, reviews } from '@/lib/mock-data';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const featuredItems = menuItems.filter(item => item.category === 'Main Courses').slice(0, 3);
+  const featuredReviews = reviews.slice(0, 5);
 
   return (
     <div className="space-y-20">
@@ -82,6 +86,39 @@ export default function Home() {
             <p className="text-muted-foreground">Your order will be freshly prepared and ready for you, right on schedule. Enjoy!</p>
           </div>
         </div>
+      </section>
+
+      <section>
+        <h2 className="text-3xl font-headline font-bold text-center mb-10">What Our Customers Say</h2>
+        <Carousel
+          opts={{
+            align: "start",
+            loop: true,
+          }}
+          className="w-full max-w-xs sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto"
+        >
+          <CarouselContent>
+            {featuredReviews.map((review) => (
+              <CarouselItem key={review.id} className="md:basis-1/2 lg:basis-1/3">
+                <div className="p-1 h-full">
+                  <Card className="flex flex-col h-full">
+                    <CardContent className="flex-grow flex flex-col items-start justify-center p-6 space-y-4">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={cn("h-5 w-5", i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
+                        ))}
+                      </div>
+                      <p className="text-muted-foreground text-sm italic grow">"{review.comment}"</p>
+                      <p className="font-bold self-end">- {review.customerName}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="hidden sm:flex" />
+          <CarouselNext className="hidden sm:flex" />
+        </Carousel>
       </section>
     </div>
   );
