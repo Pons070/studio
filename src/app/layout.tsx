@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { CartProvider } from '@/store/cart';
+import { OrderProvider } from '@/store/orders';
 
 export const metadata: Metadata = {
   title: 'CulinaPreOrder - Delicious Meals, Ordered Ahead',
@@ -27,14 +28,16 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <CartProvider>
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              {children}
-            </main>
-            <Footer />
-          </div>
-          <Toaster />
+          <OrderProvider>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {children}
+              </main>
+              <Footer />
+            </div>
+            <Toaster />
+          </OrderProvider>
         </CartProvider>
       </body>
     </html>

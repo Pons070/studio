@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { orders as mockOrders, reviews as mockReviews } from '@/lib/mock-data';
+import { reviews as mockReviews } from '@/lib/mock-data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +42,7 @@ import { Separator } from '@/components/ui/separator';
 import { Star } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useOrders } from '@/store/orders';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
@@ -229,13 +230,13 @@ function ReviewDialog(
 
 export default function OrdersPage() {
   const { toast } = useToast();
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const { orders, updateOrderStatus, addReviewToOrder } = useOrders();
   const [reviews, setReviews] = useState<Review[]>(mockReviews);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
 
   const handleCancelOrder = (orderId: string) => {
-    console.log(`Cancelling order ${orderId}`);
+    updateOrderStatus(orderId, 'Cancelled');
     toast({
         title: "Order Cancelled",
         description: `Your order #${orderId} has been successfully cancelled.`,
@@ -252,7 +253,7 @@ export default function OrdersPage() {
         date: new Date().toISOString().split('T')[0],
     };
     setReviews([...reviews, newReview]);
-    setOrders(orders.map(o => o.id === orderId ? { ...o, reviewId: newReview.id } : o));
+    addReviewToOrder(orderId, newReview.id);
     setReviewOrder(null);
     toast({
         title: "Review Submitted!",

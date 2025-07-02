@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare } from 'lucide-react';
-import { orders as mockOrders, menuItems as mockMenuItems, reviews as mockReviews } from '@/lib/mock-data';
+import { menuItems as mockMenuItems, reviews as mockReviews } from '@/lib/mock-data';
 import type { Order, MenuItem, Review } from '@/lib/types';
 import {
   Dialog,
@@ -39,6 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { useOrders } from '@/store/orders';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -140,14 +141,9 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
 }
 
 function OrderManagement() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const { orders, updateOrderStatus } = useOrders();
   const [reviews] = useState<Review[]>(mockReviews);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-
-
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(orders.map(o => o.id === orderId ? { ...o, status } : o));
-  };
 
   return (
     <>
