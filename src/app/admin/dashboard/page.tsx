@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare } from 'lucide-react';
-import { menuItems as mockMenuItems, reviews as mockReviews } from '@/lib/mock-data';
+import { reviews as mockReviews } from '@/lib/mock-data';
 import type { Order, MenuItem, Review } from '@/lib/types';
 import {
   Dialog,
@@ -40,6 +40,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useOrders } from '@/store/orders';
+import { useMenu } from '@/store/menu';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -244,7 +245,7 @@ function OrderManagement() {
 type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint'> & { id?: string };
 
 function MenuManagement() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
+  const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isDialogOpen, setDialogOpen] = useState(false);
 
@@ -259,20 +260,27 @@ function MenuManagement() {
   }
 
   const handleDelete = (id: string) => {
-    setMenuItems(menuItems.filter(item => item.id !== id));
+    deleteMenuItem(id);
   }
   
   const handleSave = (itemData: MenuItemFormData) => {
-     if (itemData.id) {
-       setMenuItems(menuItems.map(item => item.id === itemData.id ? { ...item, ...itemData, aiHint: itemData.name.toLowerCase() } : item));
-     } else {
-       const newItem: MenuItem = {
+    const finalImageUrl = itemData.imageUrl || 'https://placehold.co/600x400.png';
+    const finalAiHint = itemData.name.toLowerCase();
+
+    if (itemData.id) {
+       updateMenuItem({
          ...itemData,
-         id: `MENU-${Date.now()}`,
-         imageUrl: itemData.imageUrl || 'https://placehold.co/600x400.png',
-         aiHint: itemData.name.toLowerCase()
-       };
-       setMenuItems([...menuItems, newItem]);
+         id: itemData.id,
+         imageUrl: finalImageUrl,
+         aiHint: finalAiHint,
+       });
+     } else {
+       const { id, ...newItemData } = itemData;
+       addMenuItem({
+         ...newItemData,
+         imageUrl: finalImageUrl,
+         // aiHint is added in the store
+       });
      }
      setDialogOpen(false);
   }
@@ -352,6 +360,17 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
         }
     }, [item, isOpen]);
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSubmit = () => {
         onSave({ id: item?.id, name, description, price, category, imageUrl });
     }
@@ -393,8 +412,15 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
                         </Select>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="imageUrl" className="text-right">Image URL</Label>
-                        <Input id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="col-span-3" placeholder="https://placehold.co/600x400.png" />
+                        <Label htmlFor="image" className="text-right">Image</Label>
+                        <div className="col-span-3 space-y-2">
+                          <Input id="image" type="file" onChange={handleFileChange} accept="image/*" />
+                          {imageUrl && (
+                              <div className="relative w-full aspect-video rounded-md overflow-hidden border">
+                                  <Image src={imageUrl} alt="Menu item preview" fill className="object-cover" />
+                              </div>
+                          )}
+                        </div>
                     </div>
                 </div>
                 <DialogFooter>

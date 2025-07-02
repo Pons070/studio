@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { menuItems as allMenuItems } from "@/lib/mock-data";
+import { useMenu } from "@/store/menu";
 import { useCart } from "@/store/cart";
 import { PlusCircle, Utensils, Soup, Cookie, GlassWater } from "lucide-react";
 import Image from "next/image";
@@ -24,6 +24,7 @@ const categoryIcons = {
 
 export default function MenuPage() {
   const { addItem } = useCart();
+  const { menuItems } = useMenu();
   const categories = ['Appetizers', 'Main Courses', 'Desserts', 'Drinks'];
 
   return (
@@ -40,7 +41,7 @@ export default function MenuPage() {
             {category}
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {allMenuItems
+            {menuItems
               .filter((item) => item.category === category)
               .map((item) => (
                 <Card key={item.id} className="flex flex-col overflow-hidden group transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">

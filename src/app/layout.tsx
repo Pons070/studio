@@ -5,6 +5,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { CartProvider } from '@/store/cart';
 import { OrderProvider } from '@/store/orders';
+import { MenuProvider } from '@/store/menu';
 
 export const metadata: Metadata = {
   title: 'CulinaPreOrder - Delicious Meals, Ordered Ahead',
@@ -27,18 +28,20 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <CartProvider>
-          <OrderProvider>
-            <div className="flex flex-col min-h-screen">
-              <Header />
-              <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {children}
-              </main>
-              <Footer />
-            </div>
-            <Toaster />
-          </OrderProvider>
-        </CartProvider>
+        <MenuProvider>
+          <CartProvider>
+            <OrderProvider>
+              <div className="flex flex-col min-h-screen">
+                <Header />
+                <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  {children}
+                </main>
+                <Footer />
+              </div>
+              <Toaster />
+            </OrderProvider>
+          </CartProvider>
+        </MenuProvider>
       </body>
     </html>
   );

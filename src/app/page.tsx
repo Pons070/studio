@@ -1,14 +1,17 @@
+"use client";
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { menuItems, reviews } from '@/lib/mock-data';
+import { reviews } from '@/lib/mock-data';
+import { useMenu } from '@/store/menu';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
+  const { menuItems } = useMenu();
   const featuredItems = menuItems.filter(item => item.category === 'Main Courses').slice(0, 3);
   const featuredReviews = reviews.slice(0, 5);
 
