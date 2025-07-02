@@ -1,5 +1,12 @@
 
-import type { MenuItem, Order, Review } from './types';
+import type { MenuItem, Order, Review, BrandInfo } from './types';
+
+export const brandInfo: BrandInfo = {
+  name: 'CulinaPreOrder',
+  logoUrl: '',
+  phone: '123-456-7890',
+  address: '123 Foodie Lane, Flavor Town, 12345',
+};
 
 export const menuItems: MenuItem[] = [
   {

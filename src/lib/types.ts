@@ -36,3 +36,10 @@ export type Review = {
   date: string;
   adminReply?: string;
 };
+
+export type BrandInfo = {
+  name: string;
+  logoUrl: string;
+  phone: string;
+  address: string;
+};

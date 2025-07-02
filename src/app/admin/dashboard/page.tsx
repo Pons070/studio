@@ -5,14 +5,14 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building } from 'lucide-react';
 import { reviews as mockReviews } from '@/lib/mock-data';
-import type { Order, MenuItem, Review } from '@/lib/types';
+import type { Order, MenuItem, Review, BrandInfo } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useOrders } from '@/store/orders';
 import { useMenu } from '@/store/menu';
+import { useBrand } from '@/store/brand';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -597,6 +598,80 @@ function ReviewManagement() {
   );
 }
 
+function BrandManagement() {
+  const { brandInfo, updateBrandInfo } = useBrand();
+  const [name, setName] = useState(brandInfo.name);
+  const [logoUrl, setLogoUrl] = useState(brandInfo.logoUrl);
+  const [phone, setPhone] = useState(brandInfo.phone);
+  const [address, setAddress] = useState(brandInfo.address);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setLogoUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = () => {
+    setIsSaving(true);
+    updateBrandInfo({
+      name,
+      logoUrl,
+      phone,
+      address,
+    });
+    setIsSaving(false);
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Brand Management</CardTitle>
+        <CardDescription>Update your restaurant's branding and contact information.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+                <Label htmlFor="brand-name">Brand Name</Label>
+                <Input id="brand-name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="brand-phone">Phone Number</Label>
+                <Input id="brand-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="brand-address">Address</Label>
+            <Textarea id="brand-address" value={address} onChange={(e) => setAddress(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="logo">Logo</Label>
+             <div className="flex items-center gap-4">
+                {logoUrl ? (
+                    <Image src={logoUrl} alt="Brand Logo" width={80} height={80} className="rounded-md border p-1" />
+                ) : (
+                    <div className="h-20 w-20 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+                        <Building className="h-10 w-10" />
+                    </div>
+                )}
+                <Input id="logo" type="file" onChange={handleFileChange} accept="image/*" className="max-w-xs" />
+            </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+          <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
 
 export default function AdminDashboardPage() {
   return (
@@ -611,10 +686,11 @@ export default function AdminDashboardPage() {
           </Button>
       </div>
       <Tabs defaultValue="orders" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 md:w-[600px]">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 md:w-[800px]">
           <TabsTrigger value="orders">Manage Orders</TabsTrigger>
           <TabsTrigger value="menu">Manage Menu</TabsTrigger>
           <TabsTrigger value="reviews">Manage Reviews</TabsTrigger>
+          <TabsTrigger value="brand">Manage Brand</TabsTrigger>
         </TabsList>
         <TabsContent value="orders">
           <OrderManagement />
@@ -624,6 +700,9 @@ export default function AdminDashboardPage() {
         </TabsContent>
          <TabsContent value="reviews">
           <ReviewManagement />
+        </TabsContent>
+        <TabsContent value="brand">
+          <BrandManagement />
         </TabsContent>
       </Tabs>
     </div>

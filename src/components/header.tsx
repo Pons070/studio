@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -14,10 +15,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CartSheet } from './cart-sheet';
 import { useCart } from '@/store/cart';
+import { useBrand } from '@/store/brand';
+import Image from 'next/image';
 
 export function Header() {
   const pathname = usePathname();
   const { items } = useCart();
+  const { brandInfo } = useBrand();
   const cartItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const isAuthenticated = false; // Placeholder for auth logic
 
@@ -30,8 +34,12 @@ export function Header() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-2">
-            <Utensils className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-headline font-bold text-foreground">CulinaPreOrder</span>
+            {brandInfo.logoUrl ? (
+              <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={40} height={40} className="rounded-md object-contain" />
+            ) : (
+              <Utensils className="h-8 w-8 text-primary" />
+            )}
+            <span className="text-2xl font-headline font-bold text-foreground">{brandInfo.name}</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-lg font-medium">
