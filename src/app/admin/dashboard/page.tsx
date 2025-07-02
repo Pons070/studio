@@ -209,7 +209,7 @@ function OrderManagement() {
   );
 }
 
-type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint' | 'imageUrl'> & { id?: string };
+type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint'> & { id?: string };
 
 function MenuManagement() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
@@ -232,12 +232,12 @@ function MenuManagement() {
   
   const handleSave = (itemData: MenuItemFormData) => {
      if (itemData.id) {
-       setMenuItems(menuItems.map(item => item.id === itemData.id ? { ...item, ...itemData } : item));
+       setMenuItems(menuItems.map(item => item.id === itemData.id ? { ...item, ...itemData, aiHint: itemData.name.toLowerCase() } : item));
      } else {
        const newItem: MenuItem = {
          ...itemData,
          id: `MENU-${Date.now()}`,
-         imageUrl: 'https://placehold.co/600x400.png',
+         imageUrl: itemData.imageUrl || 'https://placehold.co/600x400.png',
          aiHint: itemData.name.toLowerCase()
        };
        setMenuItems([...menuItems, newItem]);
@@ -300,6 +300,7 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState(0);
     const [category, setCategory] = useState<MenuItem['category']>('Main Courses');
+    const [imageUrl, setImageUrl] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -308,17 +309,19 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
                 setDescription(item.description);
                 setPrice(item.price);
                 setCategory(item.category);
+                setImageUrl(item.imageUrl);
             } else {
                 setName('');
                 setDescription('');
                 setPrice(0);
                 setCategory('Main Courses');
+                setImageUrl('');
             }
         }
     }, [item, isOpen]);
 
     const handleSubmit = () => {
-        onSave({ id: item?.id, name, description, price, category });
+        onSave({ id: item?.id, name, description, price, category, imageUrl });
     }
 
     return (
@@ -356,6 +359,10 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
                                 <SelectItem value="Drinks">Drinks</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="imageUrl" className="text-right">Image URL</Label>
+                        <Input id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="col-span-3" placeholder="https://placehold.co/600x400.png" />
                     </div>
                 </div>
                 <DialogFooter>
