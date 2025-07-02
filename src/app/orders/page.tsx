@@ -237,10 +237,6 @@ export default function OrdersPage() {
 
   const handleCancelOrder = (orderId: string) => {
     updateOrderStatus(orderId, 'Cancelled');
-    toast({
-        title: "Order Cancelled",
-        description: `Your order #${orderId} has been successfully cancelled.`,
-    })
   }
 
   const handleReviewSubmit = (orderId: string, rating: number, comment: string) => {

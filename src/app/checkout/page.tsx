@@ -7,18 +7,21 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCart } from '@/store/cart';
+import { useOrders } from '@/store/orders';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
+  const { addOrder } = useOrders();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState<string | undefined>();
+  const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!date || !time) {
         toast({
             title: "Incomplete Information",
@@ -37,20 +40,11 @@ export default function CheckoutPage() {
         return;
     }
 
-    // In a real app, you would send this data to a server.
-    console.log({
-      orderItems: items,
-      total: totalPrice,
-      pickupDate: date,
-      pickupTime: time,
-    });
+    setIsProcessing(true);
+    
+    await addOrder(items, totalPrice, date, time);
 
-    toast({
-        title: "Pre-Order Placed!",
-        description: "Your order has been successfully submitted. We'll see you soon!",
-        className: "bg-green-500 text-white",
-    });
-
+    setIsProcessing(false);
     clearCart();
     router.push('/orders');
   };
@@ -122,8 +116,8 @@ export default function CheckoutPage() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button onClick={handlePlaceOrder} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                            Place Pre-Order
+                        <Button onClick={handlePlaceOrder} disabled={isProcessing} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                            {isProcessing ? 'Processing...' : 'Place Pre-Order'}
                         </Button>
                     </CardFooter>
                 </Card>
