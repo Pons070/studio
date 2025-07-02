@@ -140,65 +140,97 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
     )
 }
 
+function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus: (orderId: string, status: Order['status']) => void }) {
+  if (orders.length === 0) {
+    return <p className="text-sm text-muted-foreground">No orders to display in this category.</p>;
+  }
+  
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Order ID</TableHead>
+          <TableHead>Customer</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Total</TableHead>
+          <TableHead className="text-center">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {orders.map((order) => (
+          <TableRow key={order.id}>
+            <TableCell className="font-medium">{order.id}</TableCell>
+            <TableCell>Guest User</TableCell>
+            <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
+            <TableCell>
+              <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
+            </TableCell>
+            <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+            <TableCell>
+              <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => onSelectOrder(order)}>View Details</Button>
+                  <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'Cancelled')}>Set as Cancelled</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+
 function OrderManagement() {
   const { orders, updateOrderStatus } = useOrders();
   const [reviews] = useState<Review[]>(mockReviews);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
+  const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Confirmed').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const historicalOrders = orders.filter(o => o.status === 'Completed' || o.status === 'Cancelled').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>All Orders</CardTitle>
-          <CardDescription>View and manage all customer orders.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>Guest User</TableCell>
-                  <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>View Details</Button>
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateOrderStatus(order.id, 'Cancelled')}>Set as Cancelled</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Orders</CardTitle>
+            <CardDescription>Newly received and ongoing orders that require attention.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OrderTable 
+              orders={activeOrders} 
+              onSelectOrder={setSelectedOrder} 
+              onUpdateStatus={updateOrderStatus} 
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Order History</CardTitle>
+            <CardDescription>Completed and cancelled orders.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OrderTable 
+              orders={historicalOrders} 
+              onSelectOrder={setSelectedOrder} 
+              onUpdateStatus={updateOrderStatus}
+            />
+          </CardContent>
+        </Card>
+      </div>
       <OrderDetailsDialog 
         order={selectedOrder}
         isOpen={!!selectedOrder}
