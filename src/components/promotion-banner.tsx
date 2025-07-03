@@ -65,7 +65,7 @@ export function PromotionBanner() {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-      <Alert className="bg-accent/20 border-accent/50 text-accent-foreground relative pr-10">
+      <Alert className="bg-accent/50 border-accent/50 text-accent-foreground relative pr-10">
         <Megaphone className="h-4 w-4 text-accent" />
         <AlertTitle className="font-bold text-accent">{activePromotion.title}</AlertTitle>
         <AlertDescription>
@@ -74,7 +74,7 @@ export function PromotionBanner() {
          <Button 
             variant="ghost" 
             size="icon" 
-            className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7 text-accent/70 hover:text-accent hover:bg-transparent"
+            className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7 text-accent/50 hover:text-accent hover:bg-transparent"
             onClick={() => setIsVisible(false)}
           >
             <X className="h-4 w-4" />

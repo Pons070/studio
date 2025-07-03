@@ -49,7 +49,7 @@ export default function ReviewsPage() {
               </CardHeader>
               <CardContent className="flex-grow">
                  <div className="flex gap-4">
-                    <Quote className="h-8 w-8 text-primary/30 shrink-0 mt-1" />
+                    <Quote className="h-8 w-8 text-primary/50 shrink-0 mt-1" />
                     <p className="text-muted-foreground italic">"{review.comment}"</p>
                  </div>
               </CardContent>
