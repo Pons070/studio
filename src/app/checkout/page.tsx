@@ -46,7 +46,14 @@ export default function CheckoutPage() {
   const { toast } = useToast();
   
   const isClosed = brandInfo.businessHours.status === 'closed';
-  const isProfileIncomplete = isAuthenticated && (!currentUser?.phone || !currentUser?.address);
+  const isProfileIncomplete = isAuthenticated && (
+    !currentUser?.phone ||
+    !currentUser?.address?.doorNumber ||
+    !currentUser?.address?.area ||
+    !currentUser?.address?.city ||
+    !currentUser?.address?.state ||
+    !currentUser?.address?.pincode
+  );
 
   const handlePlaceOrder = async () => {
     if (!isAuthenticated) {

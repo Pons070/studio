@@ -1,4 +1,17 @@
 
+
+export type Address = {
+  doorNumber: string;
+  apartmentName: string;
+  floorNumber?: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  latitude?: number;
+  longitude?: number;
+};
+
 export type MenuItem = {
   id: string;
   name: string;
@@ -48,7 +61,7 @@ export type BrandInfo = {
   name: string;
   logoUrl: string;
   phone: string;
-  address: string;
+  address: Address;
   about: string;
   businessHours: {
     status: 'open' | 'closed';

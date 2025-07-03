@@ -6,6 +6,13 @@ import { usePathname } from "next/navigation";
 import { Utensils, Instagram, Youtube } from "lucide-react";
 import { useBrand } from "@/store/brand";
 import Image from "next/image";
+import type { Address } from "@/lib/types";
+
+const formatAddress = (address: Address) => {
+    if (!address) return '';
+    const { doorNumber, apartmentName, area, city, state, pincode } = address;
+    return `${doorNumber} ${apartmentName}\n${area}, ${city}\n${state} ${pincode}`;
+};
 
 export function Footer() {
   const pathname = usePathname();
@@ -39,7 +46,7 @@ export function Footer() {
 
           <div className="text-muted-foreground text-sm space-y-2">
              <h4 className="font-semibold text-foreground mb-2">Contact</h4>
-             <p className="whitespace-pre-line">{brandInfo.address}</p>
+             <p className="whitespace-pre-line">{formatAddress(brandInfo.address)}</p>
              <p>{brandInfo.phone}</p>
           </div>
           

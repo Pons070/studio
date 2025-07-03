@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import type { Address } from '@/lib/types';
 
 type User = {
   id: string;
@@ -11,7 +12,7 @@ type User = {
   email: string;
   password?: string; // For mock purposes, password is stored. It's not secure.
   phone?: string;
-  address?: string;
+  address?: Address;
 };
 
 type AuthContextType = {
@@ -20,7 +21,7 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string) => boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
-  updateUser: (data: Partial<Omit<User, 'id' | 'email'>>) => void;
+  updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password'>>) => void;
   deleteUser: () => void;
 };
 
@@ -87,7 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       phone: '',
-      address: '',
+      address: {
+        doorNumber: '',
+        apartmentName: '',
+        area: '',
+        city: '',
+        state: '',
+        pincode: '',
+      },
     };
     
     persistUsers([...users, newUser]);
@@ -130,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/');
   }, [router, toast]);
 
-  const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email'>>) => {
+  const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email' | 'password'>>) => {
     if (!currentUser) return;
 
     const updatedUser = { ...currentUser, ...data };

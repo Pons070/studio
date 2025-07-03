@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon } from 'lucide-react';
-import type { Order, MenuItem, Review, BrandInfo, Promotion } from '@/lib/types';
+import type { Order, MenuItem, Review, BrandInfo, Promotion, Address } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -863,12 +863,22 @@ function ReviewManagement() {
   );
 }
 
+const initialAddressState: Address = {
+    doorNumber: '',
+    apartmentName: '',
+    floorNumber: '',
+    area: '',
+    city: '',
+    state: '',
+    pincode: '',
+};
+
 function BrandManagement() {
   const { brandInfo, updateBrandInfo } = useBrand();
   const [name, setName] = useState(brandInfo.name);
   const [logoUrl, setLogoUrl] = useState(brandInfo.logoUrl);
   const [phone, setPhone] = useState(brandInfo.phone);
-  const [address, setAddress] = useState(brandInfo.address);
+  const [address, setAddress] = useState<Address>(brandInfo.address || initialAddressState);
   const [about, setAbout] = useState(brandInfo.about || '');
   const [youtubeUrl, setYoutubeUrl] = useState(brandInfo.youtubeUrl || '');
   const [instagramUrl, setInstagramUrl] = useState(brandInfo.instagramUrl || '');
@@ -880,13 +890,18 @@ function BrandManagement() {
     setName(brandInfo.name);
     setLogoUrl(brandInfo.logoUrl);
     setPhone(brandInfo.phone);
-    setAddress(brandInfo.address);
+    setAddress(brandInfo.address || initialAddressState);
     setAbout(brandInfo.about || '');
     setYoutubeUrl(brandInfo.youtubeUrl || '');
     setInstagramUrl(brandInfo.instagramUrl || '');
     setBusinessStatus(brandInfo.businessHours.status);
     setClosureMessage(brandInfo.businessHours.message);
   }, [brandInfo]);
+  
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setAddress(prev => ({ ...prev, [id]: value }));
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -921,7 +936,7 @@ function BrandManagement() {
   const isDirty = name !== brandInfo.name ||
     logoUrl !== brandInfo.logoUrl ||
     phone !== brandInfo.phone ||
-    address !== brandInfo.address ||
+    JSON.stringify(address) !== JSON.stringify(brandInfo.address) ||
     about !== (brandInfo.about || '') ||
     youtubeUrl !== (brandInfo.youtubeUrl || '') ||
     instagramUrl !== (brandInfo.instagramUrl || '') ||
@@ -945,10 +960,45 @@ function BrandManagement() {
                 <Input id="brand-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="brand-address">Address</Label>
-            <Textarea id="brand-address" value={address} onChange={(e) => setAddress(e.target.value)} />
+        
+        <Separator />
+        
+        <div className="space-y-4">
+            <Label className="text-base font-medium">Address</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                  <Label htmlFor="doorNumber">Door Number</Label>
+                  <Input id="doorNumber" value={address.doorNumber} onChange={handleAddressChange} />
+              </div>
+               <div className="space-y-2">
+                  <Label htmlFor="apartmentName">Apartment/Building Name</Label>
+                  <Input id="apartmentName" value={address.apartmentName} onChange={handleAddressChange} />
+              </div>
+               <div className="space-y-2">
+                  <Label htmlFor="floorNumber">Floor Number (Optional)</Label>
+                  <Input id="floorNumber" value={address.floorNumber || ''} onChange={handleAddressChange} />
+              </div>
+               <div className="space-y-2">
+                  <Label htmlFor="area">Area Name</Label>
+                  <Input id="area" value={address.area} onChange={handleAddressChange} />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input id="city" value={address.city} onChange={handleAddressChange} />
+              </div>
+               <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input id="state" value={address.state} onChange={handleAddressChange} />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input id="pincode" value={address.pincode} onChange={handleAddressChange} />
+              </div>
+            </div>
         </div>
+
+        <Separator />
+
         <div className="space-y-2">
             <Label htmlFor="brand-about">About Section</Label>
             <Textarea id="brand-about" value={about} onChange={(e) => setAbout(e.target.value)} placeholder="Tell your customers about your restaurant..." rows={4} />
