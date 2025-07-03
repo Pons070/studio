@@ -1960,7 +1960,7 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
-          <p className="mt-2 text-lg text-muted-foreground">Manage &amp; Control at your finger tips</p>
+          <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
         </div>
         <Button asChild variant="outline">
           <Link href="/">
