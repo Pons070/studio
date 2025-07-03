@@ -8,6 +8,7 @@ import { useOrders } from '@/store/orders';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Megaphone, X } from 'lucide-react';
 import { Button } from './ui/button';
+import type { Promotion } from '@/lib/types';
 
 export function PromotionBanner() {
   const { promotions } = usePromotions();
@@ -22,7 +23,19 @@ export function PromotionBanner() {
   }, [isAuthenticated, currentUser, orders]);
 
   const activePromotion = useMemo(() => {
-    const activePromos = promotions.filter(p => p.isActive);
+    const isDateActive = (promo: Promotion) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        if (promo.startDate && promo.startDate > todayStr) {
+            return false; // Not started yet
+        }
+        if (promo.endDate && promo.endDate < todayStr) {
+            return false; // Expired
+        }
+        return true;
+    };
+
+    const activePromos = promotions.filter(p => p.isActive && isDateActive(p));
     
     // Find a promotion specifically for the customer type
     const specificPromotion = activePromos.find(p => p.targetAudience === customerType);

@@ -264,6 +264,7 @@ export const promotions: Promotion[] = [
     description: 'Enjoy a free dessert on your next order as a thank you for your continued support.',
     targetAudience: 'existing',
     isActive: true,
+    startDate: '2024-06-01',
   },
    {
     id: 'PROMO-3',
@@ -271,5 +272,7 @@ export const promotions: Promotion[] = [
     description: 'Get a free drink with any main course ordered this month.',
     targetAudience: 'all',
     isActive: false,
+    startDate: '2023-07-01',
+    endDate: '2023-07-31',
   },
 ];

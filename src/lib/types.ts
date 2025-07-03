@@ -64,4 +64,6 @@ export type Promotion = {
   description: string;
   targetAudience: 'all' | 'new' | 'existing';
   isActive: boolean;
+  startDate?: string;
+  endDate?: string;
 };

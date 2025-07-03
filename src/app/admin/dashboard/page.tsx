@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Promotion } from '@/lib/types';
 import {
   Dialog,
@@ -34,6 +34,9 @@ import { Switch } from '@/components/ui/switch';
 import { useReviews } from '@/store/reviews';
 import { Checkbox } from '@/components/ui/checkbox';
 import { usePromotions } from '@/store/promotions';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -1014,6 +1017,8 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [targetAudience, setTargetAudience] = useState<Promotion['targetAudience']>('all');
+    const [startDate, setStartDate] = useState<Date | undefined>();
+    const [endDate, setEndDate] = useState<Date | undefined>();
 
     useEffect(() => {
         if (isOpen) {
@@ -1021,21 +1026,33 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                 setTitle(item.title);
                 setDescription(item.description);
                 setTargetAudience(item.targetAudience);
+                setStartDate(item.startDate ? new Date(item.startDate) : undefined);
+                setEndDate(item.endDate ? new Date(item.endDate) : undefined);
             } else {
                 setTitle('');
                 setDescription('');
                 setTargetAudience('all');
+                setStartDate(undefined);
+                setEndDate(undefined);
             }
         }
     }, [item, isOpen]);
 
     const handleSubmit = () => {
-        onSave({ id: item?.id, title, description, targetAudience, isActive: item?.isActive ?? true });
+        onSave({ 
+            id: item?.id, 
+            title, 
+            description, 
+            targetAudience, 
+            isActive: item?.isActive ?? true,
+            startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
+            endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
+        });
     }
 
     return (
         <Dialog open={isOpen} onOpenChange={setOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{item ? 'Edit Promotion' : 'Add New Promotion'}</DialogTitle>
                 </DialogHeader>
@@ -1060,6 +1077,57 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                                 <SelectItem value="existing">Existing Customers</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="promo-start-date" className="text-right">Start Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "col-span-3 justify-start text-left font-normal",
+                                        !startDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {startDate ? format(startDate, "PPP") : <span>(Optional)</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={startDate}
+                                    onSelect={setStartDate}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="promo-end-date" className="text-right">End Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "col-span-3 justify-start text-left font-normal",
+                                        !endDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {endDate ? format(endDate, "PPP") : <span>(Optional)</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={endDate}
+                                    onSelect={setEndDate}
+                                    disabled={{ before: startDate }}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
                 <DialogFooter>
@@ -1108,6 +1176,20 @@ function PromotionManagement() {
     existing: 'Existing Customers'
   };
 
+  const formatDateRange = (startDate?: string, endDate?: string) => {
+    if (!startDate && !endDate) return "Always Active";
+    
+    // Add time to date to avoid timezone issues with new Date()
+    const start = startDate ? format(new Date(`${startDate}T00:00:00`), 'MMM d, yyyy') : '';
+    const end = endDate ? format(new Date(`${endDate}T00:00:00`), 'MMM d, yyyy') : '';
+
+    if (start && end) return `${start} - ${end}`;
+    if (start) return `Starts ${start}`;
+    if (end) return `Ends ${end}`;
+    return "Always Active";
+  };
+
+
   return (
     <>
       <Card>
@@ -1126,6 +1208,7 @@ function PromotionManagement() {
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>Target Audience</TableHead>
+                <TableHead>Date Range</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -1135,6 +1218,7 @@ function PromotionManagement() {
                 <TableRow key={promo.id}>
                   <TableCell className="font-medium">{promo.title}</TableCell>
                   <TableCell>{targetAudienceMap[promo.targetAudience]}</TableCell>
+                  <TableCell>{formatDateRange(promo.startDate, promo.endDate)}</TableCell>
                   <TableCell>
                     <Switch
                       checked={promo.isActive}
