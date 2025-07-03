@@ -12,6 +12,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useReviews } from '@/store/reviews';
+import { RecommendButton } from '@/components/recommend-dialog';
 
 export default function Home() {
   const { menuItems } = useMenu();
@@ -20,6 +21,10 @@ export default function Home() {
   const featuredItems = menuItems.filter(item => item.isFeatured).slice(0, 3);
   const featuredReviews = reviews.filter(r => r.isPublished).slice(0, 5);
   const isClosed = brandInfo.businessHours.status === 'closed';
+
+  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const shareText = `Check out ${brandInfo.name} for delicious pre-ordered meals!`;
+  const shareTitle = `Recommend ${brandInfo.name}`;
 
   return (
     <div className="space-y-20">
@@ -104,6 +109,25 @@ export default function Home() {
         </div>
       </section>
       
+      <section>
+        <h2 className="text-3xl font-headline font-bold text-center mb-6">Share the Love</h2>
+        <Card className="max-w-2xl mx-auto shadow-lg">
+            <CardContent className="p-8 text-center">
+                  <p className="text-lg text-muted-foreground mb-6">
+                    Enjoying our food? Help us grow by recommending us to your friends and family!
+                </p>
+                <RecommendButton 
+                    shareUrl={shareUrl}
+                    shareTitle={shareTitle}
+                    shareText={shareText}
+                    triggerText="Share with Friends"
+                    variant="accent"
+                    size="lg"
+                  />
+            </CardContent>
+        </Card>
+      </section>
+
       <section>
         <h2 className="text-3xl font-headline font-bold text-center mb-10">About {brandInfo.name}</h2>
         <div className="max-w-3xl mx-auto text-center bg-card p-8 rounded-lg shadow-lg">

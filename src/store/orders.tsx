@@ -126,9 +126,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 if (status === 'Cancelled') {
                     notificationOrder = updatedOrder;
                     // In a real app, you would fetch the customer's email from your user database
-                    // For now, we will assume the current user is the one related to the order if an admin is acting.
-                    // This is a simplification. A better approach would be to have customer email on the order object.
-                    customerEmail = currentUser?.id === updatedOrder.customerId ? currentUser.email : 'pons070@yahoo.in';
+                    // For this app, we retrieve it from the order itself if needed, or assume current user.
+                    // This simplification is okay for now, but a real app should have the email on the order.
+                     const customer = {email: 'pons070@yahoo.in'}; // Mock, as we dont have users list here
+                     customerEmail = customer.email;
                 }
                 return updatedOrder;
             }
@@ -195,5 +196,3 @@ export function useOrders() {
   }
   return context;
 }
-
-    

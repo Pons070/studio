@@ -46,6 +46,8 @@ import { useAuth } from '@/store/auth';
 import Link from 'next/link';
 import { useFavorites } from '@/store/favorites';
 import { useCart } from '@/store/cart';
+import { useBrand } from '@/store/brand';
+import { RecommendButton } from '@/components/recommend-dialog';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
@@ -254,6 +256,7 @@ export default function OrdersPage() {
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const { toggleFavoriteOrder, isOrderFavorite } = useFavorites();
   const { reorder } = useCart();
+  const { brandInfo } = useBrand();
 
   const handleCancelOrder = (orderId: string) => {
     updateOrderStatus(orderId, 'Cancelled');
@@ -263,6 +266,11 @@ export default function OrdersPage() {
     addReview(orderId, rating, comment);
     setReviewOrder(null);
   };
+  
+  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const shareText = `I just had a great meal from ${brandInfo.name}! You should check them out for delicious pre-ordered meals.`;
+  const shareTitle = `Recommend ${brandInfo.name}`;
+
 
   if (!isAuthenticated) {
     return (
@@ -321,16 +329,27 @@ export default function OrdersPage() {
                     </TableCell>
                     <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                       <div className="flex items-center justify-end space-x-2">
+                       <div className="flex items-center justify-end space-x-1">
                           <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>View</Button>
                           
                           {order.status !== 'Cancelled' && (
                             <Button variant="secondary" size="sm" onClick={() => reorder(order.items)}>Reorder</Button>
                           )}
                           
-                          {order.status === 'Completed' && !order.reviewId ? (
-                              <Button variant="default" size="sm" onClick={() => setReviewOrder(order)}>Review</Button>
-                          ) : null}
+                          {order.status === 'Completed' ? (
+                                !order.reviewId ? (
+                                    <Button variant="default" size="sm" onClick={() => setReviewOrder(order)}>Review</Button>
+                                ) : (
+                                    <RecommendButton 
+                                        shareUrl={shareUrl}
+                                        shareTitle={shareTitle}
+                                        shareText={shareText}
+                                        size="sm"
+                                        variant="outline"
+                                        triggerText="Recommend"
+                                    />
+                                )
+                            ) : null}
                           
                           {(order.status === 'Pending' || order.status === 'Confirmed') ? (
                             <AlertDialog>
