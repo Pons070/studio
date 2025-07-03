@@ -11,8 +11,8 @@ export default function AboutPage() {
   return (
     <div className="space-y-12">
       <div className="text-center">
-        <h1 className="text-4xl md:text-5xl font-headline font-bold">About {brandInfo.name}</h1>
-        <p className="text-lg text-muted-foreground mt-2">
+        <h1 className="text-4xl md:text-5xl font-headline font-bold text-white">About {brandInfo.name}</h1>
+        <p className="text-lg text-white font-bold mt-2">
           Learn more about our story and what makes us special.
         </p>
       </div>
