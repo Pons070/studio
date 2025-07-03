@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import type { Order, CartItem } from '@/lib/types';
+import type { Order, CartItem, Address } from '@/lib/types';
 import { orders as mockOrders } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
@@ -11,7 +12,7 @@ import { format } from 'date-fns';
 
 type OrderContextType = {
   orders: Order[];
-  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => Promise<void>;
+  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address) => Promise<void>;
   updateOrderStatus: (orderId: string, status: Order['status'], reason?: string) => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
   removeReviewIdFromOrder: (orderId: string) => void;
@@ -46,11 +47,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, [orders]);
 
 
-  const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => {
-    if (!currentUser || !currentUser.address) {
+  const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address) => {
+    if (!currentUser) {
       toast({
         title: "Authentication Error",
-        description: "You must be logged in and have a complete address to place an order.",
+        description: "You must be logged in to place an order.",
         variant: "destructive",
       });
       return;
@@ -60,7 +61,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         id: `ORD-${Date.now()}`,
         customerId: currentUser.id,
         customerName: currentUser.name,
-        address: currentUser.address,
+        address: deliveryAddress,
         orderDate: format(new Date(), 'yyyy-MM-dd'),
         pickupDate: format(pickupDate, 'yyyy-MM-dd'),
         pickupTime: pickupTime,

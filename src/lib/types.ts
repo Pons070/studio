@@ -1,6 +1,9 @@
 
 
 export type Address = {
+  id?: string;
+  label?: string;
+  isDefault?: boolean;
   doorNumber: string;
   apartmentName: string;
   floorNumber?: string;

@@ -1,11 +1,12 @@
 
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon, AlertTriangle, User, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,6 +33,9 @@ import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/store/auth';
 import Link from 'next/link';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import type { Address } from '@/lib/types';
+
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
@@ -40,20 +44,25 @@ export default function CheckoutPage() {
   const { currentUser, isAuthenticated } = useAuth();
   const [pickupDate, setPickupDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState<string | undefined>();
+  const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClearCartAlertOpen, setClearCartAlertOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   
   const isClosed = brandInfo.businessHours.status === 'closed';
-  const isProfileIncomplete = isAuthenticated && (
-    !currentUser?.phone ||
-    !currentUser?.address?.doorNumber ||
-    !currentUser?.address?.area ||
-    !currentUser?.address?.city ||
-    !currentUser?.address?.state ||
-    !currentUser?.address?.pincode
-  );
+
+  useEffect(() => {
+    if (currentUser?.addresses && currentUser.addresses.length > 0) {
+        const defaultAddress = currentUser.addresses.find(a => a.isDefault) || currentUser.addresses[0];
+        if (defaultAddress?.id) {
+            setSelectedAddressId(defaultAddress.id);
+        }
+    }
+  }, [currentUser]);
+
+  const isProfileIncomplete = isAuthenticated && !currentUser?.phone;
+  const hasNoAddress = isAuthenticated && (!currentUser?.addresses || currentUser.addresses.length === 0);
 
   const handlePlaceOrder = async () => {
     if (!isAuthenticated) {
@@ -66,10 +75,10 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (isProfileIncomplete) {
+    if (isProfileIncomplete || hasNoAddress) {
        toast({
         title: "Profile Incomplete",
-        description: "Please update your profile with your phone and address before ordering.",
+        description: "Please update your profile with your phone and at least one address.",
         variant: "destructive",
       });
       return;
@@ -83,6 +92,15 @@ export default function CheckoutPage() {
         });
         return;
     }
+    
+    if (!selectedAddressId) {
+        toast({
+            title: "No Address Selected",
+            description: "Please select a delivery address.",
+            variant: "destructive",
+        });
+        return;
+    }
 
     if (items.length === 0) {
         toast({
@@ -92,10 +110,16 @@ export default function CheckoutPage() {
         });
         return;
     }
+    
+    const deliveryAddress = currentUser?.addresses?.find(a => a.id === selectedAddressId);
+    if (!deliveryAddress) {
+        toast({ title: "Address not found.", variant: "destructive" });
+        return;
+    }
 
     setIsProcessing(true);
     
-    await addOrder(items, totalPrice, pickupDate, time);
+    await addOrder(items, totalPrice, pickupDate, time, deliveryAddress);
 
     setIsProcessing(false);
     clearCart();
@@ -129,133 +153,166 @@ export default function CheckoutPage() {
       </Card>
     )
   }
+  
+  const formatAddress = (address: Address) => {
+    return `${address.doorNumber}, ${address.apartmentName}${address.floorNumber ? `, ${address.floorNumber}` : ''}, ${address.area}, ${address.city} - ${address.pincode}`;
+  }
 
   return (
     <div>
       <h1 className="text-4xl font-headline font-bold text-center mb-10">Checkout</h1>
-      <div className="max-w-3xl mx-auto space-y-8">
-        {isProfileIncomplete && (
-          <Alert variant="destructive">
-            <User className="h-4 w-4" />
-            <AlertTitle>Profile Incomplete</AlertTitle>
-            <AlertDescription className="flex justify-between items-center">
-              <span>Please provide your phone number and address.</span>
-              <Button asChild variant="secondary" size="sm">
-                <Link href="/profile">Update Profile</Link>
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>1. Select Pickup Time</CardTitle>
-            <CardDescription>Choose when you'd like to receive your order.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2 md:gap-8">
-            <div className="space-y-2">
-              <Label>Pre-Order Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !pickupDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {pickupDate ? format(pickupDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={pickupDate}
-                    onSelect={(newDate) => {
-                      setPickupDate(newDate);
-                      const trigger = document.querySelector('[aria-haspopup="dialog"]');
-                      if (trigger instanceof HTMLElement) trigger.click();
-                    }}
-                    disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label>Available Times</Label>
-              <Select onValueChange={setTime} value={time}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a time" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTimes.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>2. Order Summary</CardTitle>
-            {items.length > 0 && (
-              <AlertDialog open={isClearCartAlertOpen} onOpenChange={setClearCartAlertOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive border-destructive/50 hover:bg-destructive/10">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Clear Cart
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will remove all items from your cart. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleClearCart} className={buttonVariants({ variant: "destructive" })}>
-                      Yes, Clear Cart
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {items.length > 0 ? (
-              items.map(item => (
-                <div key={item.id} className="flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md" />
-                    <div>
-                      <p className="font-semibold">{item.name}</p>
-                      <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                    </div>
-                  </div>
-                  <p>Rs.{(item.price * item.quantity).toFixed(2)}</p>
+      <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>1. Select Pickup Time</CardTitle>
+                <CardDescription>Choose when you'd like to receive your order.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2 md:gap-8">
+                <div className="space-y-2">
+                  <Label>Pre-Order Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !pickupDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {pickupDate ? format(pickupDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={pickupDate}
+                        onSelect={(newDate) => {
+                          setPickupDate(newDate);
+                        }}
+                        disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground">Your cart is empty.</p>
-            )}
-            <Separator />
-            <div className="flex justify-between font-bold text-xl">
-              <p>Total</p>
-              <p>Rs.{totalPrice.toFixed(2)}</p>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || isProfileIncomplete || items.length === 0} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-              {isProcessing ? 'Processing...' : 'Place Pre-Order'}
-            </Button>
-          </CardFooter>
-        </Card>
+                <div className="space-y-2">
+                  <Label>Available Times</Label>
+                  <Select onValueChange={setTime} value={time}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTimes.map(t => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>2. Select Delivery Address</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {hasNoAddress || isProfileIncomplete ? (
+                        <Alert variant="destructive">
+                            <User className="h-4 w-4" />
+                            <AlertTitle>Profile Incomplete</AlertTitle>
+                            <AlertDescription className="flex justify-between items-center">
+                            <span>Please add a phone number and address.</span>
+                            <Button asChild variant="secondary" size="sm">
+                                <Link href="/profile">Update Profile</Link>
+                            </Button>
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                        <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId} className="space-y-4">
+                            {(currentUser?.addresses || []).map(address => (
+                                <Label key={address.id} htmlFor={address.id} className="flex flex-col p-4 border rounded-md has-[:checked]:bg-secondary has-[:checked]:border-primary cursor-pointer">
+                                     <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <RadioGroupItem value={address.id!} id={address.id} />
+                                            <span className="font-bold text-base flex items-center gap-2">
+                                                {address.label === 'Home' ? <Home className="h-4 w-4 text-muted-foreground" /> : <Building className="h-4 w-4 text-muted-foreground" />}
+                                                {address.label}
+                                            </span>
+                                        </div>
+                                        {address.isDefault && <Badge variant="outline">Default</Badge>}
+                                    </div>
+                                    <p className="pl-8 text-muted-foreground text-sm mt-2">{formatAddress(address)}</p>
+                                </Label>
+                            ))}
+                        </RadioGroup>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+
+        <div className="space-y-8 lg:sticky top-24 h-fit">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>3. Order Summary</CardTitle>
+                {items.length > 0 && (
+                  <AlertDialog open={isClearCartAlertOpen} onOpenChange={setClearCartAlertOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive border-destructive/50 hover:bg-destructive/10">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Clear Cart
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will remove all items from your cart. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearCart} className={buttonVariants({ variant: "destructive" })}>
+                          Yes, Clear Cart
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {items.length > 0 ? (
+                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+                        {items.map(item => (
+                            <div key={item.id} className="flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md" />
+                                <div>
+                                <p className="font-semibold">{item.name}</p>
+                                <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                                </div>
+                            </div>
+                            <p>Rs.{(item.price * item.quantity).toFixed(2)}</p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">Your cart is empty.</p>
+                )}
+                <Separator />
+                <div className="flex justify-between font-bold text-xl">
+                  <p>Total</p>
+                  <p>Rs.{totalPrice.toFixed(2)}</p>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || hasNoAddress || isProfileIncomplete || items.length === 0} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                  {isProcessing ? 'Processing...' : 'Place Pre-Order'}
+                </Button>
+              </CardFooter>
+            </Card>
+        </div>
       </div>
     </div>
   );

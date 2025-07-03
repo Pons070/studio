@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -15,13 +16,139 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
 import { Separator } from '@/components/ui/separator';
-import { Trash2, AlertTriangle, MapPin } from 'lucide-react';
+import { Trash2, AlertTriangle, MapPin, Home, Building, Edit, PlusCircle, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Address } from '@/lib/types';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { AddressSchema } from '@/lib/schemas';
+import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 
+const initialAddressState: Omit<Address, 'id' | 'isDefault'> = {
+    label: 'Home',
+    doorNumber: '',
+    apartmentName: '',
+    floorNumber: '',
+    area: '',
+    city: '',
+    state: '',
+    pincode: '',
+    latitude: undefined,
+    longitude: undefined,
+};
+
+
+function AddressDialog({
+    isOpen,
+    onOpenChange,
+    onSave,
+    address
+}: {
+    isOpen: boolean,
+    onOpenChange: (open: boolean) => void,
+    onSave: (data: Address) => void,
+    address: Address | null
+}) {
+    const { toast } = useToast();
+    const { register, handleSubmit, control, reset, setValue, formState: { errors, isSubmitting } } = useForm<Address>({
+        resolver: zodResolver(AddressSchema),
+        defaultValues: address || { ...initialAddressState, id: undefined, isDefault: undefined },
+    });
+
+    useEffect(() => {
+        if(isOpen) {
+            reset(address || { ...initialAddressState, id: undefined, isDefault: undefined, label: 'Home' });
+        }
+    }, [isOpen, address, reset]);
+    
+    const handleCaptureLocation = () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition((position) => {
+            setValue('latitude', position.coords.latitude, { shouldValidate: true, shouldDirty: true });
+            setValue('longitude', position.coords.longitude, { shouldValidate: true, shouldDirty: true });
+            toast({ title: "Location Captured!", description: "Your precise location has been saved." });
+          }, (error) => {
+            toast({ title: "Location Error", description: "Could not retrieve your location.", variant: "destructive" });
+          });
+        } else {
+          toast({ title: "Geolocation Not Supported", description: "Your browser does not support this.", variant: "destructive" });
+        }
+    }
+
+    const processSubmit = (data: Address) => {
+        onSave(data);
+        onOpenChange(false);
+    }
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{address ? 'Edit Address' : 'Add New Address'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit(processSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1 pr-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="label">Label</Label>
+                        <Input id="label" {...register('label')} placeholder="e.g., Home, Work" />
+                        {errors.label && <p className="text-sm text-destructive">{errors.label.message}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="doorNumber">Door Number</Label>
+                            <Input id="doorNumber" {...register('doorNumber')} />
+                            {errors.doorNumber && <p className="text-sm text-destructive">{errors.doorNumber.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="apartmentName">Apartment/Building Name</Label>
+                            <Input id="apartmentName" {...register('apartmentName')} />
+                            {errors.apartmentName && <p className="text-sm text-destructive">{errors.apartmentName.message}</p>}
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="floorNumber">Floor Number (Optional)</Label>
+                            <Input id="floorNumber" {...register('floorNumber')} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="area">Area Name</Label>
+                            <Input id="area" {...register('area')} />
+                            {errors.area && <p className="text-sm text-destructive">{errors.area.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="city">City</Label>
+                            <Input id="city" {...register('city')} />
+                            {errors.city && <p className="text-sm text-destructive">{errors.city.message}</p>}
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="state">State</Label>
+                            <Input id="state" {...register('state')} />
+                             {errors.state && <p className="text-sm text-destructive">{errors.state.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="pincode">Pincode</Label>
+                            <Input id="pincode" {...register('pincode')} />
+                            {errors.pincode && <p className="text-sm text-destructive">{errors.pincode.message}</p>}
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <Button type="button" variant="outline" className="w-full" onClick={handleCaptureLocation}>
+                                <MapPin className="mr-2 h-4 w-4" />
+                                Capture My Location
+                            </Button>
+                        </div>
+                    </div>
+                </form>
+                <DialogFooter>
+                    <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                    <Button type="submit" onClick={handleSubmit(processSubmit)} disabled={isSubmitting}>Save Address</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 function DeleteProfileDialog({ isOpen, onOpenChange, onConfirm }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onConfirm: () => void }) {
     const [confirmationInput, setConfirmationInput] = useState('');
@@ -77,28 +204,17 @@ function DeleteProfileDialog({ isOpen, onOpenChange, onConfirm }: { isOpen: bool
     );
 }
 
-const initialAddressState: Address = {
-    doorNumber: '',
-    apartmentName: '',
-    floorNumber: '',
-    area: '',
-    city: '',
-    state: '',
-    pincode: '',
-    latitude: undefined,
-    longitude: undefined,
-};
 
 export default function ProfilePage() {
-  const { currentUser, updateUser, isAuthenticated, deleteUser } = useAuth();
-  const { toast } = useToast();
+  const { currentUser, updateUser, isAuthenticated, deleteUser, addAddress, updateAddress, deleteAddress, setDefaultAddress } = useAuth();
   const router = useRouter();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState<Address>(initialAddressState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isAddressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -106,49 +222,32 @@ export default function ProfilePage() {
     } else if (currentUser) {
       setName(currentUser.name || '');
       setPhone(currentUser.phone || '');
-      setAddress(currentUser.address || initialAddressState);
     }
   }, [currentUser, isAuthenticated, router]);
-
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setAddress(prev => ({ ...prev, [id]: value }));
+  
+  const handleEditAddress = (address: Address) => {
+    setEditingAddress(address);
+    setAddressDialogOpen(true);
   }
 
-  const handleCaptureLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setAddress(prev => ({
-          ...prev,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        }));
-        toast({
-          title: "Location Captured!",
-          description: "Your precise location has been saved.",
-        });
-      }, (error) => {
-        console.error("Error getting location", error);
-        toast({
-          title: "Location Error",
-          description: "Could not retrieve your location. Please check your browser permissions.",
-          variant: "destructive"
-        });
-      });
-    } else {
-      toast({
-          title: "Geolocation Not Supported",
-          description: "Your browser does not support geolocation.",
-          variant: "destructive"
-        });
+  const handleAddNewAddress = () => {
+    setEditingAddress(null);
+    setAddressDialogOpen(true);
+  }
+
+  const handleSaveAddress = (data: Address) => {
+    if(data.id) { // Editing existing address
+        updateAddress(data);
+    } else { // Adding new address
+        const { id, isDefault, ...newAddressData } = data;
+        addAddress(newAddressData);
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    updateUser({ name, phone, address });
-    // A little delay to simulate saving and show the disabled state
+    updateUser({ name, phone });
     setTimeout(() => setIsSubmitting(false), 500);
   };
   
@@ -161,19 +260,19 @@ export default function ProfilePage() {
   }
   
   const isDirty = name !== (currentUser.name || '') ||
-                  phone !== (currentUser.phone || '') ||
-                  JSON.stringify(address) !== JSON.stringify(currentUser.address || initialAddressState);
+                  phone !== (currentUser.phone || '');
 
+  const userAddresses = currentUser.addresses || [];
 
   return (
     <>
       <div className="flex items-center justify-center min-h-[70vh]">
-        <Card className="w-full max-w-2xl mx-auto shadow-lg">
+        <Card className="w-full max-w-3xl mx-auto shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline text-3xl">My Profile</CardTitle>
-            <CardDescription>Update your personal information and contact details.</CardDescription>
+            <CardDescription>Update your personal information and manage your addresses.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -191,64 +290,54 @@ export default function ProfilePage() {
                 <p className="text-xs text-muted-foreground">Email address cannot be changed.</p>
               </div>
 
-              <Separator />
-
-              <div className="space-y-4">
-                  <Label className="text-base font-medium">Address</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="doorNumber">Door Number</Label>
-                        <Input id="doorNumber" value={address.doorNumber} onChange={handleAddressChange} required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="apartmentName">Apartment/Building Name</Label>
-                        <Input id="apartmentName" value={address.apartmentName} onChange={handleAddressChange} required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="floorNumber">Floor Number (Optional)</Label>
-                        <Input id="floorNumber" value={address.floorNumber || ''} onChange={handleAddressChange} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="area">Area Name</Label>
-                        <Input id="area" value={address.area} onChange={handleAddressChange} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
-                        <Input id="city" value={address.city} onChange={handleAddressChange} required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="state">State</Label>
-                        <Input id="state" value={address.state} onChange={handleAddressChange} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="pincode">Pincode</Label>
-                        <Input id="pincode" value={address.pincode} onChange={handleAddressChange} required />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <Button type="button" variant="outline" className="w-full" onClick={handleCaptureLocation}>
-                            <MapPin className="mr-2 h-4 w-4" />
-                            Capture My Location
-                        </Button>
-                    </div>
-                    {address.latitude && address.longitude && (
-                        <>
-                            <div className="space-y-2">
-                                <Label htmlFor="latitude">Latitude</Label>
-                                <Input id="latitude" type="text" value={address.latitude} disabled />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="longitude">Longitude</Label>
-                                <Input id="longitude" type="text" value={address.longitude} disabled />
-                            </div>
-                        </>
-                    )}
-                  </div>
-              </div>
-
               <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg" disabled={isSubmitting || !isDirty}>
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </form>
+
+            <Separator />
+            
+            <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xl font-semibold">My Addresses</h3>
+                    <Button onClick={handleAddNewAddress} disabled={userAddresses.length >= 6}>
+                        <PlusCircle /> Add New Address
+                    </Button>
+                </div>
+                <div className="space-y-4">
+                    {userAddresses.length > 0 ? (
+                        userAddresses.map(address => (
+                            <Card key={address.id} className={cn("p-4", address.isDefault && "border-primary")}>
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        {address.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
+                                        <div>
+                                            <p className="font-bold">{address.label}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {address.doorNumber}, {address.apartmentName}, {address.area}, {address.city} - {address.pincode}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => handleEditAddress(address)}><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteAddress(address.id!)}><Trash2 className="h-4 w-4" /></Button>
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex justify-between items-center">
+                                    {address.isDefault ? (
+                                        <span className="text-sm font-medium text-primary flex items-center gap-2"><Star className="h-4 w-4" /> Default Address</span>
+                                    ) : (
+                                        <Button variant="link" className="p-0 h-auto" onClick={() => setDefaultAddress(address.id!)}>Set as Default</Button>
+                                    )}
+                                </div>
+                            </Card>
+                        ))
+                    ) : (
+                        <p className="text-muted-foreground text-center py-4">You have no saved addresses.</p>
+                    )}
+                </div>
+            </div>
+
           </CardContent>
           <CardFooter className="flex-col gap-4 items-start pt-6">
               <Separator />
@@ -273,6 +362,12 @@ export default function ProfilePage() {
             onOpenChange={setDeleteDialogOpen}
             onConfirm={deleteUser}
         />
+       <AddressDialog 
+            isOpen={isAddressDialogOpen}
+            onOpenChange={setAddressDialogOpen}
+            onSave={handleSaveAddress}
+            address={editingAddress}
+       />
     </>
   );
 }

@@ -1,15 +1,18 @@
 
+
 import { z } from 'zod';
-import { useAuth } from '@/store/auth';
 
 export const AddressSchema = z.object({
-  doorNumber: z.string(),
-  apartmentName: z.string(),
+  id: z.string().optional(),
+  label: z.string().optional(),
+  isDefault: z.boolean().optional(),
+  doorNumber: z.string().min(1, { message: "Door number is required." }),
+  apartmentName: z.string().min(1, { message: "Apartment/Building name is required." }),
   floorNumber: z.string().optional(),
-  area: z.string(),
-  city: z.string(),
-  state: z.string(),
-  pincode: z.string(),
+  area: z.string().min(1, { message: "Area name is required." }),
+  city: z.string().min(1, { message: "City is required." }),
+  state: z.string().min(1, { message: "State is required." }),
+  pincode: z.string().min(5, { message: "A valid pincode is required." }),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
 });

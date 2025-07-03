@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -12,7 +13,7 @@ type User = {
   email: string;
   password?: string; // For mock purposes, password is stored. It's not secure.
   phone?: string;
-  address?: Address;
+  addresses?: Address[];
 };
 
 type AuthContextType = {
@@ -21,7 +22,11 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string) => boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
-  updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password'>>) => void;
+  updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => void;
+  addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => void;
+  updateAddress: (address: Address) => void;
+  deleteAddress: (addressId: string) => void;
+  setDefaultAddress: (addressId: string) => void;
   deleteUser: () => void;
 };
 
@@ -88,14 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       phone: '',
-      address: {
-        doorNumber: '',
-        apartmentName: '',
-        area: '',
-        city: '',
-        state: '',
-        pincode: '',
-      },
+      addresses: [],
     };
     
     persistUsers([...users, newUser]);
@@ -138,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/');
   }, [router, toast]);
 
-  const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email' | 'password'>>) => {
+  const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => {
     if (!currentUser) return;
 
     const updatedUser = { ...currentUser, ...data };
@@ -151,7 +149,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Profile Updated",
         description: "Your details have been successfully saved.",
     });
+  }, [currentUser, users, toast]);
 
+  const addAddress = useCallback((addressData: Omit<Address, 'id' | 'isDefault'>) => {
+    if (!currentUser) return;
+    
+    const currentAddresses = currentUser.addresses || [];
+    if (currentAddresses.length >= 6) {
+        toast({ title: "Address Limit Reached", description: "You can only have up to 6 addresses.", variant: "destructive" });
+        return;
+    }
+
+    const newAddress: Address = {
+      ...addressData,
+      id: crypto.randomUUID(),
+      isDefault: currentAddresses.length === 0, // Make first address default
+    };
+
+    const updatedAddresses = [...currentAddresses, newAddress];
+    const updatedUser = { ...currentUser, addresses: updatedAddresses };
+    persistCurrentUser(updatedUser);
+    persistUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
+
+    toast({ title: "Address Added", description: "Your new address has been saved." });
+  }, [currentUser, users, toast]);
+
+  const updateAddress = useCallback((addressData: Address) => {
+      if (!currentUser || !addressData.id) return;
+      
+      const updatedAddresses = (currentUser.addresses || []).map(addr => addr.id === addressData.id ? addressData : addr);
+      const updatedUser = { ...currentUser, addresses: updatedAddresses };
+      
+      persistCurrentUser(updatedUser);
+      persistUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
+
+      toast({ title: "Address Updated", description: "Your address has been successfully updated." });
+  }, [currentUser, users, toast]);
+  
+  const deleteAddress = useCallback((addressId: string) => {
+      if (!currentUser) return;
+
+      const updatedAddresses = (currentUser.addresses || []).filter(addr => addr.id !== addressId);
+      
+      // If the deleted address was the default, make the first one in the list the new default.
+      const wasDefault = currentUser.addresses?.find(a => a.id === addressId)?.isDefault;
+      if(wasDefault && updatedAddresses.length > 0) {
+        updatedAddresses[0].isDefault = true;
+      }
+
+      const updatedUser = { ...currentUser, addresses: updatedAddresses };
+      
+      persistCurrentUser(updatedUser);
+      persistUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
+      
+      toast({ title: "Address Deleted", description: "The address has been removed." });
+  }, [currentUser, users, toast]);
+
+  const setDefaultAddress = useCallback((addressId: string) => {
+      if (!currentUser) return;
+      
+      const updatedAddresses = (currentUser.addresses || []).map(addr => ({
+          ...addr,
+          isDefault: addr.id === addressId,
+      }));
+
+      const updatedUser = { ...currentUser, addresses: updatedAddresses };
+      
+      persistCurrentUser(updatedUser);
+      persistUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
+
+      toast({ title: "Default Address Updated", description: "Your default address has been set." });
   }, [currentUser, users, toast]);
 
   const deleteUser = useCallback(() => {
@@ -172,7 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !!currentUser;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, signup, login, logout, updateUser, deleteUser }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentUser, signup, login, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser }}>
       {children}
     </AuthContext.Provider>
   );
