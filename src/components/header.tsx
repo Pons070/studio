@@ -47,6 +47,9 @@ export function Header() {
             <Link href="/menu" className="text-muted-foreground hover:text-primary transition-colors">
               Menu
             </Link>
+            <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">
+              About Us
+            </Link>
             <Link href="/orders" className="text-muted-foreground hover:text-primary transition-colors">
               My Orders
             </Link>

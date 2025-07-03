@@ -125,16 +125,6 @@ Click below to copy the shareable link to your clipboard and start sharing with 
         </Card>
       </section>
 
-      <section>
-        <h2 className="text-3xl font-headline font-bold text-center mb-10">About {brandInfo.name}</h2>
-        <div className="max-w-3xl mx-auto text-center bg-card p-8 rounded-lg shadow-lg">
-            <Quote className="h-10 w-10 text-primary/50 mx-auto mb-4" />
-            <p className="text-lg text-muted-foreground italic whitespace-pre-line">
-                {brandInfo.about}
-            </p>
-        </div>
-      </section>
-
       {featuredReviews.length > 0 && (
           <section>
             <h2 className="text-3xl font-headline font-bold text-center mb-10">What Our Customers Say</h2>

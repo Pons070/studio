@@ -53,6 +53,7 @@ export function Footer() {
           <div className="text-muted-foreground text-sm space-y-2">
              <h4 className="font-semibold text-foreground mb-2">Explore</h4>
              <ul className="space-y-1">
+                <li><Link href="/about" className="hover:text-primary hover:underline">About Us</Link></li>
                 <li><Link href="/menu" className="hover:text-primary hover:underline">Menu</Link></li>
                 <li><Link href="/orders" className="hover:text-primary hover:underline">My Orders</Link></li>
                 <li><Link href="/reviews" className="hover:text-primary hover:underline">Reviews</Link></li>
