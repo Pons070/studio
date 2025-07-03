@@ -9,6 +9,7 @@ import { OrderProvider } from '@/store/orders';
 import { MenuProvider } from '@/store/menu';
 import { BrandProvider } from '@/store/brand';
 import { ReviewProvider } from '@/store/reviews';
+import { AuthProvider } from '@/store/auth';
 
 export const metadata: Metadata = {
   title: 'CulinaPreOrder - Delicious Meals, Ordered Ahead',
@@ -31,24 +32,26 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <BrandProvider>
-          <MenuProvider>
-            <CartProvider>
-              <OrderProvider>
-                <ReviewProvider>
-                  <div className="flex flex-col min-h-screen">
-                    <Header />
-                    <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      {children}
-                    </main>
-                    <Footer />
-                  </div>
-                  <Toaster />
-                </ReviewProvider>
-              </OrderProvider>
-            </CartProvider>
-          </MenuProvider>
-        </BrandProvider>
+        <AuthProvider>
+          <BrandProvider>
+            <MenuProvider>
+              <CartProvider>
+                <OrderProvider>
+                  <ReviewProvider>
+                    <div className="flex flex-col min-h-screen">
+                      <Header />
+                      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {children}
+                      </main>
+                      <Footer />
+                    </div>
+                    <Toaster />
+                  </ReviewProvider>
+                </OrderProvider>
+              </CartProvider>
+            </MenuProvider>
+          </BrandProvider>
+        </AuthProvider>
       </body>
     </html>
   );

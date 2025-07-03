@@ -17,13 +17,14 @@ import { CartSheet } from './cart-sheet';
 import { useCart } from '@/store/cart';
 import { useBrand } from '@/store/brand';
 import Image from 'next/image';
+import { useAuth } from '@/store/auth';
 
 export function Header() {
   const pathname = usePathname();
   const { items } = useCart();
   const { brandInfo } = useBrand();
+  const { isAuthenticated, currentUser, logout } = useAuth();
   const cartItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
-  const isAuthenticated = false; // Placeholder for auth logic
 
   if (pathname.startsWith('/admin')) {
     return null;
@@ -74,15 +75,15 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {isAuthenticated ? (
+                {isAuthenticated && currentUser ? (
                   <>
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuLabel>Hi, {currentUser.name}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/orders"><History className="mr-2 h-4 w-4" />Orders</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={logout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Log out</span>
                     </DropdownMenuItem>
