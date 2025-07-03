@@ -21,6 +21,7 @@ type AuthContextType = {
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateUser: (data: Partial<Omit<User, 'id' | 'email'>>) => void;
+  deleteUser: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -145,10 +146,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   }, [currentUser, users, toast]);
 
+  const deleteUser = useCallback(() => {
+    if (!currentUser) return;
+
+    const updatedUsers = users.filter(u => u.id !== currentUser.id);
+    persistUsers(updatedUsers);
+
+    toast({
+      title: "Account Deleted",
+      description: "Your account has been permanently deleted.",
+      variant: "destructive",
+    });
+
+    logout();
+  }, [currentUser, users, toast, logout]);
+
   const isAuthenticated = !!currentUser;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, signup, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentUser, signup, login, logout, updateUser, deleteUser }}>
       {children}
     </AuthContext.Provider>
   );
