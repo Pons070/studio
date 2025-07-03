@@ -872,6 +872,18 @@ function BrandManagement() {
   const [closureMessage, setClosureMessage] = useState(brandInfo.businessHours.message);
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    setName(brandInfo.name);
+    setLogoUrl(brandInfo.logoUrl);
+    setPhone(brandInfo.phone);
+    setAddress(brandInfo.address);
+    setAbout(brandInfo.about || '');
+    setYoutubeUrl(brandInfo.youtubeUrl || '');
+    setInstagramUrl(brandInfo.instagramUrl || '');
+    setBusinessStatus(brandInfo.businessHours.status);
+    setClosureMessage(brandInfo.businessHours.message);
+  }, [brandInfo]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
@@ -900,6 +912,16 @@ function BrandManagement() {
     });
     setIsSaving(false);
   }
+
+  const isDirty = name !== brandInfo.name ||
+    logoUrl !== brandInfo.logoUrl ||
+    phone !== brandInfo.phone ||
+    address !== brandInfo.address ||
+    about !== (brandInfo.about || '') ||
+    youtubeUrl !== (brandInfo.youtubeUrl || '') ||
+    instagramUrl !== (brandInfo.instagramUrl || '') ||
+    businessStatus !== brandInfo.businessHours.status ||
+    (businessStatus === 'closed' && closureMessage !== brandInfo.businessHours.message);
 
   return (
     <Card>
@@ -977,7 +999,7 @@ function BrandManagement() {
         </div>
       </CardContent>
       <CardFooter>
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button onClick={handleSave} disabled={isSaving || !isDirty}>
               {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
       </CardFooter>

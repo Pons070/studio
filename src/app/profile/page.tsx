@@ -43,6 +43,11 @@ export default function ProfilePage() {
           </div>
       )
   }
+  
+  const isDirty = name !== (currentUser.name || '') ||
+                  phone !== (currentUser.phone || '') ||
+                  address !== (currentUser.address || '');
+
 
   return (
     <div className="flex items-center justify-center min-h-[70vh]">
@@ -70,7 +75,7 @@ export default function ProfilePage() {
               <Label htmlFor="address">Address</Label>
               <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} required placeholder="Enter your full address" />
             </div>
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg" disabled={isSubmitting}>
+            <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg" disabled={isSubmitting || !isDirty}>
               {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </form>
