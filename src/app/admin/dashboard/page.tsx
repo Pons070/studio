@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo } from '@/lib/types';
 import {
   Dialog,
@@ -60,8 +60,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                 <div className="space-y-4 py-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <p className="font-medium">Order Date</p>
-                            <p className="text-muted-foreground">{new Date(order.date).toLocaleDateString()}</p>
+                            <p className="font-medium">Order Placed On</p>
+                            <p className="text-muted-foreground">{new Date(order.orderDate).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <p className="font-medium">Pre-Order Date</p>
+                            <p className="text-muted-foreground">{new Date(order.pickupDate).toLocaleDateString()}</p>
                         </div>
                         <div>
                             <p className="font-medium">Pickup Time</p>
@@ -71,6 +75,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                             <p className="font-medium">Status</p>
                             <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
                         </div>
+                        {order.cancellationDate && (
+                            <div>
+                                <p className="font-medium">Cancelled On</p>
+                                <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
+                            </div>
+                        )}
                         <div>
                             <p className="font-medium">Order Total</p>
                             <p className="font-bold">Rs.{order.total.toFixed(2)}</p>
@@ -143,7 +153,7 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[]
         <TableRow>
           <TableHead>Order ID</TableHead>
           <TableHead>Customer</TableHead>
-          <TableHead>Date</TableHead>
+          <TableHead>Pickup Date</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Total</TableHead>
           <TableHead className="text-center">Actions</TableHead>
@@ -154,7 +164,7 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[]
           <TableRow key={order.id}>
             <TableCell className="font-medium">{order.id}</TableCell>
             <TableCell>Guest User</TableCell>
-            <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
+            <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
             <TableCell>
               <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
             </TableCell>
@@ -190,8 +200,8 @@ function OrderManagement() {
   const { reviews } = useReviews();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Confirmed').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const historicalOrders = orders.filter(o => o.status === 'Completed' || o.status === 'Cancelled').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Confirmed').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
+  const historicalOrders = orders.filter(o => o.status === 'Completed' || o.status === 'Cancelled').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
 
   return (
     <>

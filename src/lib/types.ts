@@ -19,12 +19,14 @@ export type CartItem = {
 
 export type Order = {
   id:string;
-  date: string;
+  orderDate: string; // The date the order was placed
+  pickupDate: string; // The date for pre-order pickup
   pickupTime: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
   total: number;
   items: CartItem[];
   reviewId?: string;
+  cancellationDate?: string; // The date the order was cancelled
 };
 
 export type Review = {

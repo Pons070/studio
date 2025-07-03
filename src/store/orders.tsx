@@ -44,7 +44,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => {
     const newOrder: Order = {
         id: `ORD-${Date.now()}`,
-        date: pickupDate.toISOString().split('T')[0],
+        orderDate: new Date().toISOString().split('T')[0],
+        pickupDate: pickupDate.toISOString().split('T')[0],
         pickupTime: pickupTime,
         status: 'Pending',
         total: total,
@@ -90,18 +91,30 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: Order['status']) => {
-    const orderToUpdate = orders.find(order => order.id === orderId);
+    let notificationOrder: Order | null = null;
 
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId ? { ...order, status: status } : order
-      )
-    );
+    setOrders(prevOrders => {
+        const newOrders = prevOrders.map(order => {
+            if (order.id === orderId) {
+                const updatedOrder = { 
+                    ...order, 
+                    status: status,
+                    ...(status === 'Cancelled' && { cancellationDate: new Date().toISOString().split('T')[0] })
+                };
+                if (status === 'Cancelled') {
+                    notificationOrder = updatedOrder;
+                }
+                return updatedOrder;
+            }
+            return order;
+        });
+        return newOrders;
+    });
 
-    if (status === 'Cancelled' && orderToUpdate) {
+    if (notificationOrder) {
         try {
             await sendOrderNotification({
-                order: { ...orderToUpdate, status: 'Cancelled' },
+                order: notificationOrder,
                 notificationType: 'customerCancellation',
                 customerEmail: 'pons070@yahoo.in',
                 adminEmail: 'sangkar111@gmail.com'
@@ -124,7 +137,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             description: `Order #${orderId} has been updated to "${status}".`,
         });
     }
-  }, [orders, toast]);
+}, [toast]);
 
   const addReviewToOrder = useCallback((orderId: string, reviewId: string) => {
       setOrders(prevOrders =>

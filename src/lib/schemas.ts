@@ -10,12 +10,14 @@ export const CartItemSchema = z.object({
 
 export const OrderSchema = z.object({
   id: z.string(),
-  date: z.string(),
+  orderDate: z.string().describe("The date the order was placed."),
+  pickupDate: z.string().describe("The date the customer will pick up the order."),
   pickupTime: z.string(),
   status: z.enum(['Pending', 'Confirmed', 'Completed', 'Cancelled']),
   total: z.number(),
   items: z.array(CartItemSchema),
   reviewId: z.string().optional(),
+  cancellationDate: z.string().optional().describe("The date the order was cancelled."),
 });
 
 const NotificationTypeSchema = z.enum([

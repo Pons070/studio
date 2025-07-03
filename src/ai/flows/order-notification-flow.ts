@@ -35,9 +35,13 @@ const emailPrompt = ai.definePrompt({
 
     Order Details:
     - Order ID: {{{order.id}}}
-    - Order Date: {{{order.date}}}
+    - Order Placed On: {{{order.orderDate}}}
+    - Pre-Order Date: {{{order.pickupDate}}}
     - Pickup Time: {{{order.pickupTime}}}
     - Status: {{{order.status}}}
+    {{#if order.cancellationDate}}
+    - Cancelled On: {{{order.cancellationDate}}}
+    {{/if}}
     - Total: Rs.{{{order.total}}}
     - Items:
       {{#each order.items}}

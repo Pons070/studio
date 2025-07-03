@@ -75,8 +75,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                 <div className="space-y-4 py-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <p className="font-medium">Order Date</p>
-                            <p className="text-muted-foreground">{new Date(order.date).toLocaleDateString()}</p>
+                            <p className="font-medium">Order Placed On</p>
+                            <p className="text-muted-foreground">{new Date(order.orderDate).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <p className="font-medium">Pre-Order Date</p>
+                            <p className="text-muted-foreground">{new Date(order.pickupDate).toLocaleDateString()}</p>
                         </div>
                         <div>
                             <p className="font-medium">Pickup Time</p>
@@ -84,11 +88,14 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                         </div>
                          <div>
                             <p className="font-medium">Status</p>
-                            <Badge variant={getBadgeVariant(order.status)} className={cn(
-                                order.status === 'Completed' && 'bg-green-600 text-white',
-                                order.status === 'Confirmed' && 'bg-blue-500 text-white'
-                              )}>{order.status}</Badge>
+                            <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
                         </div>
+                        {order.cancellationDate && (
+                          <div>
+                              <p className="font-medium">Cancelled On</p>
+                              <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
+                          </div>
+                        )}
                         <div>
                             <p className="font-medium">Order Total</p>
                             <p className="font-bold">Rs.{order.total.toFixed(2)}</p>
@@ -254,7 +261,7 @@ export default function OrdersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="hidden sm:table-cell">Order ID</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Pickup Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-center">Actions</TableHead>
@@ -264,12 +271,9 @@ export default function OrdersPage() {
               {orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="hidden sm:table-cell font-medium">{order.id}</TableCell>
-                  <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Badge variant={getBadgeVariant(order.status)} className={cn(
-                      order.status === 'Completed' && 'bg-green-600 text-white',
-                      order.status === 'Confirmed' && 'bg-blue-500 text-white'
-                    )}>
+                    <Badge variant={getBadgeVariant(order.status)}>
                       {order.status}
                     </Badge>
                   </TableCell>

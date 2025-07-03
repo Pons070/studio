@@ -102,7 +102,8 @@ export const menuItems: MenuItem[] = [
 export const orders: Order[] = [
   {
     id: 'ORD-001',
-    date: '2023-10-26',
+    orderDate: '2023-10-25',
+    pickupDate: '2023-10-26',
     pickupTime: '18:30',
     status: 'Completed',
     total: 32.48,
@@ -114,7 +115,8 @@ export const orders: Order[] = [
   },
   {
     id: 'ORD-002',
-    date: '2023-11-15',
+    orderDate: '2023-11-14',
+    pickupDate: '2023-11-15',
     pickupTime: '19:00',
     status: 'Confirmed',
     total: 25.00,
@@ -125,7 +127,8 @@ export const orders: Order[] = [
   },
   {
     id: 'ORD-003',
-    date: '2023-12-01',
+    orderDate: '2023-11-30',
+    pickupDate: '2023-12-01',
     pickupTime: '12:00',
     status: 'Pending',
     total: 27.50,
@@ -136,7 +139,9 @@ export const orders: Order[] = [
   },
    {
     id: 'ORD-004',
-    date: '2024-01-05',
+    orderDate: '2024-01-04',
+    pickupDate: '2024-01-05',
+    cancellationDate: '2024-01-04',
     pickupTime: '20:00',
     status: 'Cancelled',
     total: 19.49,
@@ -148,7 +153,8 @@ export const orders: Order[] = [
   },
   {
     id: 'ORD-005',
-    date: '2024-02-10',
+    orderDate: '2024-02-09',
+    pickupDate: '2024-02-10',
     pickupTime: '13:00',
     status: 'Completed',
     total: 25.00,
@@ -160,7 +166,8 @@ export const orders: Order[] = [
   },
   {
     id: 'ORD-006',
-    date: '2024-03-20',
+    orderDate: '2024-03-19',
+    pickupDate: '2024-03-20',
     pickupTime: '19:30',
     status: 'Completed',
     total: 27.50,
