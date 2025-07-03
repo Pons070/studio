@@ -33,7 +33,6 @@ import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/store/auth';
 import Link from 'next/link';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { Address } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 
@@ -75,6 +74,7 @@ export default function CheckoutPage() {
 
   const isProfileIncomplete = isAuthenticated && !currentUser?.phone;
   const hasNoAddress = isAuthenticated && (!currentUser?.addresses || currentUser.addresses.length === 0);
+  const selectedAddress = currentUser?.addresses?.find(a => a.id === selectedAddressId);
 
   const handlePlaceOrder = async () => {
     if (!isAuthenticated) {
@@ -253,23 +253,40 @@ export default function CheckoutPage() {
                             </AlertDescription>
                         </Alert>
                     ) : (
-                        <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId} className="space-y-4">
-                            {(currentUser?.addresses || []).map(address => (
-                                <Label key={address.id} htmlFor={address.id!} className="flex flex-col p-4 border rounded-md has-[:checked]:bg-secondary has-[:checked]:border-primary cursor-pointer">
-                                     <div className="flex items-center justify-between">
+                         <Select onValueChange={setSelectedAddressId} value={selectedAddressId}>
+                            <SelectTrigger className="w-full text-left h-auto items-start py-2">
+                                <SelectValue asChild>
+                                    {selectedAddress ? (
                                         <div className="flex items-center gap-3">
-                                            <RadioGroupItem value={address.id!} id={address.id} />
-                                            <span className="font-bold text-base flex items-center gap-2">
-                                                {address.label === 'Home' ? <Home className="h-4 w-4 text-muted-foreground" /> : <Building className="h-4 w-4 text-muted-foreground" />}
-                                                {address.label}
-                                            </span>
+                                            <div className="shrink-0">
+                                                {selectedAddress.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-semibold">{selectedAddress.label} {selectedAddress.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
+                                                <p className="text-sm text-muted-foreground truncate">{formatAddress(selectedAddress)}</p>
+                                            </div>
                                         </div>
-                                        {address.isDefault && <Badge variant="outline">Default</Badge>}
-                                    </div>
-                                    <p className="pl-8 text-muted-foreground text-sm mt-2">{formatAddress(address)}</p>
-                                </Label>
-                            ))}
-                        </RadioGroup>
+                                    ) : (
+                                        <span className="text-muted-foreground">Select a delivery address...</span>
+                                    )}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {(currentUser?.addresses || []).map(address => (
+                                    <SelectItem key={address.id} value={address.id!} className="py-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="shrink-0">
+                                                {address.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-semibold">{address.label} {address.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
+                                                <p className="text-sm text-muted-foreground">{formatAddress(address)}</p>
+                                            </div>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     )}
                 </CardContent>
             </Card>
