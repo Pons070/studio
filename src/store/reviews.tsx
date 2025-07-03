@@ -1,7 +1,6 @@
-
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { Review } from '@/lib/types';
 import { reviews as mockReviews } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
@@ -15,10 +14,32 @@ type ReviewContextType = {
 
 const ReviewContext = createContext<ReviewContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'culina-preorder-reviews';
+
 export function ReviewProvider({ children }: { children: ReactNode }) {
   const [reviews, setReviews] = useState<Review[]>(mockReviews);
   const { addReviewToOrder } = useOrders();
   const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (item) {
+        setReviews(JSON.parse(item));
+      }
+    } catch (error) {
+      console.error("Failed to load reviews from localStorage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(reviews));
+    } catch (error) {
+      console.error("Failed to save reviews to localStorage", error);
+    }
+  }, [reviews]);
+
 
   const addReview = useCallback((orderId: string, rating: number, comment: string) => {
     const newReview: Review = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { Order, CartItem } from '@/lib/types';
 import { orders as mockOrders } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
@@ -15,9 +15,31 @@ type OrderContextType = {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'culina-preorder-orders';
+
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (item) {
+        setOrders(JSON.parse(item));
+      }
+    } catch (error) {
+      console.error("Failed to load orders from localStorage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orders));
+    } catch (error) {
+      console.error("Failed to save orders to localStorage", error);
+    }
+  }, [orders]);
+
 
   const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => {
     const newOrder: Order = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { MenuItem } from '@/lib/types';
 import { menuItems as mockMenuItems } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
@@ -14,9 +14,30 @@ type MenuContextType = {
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'culina-preorder-menu';
+
 export function MenuProvider({ children }: { children: ReactNode }) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
   const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (item) {
+        setMenuItems(JSON.parse(item));
+      }
+    } catch (error) {
+      console.error("Failed to load menu from localStorage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(menuItems));
+    } catch (error) {
+      console.error("Failed to save menu to localStorage", error);
+    }
+  }, [menuItems]);
 
   const addMenuItem = useCallback((itemData: Omit<MenuItem, 'id' | 'aiHint'>) => {
     const newItem: MenuItem = {

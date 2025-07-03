@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { CartItem, MenuItem } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast"
 
@@ -15,9 +15,30 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'culina-preorder-cart';
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (item) {
+        setItems(JSON.parse(item));
+      }
+    } catch (error) {
+      console.error("Failed to load cart from localStorage", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    } catch (error) {
+      console.error("Failed to save cart to localStorage", error);
+    }
+  }, [items]);
 
   const addItem = (itemToAdd: MenuItem) => {
     setItems(prevItems => {
