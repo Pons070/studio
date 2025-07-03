@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings } from '@/lib/types';
 import {
   Dialog,
@@ -1130,6 +1130,23 @@ function BrandManagement() {
   const [theme, setTheme] = useState<ThemeSettings>(brandInfo.theme || initialThemeState);
   const [isSaving, setIsSaving] = useState(false);
 
+  const palettes = [
+    { name: 'Sunset Orange', primaryColor: '30 85% 67%', backgroundColor: '28 71% 92%', accentColor: '14 66% 62%' },
+    { name: 'Oceanic Blue', primaryColor: '217 91% 60%', backgroundColor: '210 40% 98%', accentColor: '198 93% 60%' },
+    { name: 'Forest Green', primaryColor: '142 76% 36%', backgroundColor: '120 20% 97%', accentColor: '90 57% 53%' },
+    { name: 'Royal Purple', primaryColor: '262 83% 58%', backgroundColor: '270 60% 98%', accentColor: '286 75% 68%' },
+    { name: 'Modern Monochrome', primaryColor: '240 10% 3.9%', backgroundColor: '0 0% 100%', accentColor: '240 5% 65%' },
+  ];
+
+  const handlePaletteSelect = (palette: typeof palettes[0]) => {
+    setTheme(prev => ({
+        ...prev,
+        primaryColor: palette.primaryColor,
+        backgroundColor: palette.backgroundColor,
+        accentColor: palette.accentColor,
+    }));
+  };
+
   useEffect(() => {
     setName(brandInfo.name);
     setLogoUrl(brandInfo.logoUrl);
@@ -1339,21 +1356,39 @@ function BrandManagement() {
         <div className="space-y-6">
           <h3 className="text-lg font-medium flex items-center gap-2"><Palette /> Theme & Appearance</h3>
           <p className="text-sm text-muted-foreground">
-            Customize the look and feel of your storefront. For colors, use HSL values without the `hsl()` wrapper (e.g., `210 40% 96%`).
+            Customize the look and feel of your storefront. Choose a color palette, select fonts, and more.
           </p>
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="primaryColor">Primary Color</Label>
-              <Input id="primaryColor" value={theme.primaryColor} onChange={(e) => handleThemeChange('primaryColor', e.target.value)} placeholder="e.g., 30 85% 67%" />
+            <div className="space-y-2 md:col-span-2">
+              <Label>Color Palette</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-2">
+                {palettes.map((palette) => {
+                  const isSelected = theme.primaryColor === palette.primaryColor && theme.backgroundColor === palette.backgroundColor;
+                  return (
+                    <div key={palette.name} onClick={() => handlePaletteSelect(palette)} className="cursor-pointer group">
+                      <div className="relative">
+                        <div className={cn("rounded-md border-2 p-1 transition-all", isSelected ? 'border-primary shadow-lg' : 'border-card group-hover:border-border')}>
+                          <div className="flex h-16 w-full rounded-sm overflow-hidden">
+                            <div className="w-1/2" style={{ backgroundColor: `hsl(${palette.backgroundColor})` }} />
+                            <div className="w-1/2 flex flex-col">
+                              <div className="h-2/3" style={{ backgroundColor: `hsl(${palette.primaryColor})` }} />
+                              <div className="h-1/3" style={{ backgroundColor: `hsl(${palette.accentColor})` }} />
+                            </div>
+                          </div>
+                        </div>
+                         {isSelected && (
+                            <div className="absolute -top-2 -right-2 h-6 w-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center border-2 border-background">
+                                <Check className="h-4 w-4" />
+                            </div>
+                        )}
+                      </div>
+                      <p className={cn("text-sm text-center mt-2 transition-colors", isSelected ? 'font-semibold text-primary' : 'text-muted-foreground group-hover:text-foreground')}>{palette.name}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="backgroundColor">Background Color</Label>
-              <Input id="backgroundColor" value={theme.backgroundColor} onChange={(e) => handleThemeChange('backgroundColor', e.target.value)} placeholder="e.g., 28 71% 92%" />
-            </div>
-             <div className="space-y-2">
-              <Label htmlFor="accentColor">Accent Color</Label>
-              <Input id="accentColor" value={theme.accentColor} onChange={(e) => handleThemeChange('accentColor', e.target.value)} placeholder="e.g., 14 66% 62%" />
-            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="backgroundImage">Background Image (Optional)</Label>
               <Input id="backgroundImage" type="file" onChange={(e) => handleFileChange(e, 'background')} accept="image/*" />
