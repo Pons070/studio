@@ -1958,13 +1958,16 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8 p-4 md:p-8">
       <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-headline font-bold">Admin Dashboard</h1>
-          <Button asChild variant="outline">
-            <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
-              Go to Home
-            </Link>
-          </Button>
+        <div>
+          <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Oversee operations, manage content, and gain valuable insights.</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/">
+            <Home className="mr-2 h-4 w-4" />
+            Go to Home
+          </Link>
+        </Button>
       </div>
       <Tabs defaultValue="orders" className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
