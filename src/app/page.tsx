@@ -17,7 +17,7 @@ export default function Home() {
   const { menuItems } = useMenu();
   const { brandInfo } = useBrand();
   const { reviews } = useReviews();
-  const featuredItems = menuItems.filter(item => item.category === 'Main Courses').slice(0, 3);
+  const featuredItems = menuItems.filter(item => item.isFeatured).slice(0, 3);
   const featuredReviews = reviews.filter(r => r.isPublished).slice(0, 5);
   const isClosed = brandInfo.businessHours.status === 'closed';
 

@@ -24,6 +24,7 @@ export type MenuItem = {
   category: 'Appetizers' | 'Main Courses' | 'Desserts' | 'Drinks';
   aiHint: string;
   isAvailable: boolean;
+  isFeatured?: boolean;
 };
 
 export type CartItem = {

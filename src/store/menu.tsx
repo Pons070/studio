@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type MenuContextType = {
   menuItems: MenuItem[];
-  addMenuItem: (item: Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable'>) => void;
+  addMenuItem: (item: Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable' | 'isFeatured'>) => void;
   updateMenuItem: (item: MenuItem) => void;
   deleteMenuItem: (itemId: string) => void;
 };
@@ -40,12 +40,13 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     }
   }, [menuItems]);
 
-  const addMenuItem = useCallback((itemData: Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable'>) => {
+  const addMenuItem = useCallback((itemData: Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable' | 'isFeatured'>) => {
     const newItem: MenuItem = {
       ...itemData,
       id: `MENU-${Date.now()}`,
       aiHint: itemData.name.toLowerCase(),
       isAvailable: true,
+      isFeatured: false,
     };
     setMenuItems(prevItems => [newItem, ...prevItems]);
     toast({

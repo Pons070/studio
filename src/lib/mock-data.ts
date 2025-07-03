@@ -92,6 +92,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'bruschetta appetizer',
     category: 'Appetizers',
     isAvailable: true,
+    isFeatured: false,
   },
   {
     id: '2',
@@ -102,6 +103,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'caprese salad',
     category: 'Appetizers',
     isAvailable: true,
+    isFeatured: false,
   },
   {
     id: '3',
@@ -112,6 +114,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'spaghetti carbonara',
     category: 'Main Courses',
     isAvailable: true,
+    isFeatured: true,
   },
   {
     id: '4',
@@ -122,6 +125,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'margherita pizza',
     category: 'Main Courses',
     isAvailable: true,
+    isFeatured: true,
   },
     {
     id: '5',
@@ -132,6 +136,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'grilled salmon',
     category: 'Main Courses',
     isAvailable: true,
+    isFeatured: true,
   },
   {
     id: '6',
@@ -142,6 +147,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'tiramisu dessert',
     category: 'Desserts',
     isAvailable: true,
+    isFeatured: false,
   },
   {
     id: '7',
@@ -152,6 +158,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'panna cotta',
     category: 'Desserts',
     isAvailable: true,
+    isFeatured: false,
   },
   {
     id: '8',
@@ -162,6 +169,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'water bottle',
     category: 'Drinks',
     isAvailable: true,
+    isFeatured: false,
   },
     {
     id: '9',
@@ -172,6 +180,7 @@ export const menuItems: MenuItem[] = [
     aiHint: 'orange juice',
     category: 'Drinks',
     isAvailable: true,
+    isFeatured: false,
   },
 ];
 

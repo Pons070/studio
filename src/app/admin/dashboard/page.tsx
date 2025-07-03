@@ -418,7 +418,7 @@ function OrderManagement() {
   );
 }
 
-type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable'> & { id?: string };
+type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable' | 'isFeatured'> & { id?: string };
 
 function MenuManagement() {
   const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
@@ -448,6 +448,7 @@ function MenuManagement() {
          imageUrl: finalImageUrl,
          aiHint: itemData.name.toLowerCase(),
          isAvailable: originalItem?.isAvailable ?? true,
+         isFeatured: originalItem?.isFeatured ?? false,
        });
      } else {
        const { id, ...newItemData } = itemData;
@@ -463,6 +464,13 @@ function MenuManagement() {
     const itemToUpdate = menuItems.find(item => item.id === itemId);
     if (itemToUpdate) {
         updateMenuItem({ ...itemToUpdate, isAvailable });
+    }
+  };
+
+  const handleFeatureChange = (itemId: string, isFeatured: boolean) => {
+    const itemToUpdate = menuItems.find(item => item.id === itemId);
+    if (itemToUpdate) {
+        updateMenuItem({ ...itemToUpdate, isFeatured });
     }
   };
 
@@ -496,11 +504,19 @@ function MenuManagement() {
     setSelectedItemIds([]);
   };
 
+  const handleBulkFeature = (isFeatured: boolean) => {
+    const itemsToUpdate = menuItems.filter(item => selectedItemIds.includes(item.id));
+    itemsToUpdate.forEach(item => {
+        updateMenuItem({ ...item, isFeatured });
+    });
+    setSelectedItemIds([]);
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Menu Items</CardTitle>
-        <CardDescription>Add, edit, or remove menu items.</CardDescription>
+        <CardDescription>Add, edit, or remove menu items. Toggle their availability and featured status.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4 mb-4">
@@ -522,6 +538,9 @@ function MenuManagement() {
                 <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => handleBulkAvailability(true)}>Set as Available</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleBulkAvailability(false)}>Set as Unavailable</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleBulkFeature(true)}>Set as Featured</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkFeature(false)}>Set as Not Featured</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleBulkDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">Delete Selected</DropdownMenuItem>
                 </DropdownMenuContent>
@@ -546,6 +565,7 @@ function MenuManagement() {
               <TableHead>Category</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Availability</TableHead>
+              <TableHead>Featured</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -567,6 +587,13 @@ function MenuManagement() {
                         checked={item.isAvailable}
                         onCheckedChange={(checked) => handleAvailabilityChange(item.id, checked)}
                         aria-label="Toggle item availability"
+                    />
+                </TableCell>
+                <TableCell>
+                    <Switch
+                        checked={!!item.isFeatured}
+                        onCheckedChange={(checked) => handleFeatureChange(item.id, checked)}
+                        aria-label="Toggle featured status"
                     />
                 </TableCell>
                 <TableCell className="text-right">
