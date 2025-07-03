@@ -35,6 +35,7 @@ export type Order = {
   id:string;
   customerId: string;
   customerName: string;
+  address: Address;
   orderDate: string; // The date the order was placed
   pickupDate: string; // The date for pre-order pickup
   pickupTime: string;
@@ -81,3 +82,5 @@ export type Promotion = {
   endDate?: string;
   activeDays?: number[]; // 0 = Sun, 1 = Mon, ..., 6 = Sat
 };
+
+    

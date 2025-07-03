@@ -4,13 +4,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Promotion, Address } from '@/lib/types';
 import {
   Dialog,
@@ -52,6 +52,21 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
     if (!order) return null;
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
+
+    const fullAddress = [
+        order.address.doorNumber,
+        order.address.apartmentName,
+        order.address.floorNumber,
+        order.address.area,
+        order.address.city,
+        order.address.state,
+        order.address.pincode,
+    ].filter(Boolean).join(', ');
+
+    const mapsUrl = order.address.latitude && order.address.longitude
+        ? `https://www.google.com/maps/search/?api=1&query=${order.address.latitude},${order.address.longitude}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -100,6 +115,19 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                         </div>
                     </div>
 
+                    <Separator />
+                     <div className="space-y-2">
+                        <h4 className="font-medium">Delivery Address</h4>
+                        <div className="text-sm text-muted-foreground">
+                            <p>{order.address.doorNumber}, {order.address.apartmentName}{order.address.floorNumber && `, ${order.address.floorNumber}`}</p>
+                            <p>{order.address.area}</p>
+                            <p>{order.address.city}, {order.address.state} - {order.address.pincode}</p>
+                        </div>
+                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), "mt-2")}>
+                            <MapPin className="mr-2 h-4 w-4" />
+                            View on Map
+                        </a>
+                    </div>
                     <Separator />
 
                     <h4 className="font-medium">Items in this order</h4>
@@ -1390,3 +1418,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    

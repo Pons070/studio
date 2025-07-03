@@ -2,6 +2,18 @@
 import { z } from 'zod';
 import { useAuth } from '@/store/auth';
 
+export const AddressSchema = z.object({
+  doorNumber: z.string(),
+  apartmentName: z.string(),
+  floorNumber: z.string().optional(),
+  area: z.string(),
+  city: z.string(),
+  state: z.string(),
+  pincode: z.string(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+});
+
 export const CartItemSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -14,6 +26,7 @@ export const OrderSchema = z.object({
   id: z.string(),
   customerId: z.string(),
   customerName: z.string(),
+  address: AddressSchema,
   orderDate: z.string().describe("The date the order was placed."),
   pickupDate: z.string().describe("The date the customer will pick up the order."),
   pickupTime: z.string(),
@@ -38,3 +51,5 @@ export const OrderNotificationInputSchema = z.object({
   adminEmail: z.string().email().default('sangkar111@gmail.com'),
 });
 export type OrderNotificationInput = z.infer<typeof OrderNotificationInputSchema>;
+
+    

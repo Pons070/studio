@@ -47,10 +47,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
 
   const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => {
-    if (!currentUser) {
+    if (!currentUser || !currentUser.address) {
       toast({
         title: "Authentication Error",
-        description: "You must be logged in to place an order.",
+        description: "You must be logged in and have a complete address to place an order.",
         variant: "destructive",
       });
       return;
@@ -60,6 +60,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         id: `ORD-${Date.now()}`,
         customerId: currentUser.id,
         customerName: currentUser.name,
+        address: currentUser.address,
         orderDate: format(new Date(), 'yyyy-MM-dd'),
         pickupDate: format(pickupDate, 'yyyy-MM-dd'),
         pickupTime: pickupTime,
@@ -193,3 +194,5 @@ export function useOrders() {
   }
   return context;
 }
+
+    

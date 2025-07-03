@@ -22,6 +22,66 @@ export const brandInfo: BrandInfo = {
   instagramUrl: '',
 };
 
+const aliceAddress: Address = {
+    doorNumber: '4A',
+    apartmentName: 'Wonderland Apts',
+    area: 'Rabbit Hole District',
+    city: 'Curious City',
+    state: 'Imagi Nation',
+    pincode: '12345',
+    latitude: 34.0522,
+    longitude: -118.2437,
+};
+
+const dianaAddress: Address = {
+    doorNumber: '100',
+    apartmentName: 'Olympus Towers',
+    area: 'Themyscira Plaza',
+    city: 'Paradise Island',
+    state: 'Amazonia',
+    pincode: '23456'
+};
+
+const charlieAddress: Address = {
+    doorNumber: '22B',
+    apartmentName: 'Chocolate Factory',
+    area: 'Sweet Street',
+    city: 'Confectionville',
+    state: 'Sugarland',
+    pincode: '34567',
+    latitude: 40.7128,
+    longitude: -74.0060,
+};
+
+const eveAddress: Address = {
+    doorNumber: '1',
+    apartmentName: 'Garden House',
+    area: 'Eden Estates',
+    city: 'First City',
+    state: 'Genesis',
+    pincode: '45678'
+};
+
+const bobAddress: Address = {
+    doorNumber: 'B2',
+    apartmentName: 'Builder Complex',
+    area: 'Construct Lane',
+    city: 'Tool-Town',
+    state: 'Handy State',
+    pincode: '56789'
+};
+
+const frankAddress: Address = {
+    doorNumber: 'C-3',
+    apartmentName: 'Castle Apartments',
+    area: 'Kingdom Valley',
+    city: 'Nobleburg',
+    state: 'Regalia',
+    pincode: '67890',
+    latitude: 51.5074,
+    longitude: -0.1278,
+};
+
 export const menuItems: MenuItem[] = [
   {
     id: '1',
@@ -120,6 +180,7 @@ export const orders: Order[] = [
     id: 'ORD-001',
     customerId: 'user-alice',
     customerName: 'Alice',
+    address: aliceAddress,
     orderDate: '2023-10-25',
     pickupDate: '2023-10-26',
     pickupTime: '18:30',
@@ -135,6 +196,7 @@ export const orders: Order[] = [
     id: 'ORD-002',
     customerId: 'user-diana',
     customerName: 'Diana',
+    address: dianaAddress,
     orderDate: '2023-11-14',
     pickupDate: '2023-11-15',
     pickupTime: '19:00',
@@ -149,6 +211,7 @@ export const orders: Order[] = [
     id: 'ORD-003',
     customerId: 'user-charlie',
     customerName: 'Charlie',
+    address: charlieAddress,
     orderDate: '2023-11-30',
     pickupDate: '2023-12-01',
     pickupTime: '12:00',
@@ -163,6 +226,7 @@ export const orders: Order[] = [
     id: 'ORD-004',
     customerId: 'user-eve',
     customerName: 'Eve',
+    address: eveAddress,
     orderDate: '2024-01-04',
     pickupDate: '2024-01-05',
     cancellationDate: '2024-01-04',
@@ -180,6 +244,7 @@ export const orders: Order[] = [
     id: 'ORD-005',
     customerId: 'user-bob',
     customerName: 'Bob',
+    address: bobAddress,
     orderDate: '2024-02-09',
     pickupDate: '2024-02-10',
     pickupTime: '13:00',
@@ -195,6 +260,7 @@ export const orders: Order[] = [
     id: 'ORD-006',
     customerId: 'user-frank',
     customerName: 'Frank',
+    address: frankAddress,
     orderDate: '2024-03-19',
     pickupDate: '2024-03-20',
     pickupTime: '19:30',
@@ -284,3 +350,5 @@ export const promotions: Promotion[] = [
     endDate: '2023-07-31',
   },
 ];
+
+    
