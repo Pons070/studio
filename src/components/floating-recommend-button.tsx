@@ -20,7 +20,7 @@ export function FloatingRecommendButton({ shareUrl }: { shareUrl: string }) {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 mr-4">
-        <div className="grid gap-4">
+        <div className="flex flex-col items-center text-center gap-4">
           <div className="space-y-2">
             <h4 className="font-medium leading-none">Share the Love!</h4>
             <p className="text-sm text-muted-foreground whitespace-pre-line">
