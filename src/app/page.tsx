@@ -78,7 +78,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-secondary/50 rounded-lg p-8 md:p-12">
+        <section className="bg-card rounded-lg p-8 md:p-12 shadow-lg">
           <h2 className="text-3xl font-headline font-bold text-center mb-10">How It Works</h2>
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div className="flex flex-col items-center">
