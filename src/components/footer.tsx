@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Utensils, Twitter, Facebook, Instagram, Youtube } from "lucide-react";
+import { Utensils, Instagram, Youtube } from "lucide-react";
 import { useBrand } from "@/store/brand";
 import Image from "next/image";
 
@@ -39,15 +39,11 @@ export function Footer() {
 
           <div className="flex flex-col items-center md:items-end gap-2">
             <div className="flex gap-4">
-               <Link href="#" className="text-muted-foreground hover:text-primary">
-                <Twitter className="h-5 w-5" />
-              </Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary">
-                <Facebook className="h-5 w-5" />
-              </Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary">
-                <Instagram className="h-5 w-5" />
-              </Link>
+              {brandInfo.instagramUrl && (
+                <Link href={brandInfo.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                  <Instagram className="h-5 w-5" />
+                </Link>
+              )}
               {brandInfo.youtubeUrl && (
                 <Link href={brandInfo.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
                   <Youtube className="h-5 w-5" />

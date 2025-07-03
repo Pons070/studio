@@ -12,6 +12,7 @@ export const brandInfo: BrandInfo = {
     message: 'We are temporarily closed. Please check back later!',
   },
   youtubeUrl: '',
+  instagramUrl: '',
 };
 
 export const menuItems: MenuItem[] = [

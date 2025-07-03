@@ -48,4 +48,5 @@ export type BrandInfo = {
     message: string;
   };
   youtubeUrl?: string;
+  instagramUrl?: string;
 };

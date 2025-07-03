@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo } from '@/lib/types';
 import {
   Dialog,
@@ -570,6 +570,7 @@ function BrandManagement() {
   const [address, setAddress] = useState(brandInfo.address);
   const [about, setAbout] = useState(brandInfo.about || '');
   const [youtubeUrl, setYoutubeUrl] = useState(brandInfo.youtubeUrl || '');
+  const [instagramUrl, setInstagramUrl] = useState(brandInfo.instagramUrl || '');
   const [businessStatus, setBusinessStatus] = useState(brandInfo.businessHours.status);
   const [closureMessage, setClosureMessage] = useState(brandInfo.businessHours.message);
   const [isSaving, setIsSaving] = useState(false);
@@ -594,6 +595,7 @@ function BrandManagement() {
       address,
       about,
       youtubeUrl,
+      instagramUrl,
       businessHours: {
         status: businessStatus,
         message: closureMessage
@@ -630,6 +632,10 @@ function BrandManagement() {
         <div className="space-y-2">
             <Label htmlFor="brand-youtube">YouTube Channel URL</Label>
             <Input id="brand-youtube" type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/yourchannel" />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="brand-instagram">Instagram Page URL</Label>
+            <Input id="brand-instagram" type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/yourpage" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="logo">Logo</Label>
