@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Gift } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { RecommendButton } from '@/components/recommend-dialog';
 
 export function FloatingRecommendButton({ shareUrl }: { shareUrl: string }) {
@@ -16,7 +16,7 @@ export function FloatingRecommendButton({ shareUrl }: { shareUrl: string }) {
           className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
           aria-label="Share the love"
         >
-          <Gift className="h-7 w-7" />
+          <Heart className="h-7 w-7 fill-current" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 mr-4">
