@@ -7,11 +7,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -52,6 +51,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { VariantProps } from 'class-variance-authority';
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -1955,50 +1955,80 @@ function CustomerManagement() {
 
 
 export default function AdminDashboardPage() {
+  const [activeView, setActiveView] = useState('orders');
+
+  const navItems = [
+    { id: 'orders', label: 'Manage Orders', icon: ClipboardList },
+    { id: 'menu', label: 'Manage Menu', icon: Utensils },
+    { id: 'reviews', label: 'Manage Reviews', icon: Star },
+    { id: 'promotions', label: 'Manage Promotions', icon: Megaphone },
+    { id: 'brand', label: 'Manage Brand', icon: Palette },
+    { id: 'customers', label: 'Manage Customers', icon: Users },
+  ];
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'orders': return <OrderManagement />;
+      case 'menu': return <MenuManagement />;
+      case 'reviews': return <ReviewManagement />;
+      case 'promotions': return <PromotionManagement />;
+      case 'brand': return <BrandManagement />;
+      case 'customers': return <CustomerManagement />;
+      default: return <OrderManagement />;
+    }
+  };
+
   return (
-    <div className="space-y-8 p-4 md:p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
-          <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
+    <SidebarProvider>
+      <Sidebar className="border-r bg-muted/20">
+        <SidebarHeader>
+           <div className="flex h-20 items-center gap-2 px-4">
+              <Shield className="h-8 w-8 text-primary" />
+              <h2 className="text-xl font-bold group-data-[collapsible=icon]:hidden">Admin Panel</h2>
+          </div>
+        </SidebarHeader>
+        <SidebarContent className="p-2">
+          <SidebarMenu>
+            {navItems.map(item => (
+              <SidebarMenuItem key={item.id}>
+                <SidebarMenuButton 
+                  onClick={() => setActiveView(item.id)} 
+                  isActive={activeView === item.id} 
+                  tooltip={item.label}
+                  className="justify-start"
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+         <SidebarFooter className="p-2">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild className="justify-start">
+                  <Link href="/">
+                      <Home />
+                      <span>Go to Home</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+         </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <div className="p-4 md:p-8 space-y-8">
+          <header className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
+              <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
+            </div>
+            <SidebarTrigger />
+          </header>
+          {renderContent()}
         </div>
-        <Button asChild variant="outline">
-          <Link href="/">
-            <Home className="mr-2 h-4 w-4" />
-            Go to Home
-          </Link>
-        </Button>
-      </div>
-      <Tabs defaultValue="orders" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
-          <TabsTrigger value="orders">Manage Orders</TabsTrigger>
-          <TabsTrigger value="menu">Manage Menu</TabsTrigger>
-          <TabsTrigger value="reviews">Manage Reviews</TabsTrigger>
-          <TabsTrigger value="promotions">Manage Promotions</TabsTrigger>
-          <TabsTrigger value="brand">Manage Brand</TabsTrigger>
-          <TabsTrigger value="customers">Manage Customers</TabsTrigger>
-        </TabsList>
-        <TabsContent value="orders">
-          <OrderManagement />
-        </TabsContent>
-        <TabsContent value="menu">
-          <MenuManagement />
-        </TabsContent>
-         <TabsContent value="reviews">
-          <ReviewManagement />
-        </TabsContent>
-        <TabsContent value="promotions">
-          <PromotionManagement />
-        </TabsContent>
-        <TabsContent value="brand">
-          <BrandManagement />
-        </TabsContent>
-        <TabsContent value="customers">
-          <CustomerManagement />
-        </TabsContent>
-      </Tabs>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
-
-    
