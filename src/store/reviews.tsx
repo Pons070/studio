@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -5,6 +6,7 @@ import type { Review } from '@/lib/types';
 import { reviews as mockReviews } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from './orders';
+import { useAuth } from './auth';
 
 type ReviewContextType = {
   reviews: Review[];
@@ -19,6 +21,7 @@ const LOCAL_STORAGE_KEY = 'culina-preorder-reviews';
 export function ReviewProvider({ children }: { children: ReactNode }) {
   const [reviews, setReviews] = useState<Review[]>(mockReviews);
   const { addReviewToOrder } = useOrders();
+  const { currentUser } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -45,7 +48,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     const newReview: Review = {
       id: `REV-${Date.now()}`,
       orderId,
-      customerName: 'Guest User',
+      customerName: currentUser?.name || 'Guest User',
       rating,
       comment,
       date: new Date().toISOString().split('T')[0],
@@ -57,7 +60,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
       description: "Thank you for your valuable feedback.",
       className: "bg-green-500 text-white"
     });
-  }, [addReviewToOrder, toast]);
+  }, [addReviewToOrder, toast, currentUser]);
 
   const addAdminReply = useCallback((reviewId: string, reply: string) => {
     setReviews(prevReviews => 

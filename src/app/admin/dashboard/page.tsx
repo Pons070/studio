@@ -54,7 +54,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                 <DialogHeader>
                     <DialogTitle>Order Details</DialogTitle>
                     <DialogDescription>
-                        Order ID: {order.id} | Customer: Guest User
+                        Order ID: {order.id} | Customer: {order.customerName}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -163,7 +163,7 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[]
         {orders.map((order) => (
           <TableRow key={order.id}>
             <TableCell className="font-medium">{order.id}</TableCell>
-            <TableCell>Guest User</TableCell>
+            <TableCell>{order.customerName}</TableCell>
             <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
             <TableCell>
               <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>

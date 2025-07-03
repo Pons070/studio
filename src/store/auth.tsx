@@ -10,6 +10,8 @@ type User = {
   name: string;
   email: string;
   password?: string; // For mock purposes, password is stored. It's not secure.
+  phone?: string;
+  address?: string;
 };
 
 type AuthContextType = {
@@ -18,6 +20,7 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string) => boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
+  updateUser: (data: Partial<Omit<User, 'id' | 'email'>>) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,7 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: `USER-${Date.now()}`,
       name,
       email,
-      password
+      password,
+      phone: '',
+      address: '',
     };
     
     persistUsers([...users, newUser]);
@@ -124,10 +129,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/');
   }, [router, toast]);
 
+  const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email'>>) => {
+    if (!currentUser) return;
+
+    const updatedUser = { ...currentUser, ...data };
+    persistCurrentUser(updatedUser);
+
+    const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+    persistUsers(updatedUsers);
+
+    toast({
+        title: "Profile Updated",
+        description: "Your details have been successfully saved.",
+    });
+
+  }, [currentUser, users, toast]);
+
   const isAuthenticated = !!currentUser;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, signup, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentUser, signup, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
-import { Utensils, User, ShoppingCart, LogOut, History, LogIn, UserPlus } from 'lucide-react';
+import { Utensils, User, ShoppingCart, LogOut, History, LogIn, UserPlus, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,6 +79,9 @@ export function Header() {
                   <>
                     <DropdownMenuLabel>Hi, {currentUser.name}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                     <DropdownMenuItem asChild>
+                      <Link href="/profile"><Settings className="mr-2 h-4 w-4" />My Profile</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/orders"><History className="mr-2 h-4 w-4" />Orders</Link>
                     </DropdownMenuItem>

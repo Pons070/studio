@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -5,6 +6,7 @@ import type { Order, CartItem } from '@/lib/types';
 import { orders as mockOrders } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
+import { useAuth } from './auth';
 
 type OrderContextType = {
   orders: Order[];
@@ -20,6 +22,7 @@ const LOCAL_STORAGE_KEY = 'culina-preorder-orders';
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     try {
@@ -44,6 +47,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => {
     const newOrder: Order = {
         id: `ORD-${Date.now()}`,
+        customerName: currentUser?.name || 'Guest User',
         orderDate: new Date().toISOString().split('T')[0],
         pickupDate: pickupDate.toISOString().split('T')[0],
         pickupTime: pickupTime,
@@ -88,7 +92,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         });
         // Here you might want to handle the error, e.g., rollback the optimistic update if placement is transactional
     }
-  }, [toast]);
+  }, [toast, currentUser]);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: Order['status']) => {
     let notificationOrder: Order | null = null;

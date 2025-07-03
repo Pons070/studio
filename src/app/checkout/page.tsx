@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, User } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,23 +16,46 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useBrand } from '@/store/brand';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/store/auth';
+import Link from 'next/link';
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
   const { addOrder } = useOrders();
   const { brandInfo } = useBrand();
+  const { currentUser, isAuthenticated } = useAuth();
   const [pickupDate, setPickupDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  
   const isClosed = brandInfo.businessHours.status === 'closed';
+  const isProfileIncomplete = isAuthenticated && (!currentUser?.phone || !currentUser?.address);
 
   const handlePlaceOrder = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Please Log In",
+        description: "You need to be logged in to place an order.",
+        variant: "destructive",
+      });
+      router.push('/login');
+      return;
+    }
+
+    if (isProfileIncomplete) {
+       toast({
+        title: "Profile Incomplete",
+        description: "Please update your profile with your phone and address before ordering.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!pickupDate || !time) {
         toast({
             title: "Incomplete Information",
@@ -84,6 +107,18 @@ export default function CheckoutPage() {
         <h1 className="text-4xl font-headline font-bold text-center mb-10">Checkout</h1>
         <div className="grid lg:grid-cols-2 gap-12">
             <div>
+                 {isProfileIncomplete && (
+                    <Alert variant="destructive" className="mb-6">
+                      <User className="h-4 w-4" />
+                      <AlertTitle>Profile Incomplete</AlertTitle>
+                      <AlertDescription className="flex justify-between items-center">
+                        <span>Please provide your phone number and address.</span>
+                        <Button asChild variant="secondary" size="sm">
+                          <Link href="/profile">Update Profile</Link>
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 <Card>
                     <CardHeader>
                         <CardTitle>1. Select Pickup Time</CardTitle>
@@ -165,7 +200,7 @@ export default function CheckoutPage() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                        <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || isProfileIncomplete} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                             {isProcessing ? 'Processing...' : 'Place Pre-Order'}
                         </Button>
                     </CardFooter>

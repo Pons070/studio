@@ -19,6 +19,7 @@ export type CartItem = {
 
 export type Order = {
   id:string;
+  customerName: string;
   orderDate: string; // The date the order was placed
   pickupDate: string; // The date for pre-order pickup
   pickupTime: string;

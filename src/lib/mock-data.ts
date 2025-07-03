@@ -102,6 +102,7 @@ export const menuItems: MenuItem[] = [
 export const orders: Order[] = [
   {
     id: 'ORD-001',
+    customerName: 'Alice',
     orderDate: '2023-10-25',
     pickupDate: '2023-10-26',
     pickupTime: '18:30',
@@ -115,6 +116,7 @@ export const orders: Order[] = [
   },
   {
     id: 'ORD-002',
+    customerName: 'Diana',
     orderDate: '2023-11-14',
     pickupDate: '2023-11-15',
     pickupTime: '19:00',
@@ -127,6 +129,7 @@ export const orders: Order[] = [
   },
   {
     id: 'ORD-003',
+    customerName: 'Charlie',
     orderDate: '2023-11-30',
     pickupDate: '2023-12-01',
     pickupTime: '12:00',
@@ -139,6 +142,7 @@ export const orders: Order[] = [
   },
    {
     id: 'ORD-004',
+    customerName: 'Eve',
     orderDate: '2024-01-04',
     pickupDate: '2024-01-05',
     cancellationDate: '2024-01-04',
@@ -153,6 +157,7 @@ export const orders: Order[] = [
   },
   {
     id: 'ORD-005',
+    customerName: 'Bob',
     orderDate: '2024-02-09',
     pickupDate: '2024-02-10',
     pickupTime: '13:00',
@@ -166,6 +171,7 @@ export const orders: Order[] = [
   },
   {
     id: 'ORD-006',
+    customerName: 'Frank',
     orderDate: '2024-03-19',
     pickupDate: '2024-03-20',
     pickupTime: '19:30',
