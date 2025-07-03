@@ -49,8 +49,18 @@ export function RecommendButton({
         });
         toast({ title: 'Thanks for sharing!' });
       } catch (error) {
-        // This can happen if the user cancels the share sheet
-        console.error('Error sharing:', error);
+        // This can happen if the user cancels the share sheet.
+        // We only want to log/notify for real errors, not the user dismissing the share UI.
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          // User cancelled the share, do nothing.
+        } else {
+          console.error('Error sharing:', error);
+          toast({
+            title: 'Could Not Share',
+            description: 'Something went wrong while trying to share.',
+            variant: 'destructive',
+          });
+        }
       }
     } else {
       // Fallback for browsers that don't support the Web Share API
