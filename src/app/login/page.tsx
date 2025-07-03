@@ -56,7 +56,7 @@ export default function LoginPage() {
               </div>
               <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg" disabled={isSubmitting}>
+            <Button type="submit" className="w-full text-lg" disabled={isSubmitting}>
               {isSubmitting ? 'Logging In...' : 'Log In'}
             </Button>
           </form>

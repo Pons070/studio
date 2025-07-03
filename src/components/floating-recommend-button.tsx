@@ -11,7 +11,7 @@ export function FloatingRecommendButton({ shareUrl }: { shareUrl: string }) {
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="accent"
+          variant="default"
           size="icon"
           className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
           aria-label="Share the love"
@@ -30,7 +30,7 @@ export function FloatingRecommendButton({ shareUrl }: { shareUrl: string }) {
           <RecommendButton
             shareUrl={shareUrl}
             triggerText="Copy Shareable Link"
-            variant="accent"
+            variant="default"
             className="w-full"
           />
         </div>

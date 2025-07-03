@@ -290,7 +290,7 @@ export default function ProfilePage() {
                 <p className="text-xs text-muted-foreground">Email address cannot be changed.</p>
               </div>
 
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg" disabled={isSubmitting || !isDirty}>
+              <Button type="submit" className="w-full text-lg" disabled={isSubmitting || !isDirty}>
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </form>

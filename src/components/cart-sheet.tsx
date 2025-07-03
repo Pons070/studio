@@ -88,7 +88,7 @@ export function CartSheet({ children }: { children: React.ReactNode }) {
                       </p>
                     )}
                     <SheetClose asChild>
-                        <Button asChild size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isClosed}>
+                        <Button asChild size="lg" className="w-full" disabled={isClosed}>
                             <Link href="/checkout">Proceed to Checkout</Link>
                         </Button>
                     </SheetClose>

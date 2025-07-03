@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required defaultValue="password" />
             </div>
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg">
+            <Button type="submit" className="w-full text-lg">
               Log In
             </Button>
           </form>

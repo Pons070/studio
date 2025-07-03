@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 interface RecommendButtonProps {
   shareUrl: string;
   triggerText?: string;
-  variant?: "default" | "secondary" | "outline" | "ghost" | "link" | "destructive" | "accent";
+  variant?: "default" | "secondary" | "outline" | "ghost" | "link" | "destructive";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
 }

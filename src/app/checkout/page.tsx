@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -366,7 +365,7 @@ export default function CheckoutPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || hasNoAddress || isProfileIncomplete || items.length === 0} size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || hasNoAddress || isProfileIncomplete || items.length === 0} size="lg" className="w-full">
                   {isProcessing ? 'Processing...' : 'Place Pre-Order'}
                 </Button>
               </CardFooter>
