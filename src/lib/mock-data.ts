@@ -1,5 +1,5 @@
 
-import type { MenuItem, Order, Review, BrandInfo } from './types';
+import type { MenuItem, Order, Review, BrandInfo, Promotion } from './types';
 
 export const brandInfo: BrandInfo = {
   name: 'CulinaPreOrder',
@@ -249,3 +249,27 @@ export const reviews: Review[] = [
     isPublished: false,
   }
 ]
+
+export const promotions: Promotion[] = [
+  {
+    id: 'PROMO-1',
+    title: '🎉 Welcome Offer for New Customers!',
+    description: 'Get 15% off your first order with us. We are so happy to have you!',
+    targetAudience: 'new',
+    isActive: true,
+  },
+  {
+    id: 'PROMO-2',
+    title: 'Loyalty Bonus for Our regulars!',
+    description: 'Enjoy a free dessert on your next order as a thank you for your continued support.',
+    targetAudience: 'existing',
+    isActive: true,
+  },
+   {
+    id: 'PROMO-3',
+    title: 'Summer Special - All Customers',
+    description: 'Get a free drink with any main course ordered this month.',
+    targetAudience: 'all',
+    isActive: false,
+  },
+];

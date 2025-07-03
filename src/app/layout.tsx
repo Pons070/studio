@@ -11,6 +11,8 @@ import { BrandProvider } from '@/store/brand';
 import { ReviewProvider } from '@/store/reviews';
 import { AuthProvider } from '@/store/auth';
 import { FavoritesProvider } from '@/store/favorites';
+import { PromotionProvider } from '@/store/promotions';
+import { PromotionBanner } from '@/components/promotion-banner';
 
 export const metadata: Metadata = {
   title: 'CulinaPreOrder - Delicious Meals, Ordered Ahead',
@@ -36,22 +38,25 @@ export default function RootLayout({
         <AuthProvider>
           <BrandProvider>
             <MenuProvider>
-              <CartProvider>
+              <PromotionProvider>
                 <OrderProvider>
-                  <ReviewProvider>
-                    <FavoritesProvider>
-                      <div className="flex flex-col min-h-screen">
-                        <Header />
-                        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                          {children}
-                        </main>
-                        <Footer />
-                      </div>
-                      <Toaster />
-                    </FavoritesProvider>
-                  </ReviewProvider>
+                  <CartProvider>
+                    <ReviewProvider>
+                      <FavoritesProvider>
+                        <div className="flex flex-col min-h-screen">
+                          <Header />
+                          <PromotionBanner />
+                          <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                            {children}
+                          </main>
+                          <Footer />
+                        </div>
+                        <Toaster />
+                      </FavoritesProvider>
+                    </ReviewProvider>
+                  </CartProvider>
                 </OrderProvider>
-              </CartProvider>
+              </PromotionProvider>
             </MenuProvider>
           </BrandProvider>
         </AuthProvider>

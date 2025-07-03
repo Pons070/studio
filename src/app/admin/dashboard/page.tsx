@@ -10,8 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search } from 'lucide-react';
-import type { Order, MenuItem, Review, BrandInfo } from '@/lib/types';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone } from 'lucide-react';
+import type { Order, MenuItem, Review, BrandInfo, Promotion } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import { useBrand } from '@/store/brand';
 import { Switch } from '@/components/ui/switch';
 import { useReviews } from '@/store/reviews';
 import { Checkbox } from '@/components/ui/checkbox';
+import { usePromotions } from '@/store/promotions';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -1007,6 +1008,164 @@ function BrandManagement() {
   );
 }
 
+type PromotionFormData = Omit<Promotion, 'id'> & { id?: string };
+
+function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, setOpen: (open: boolean) => void, item: Promotion | null, onSave: (data: PromotionFormData) => void }) {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [targetAudience, setTargetAudience] = useState<Promotion['targetAudience']>('all');
+
+    useEffect(() => {
+        if (isOpen) {
+            if (item) {
+                setTitle(item.title);
+                setDescription(item.description);
+                setTargetAudience(item.targetAudience);
+            } else {
+                setTitle('');
+                setDescription('');
+                setTargetAudience('all');
+            }
+        }
+    }, [item, isOpen]);
+
+    const handleSubmit = () => {
+        onSave({ id: item?.id, title, description, targetAudience, isActive: item?.isActive ?? true });
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>{item ? 'Edit Promotion' : 'Add New Promotion'}</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="promo-title" className="text-right">Title</Label>
+                        <Input id="promo-title" value={title} onChange={(e) => setTitle(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="promo-desc" className="text-right">Description</Label>
+                        <Textarea id="promo-desc" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="promo-target" className="text-right">Target</Label>
+                        <Select onValueChange={(value: Promotion['targetAudience']) => setTargetAudience(value)} value={targetAudience}>
+                            <SelectTrigger className="col-span-3">
+                                <SelectValue placeholder="Select an audience" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Users</SelectItem>
+                                <SelectItem value="new">New Customers</SelectItem>
+                                <SelectItem value="existing">Existing Customers</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button type="submit" onClick={handleSubmit}>Save</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function PromotionManagement() {
+  const { promotions, addPromotion, updatePromotion, deletePromotion } = usePromotions();
+  const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
+  const [isDialogOpen, setDialogOpen] = useState(false);
+
+  const handleEdit = (promo: Promotion) => {
+    setSelectedPromotion(promo);
+    setDialogOpen(true);
+  };
+
+  const handleAddNew = () => {
+    setSelectedPromotion(null);
+    setDialogOpen(true);
+  };
+
+  const handleSave = (promoData: PromotionFormData) => {
+    if (promoData.id) {
+      updatePromotion(promoData as Promotion);
+    } else {
+      const { id, ...newPromoData } = promoData;
+      addPromotion(newPromoData);
+    }
+    setDialogOpen(false);
+  };
+
+  const handleStatusChange = (promo: Promotion, isActive: boolean) => {
+    updatePromotion({ ...promo, isActive });
+  };
+  
+  const targetAudienceMap = {
+    all: 'All Users',
+    new: 'New Customers',
+    existing: 'Existing Customers'
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Manage Promotions</CardTitle>
+          <CardDescription>Create and manage promotional offers for your customers.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-right mb-4">
+            <Button onClick={handleAddNew}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New Promotion
+            </Button>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Target Audience</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {promotions.map((promo) => (
+                <TableRow key={promo.id}>
+                  <TableCell className="font-medium">{promo.title}</TableCell>
+                  <TableCell>{targetAudienceMap[promo.targetAudience]}</TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={promo.isActive}
+                      onCheckedChange={(checked) => handleStatusChange(promo, checked)}
+                      aria-label="Toggle promotion status"
+                    />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(promo)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deletePromotion(promo.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <PromotionDialog 
+        isOpen={isDialogOpen}
+        setOpen={setDialogOpen}
+        item={selectedPromotion}
+        onSave={handleSave}
+      />
+    </>
+  );
+}
+
 
 export default function AdminDashboardPage() {
   return (
@@ -1021,10 +1180,11 @@ export default function AdminDashboardPage() {
           </Button>
       </div>
       <Tabs defaultValue="orders" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
           <TabsTrigger value="orders">Manage Orders</TabsTrigger>
           <TabsTrigger value="menu">Manage Menu</TabsTrigger>
           <TabsTrigger value="reviews">Manage Reviews</TabsTrigger>
+          <TabsTrigger value="promotions">Manage Promotions</TabsTrigger>
           <TabsTrigger value="brand">Manage Brand</TabsTrigger>
         </TabsList>
         <TabsContent value="orders">
@@ -1035,6 +1195,9 @@ export default function AdminDashboardPage() {
         </TabsContent>
          <TabsContent value="reviews">
           <ReviewManagement />
+        </TabsContent>
+        <TabsContent value="promotions">
+          <PromotionManagement />
         </TabsContent>
         <TabsContent value="brand">
           <BrandManagement />

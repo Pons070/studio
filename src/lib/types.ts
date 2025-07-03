@@ -57,3 +57,11 @@ export type BrandInfo = {
   youtubeUrl?: string;
   instagramUrl?: string;
 };
+
+export type Promotion = {
+  id: string;
+  title: string;
+  description: string;
+  targetAudience: 'all' | 'new' | 'existing';
+  isActive: boolean;
+};

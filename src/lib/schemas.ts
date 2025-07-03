@@ -1,4 +1,6 @@
+
 import { z } from 'zod';
+import { useAuth } from '@/store/auth';
 
 export const CartItemSchema = z.object({
   id: z.string(),
@@ -32,7 +34,7 @@ const NotificationTypeSchema = z.enum([
 export const OrderNotificationInputSchema = z.object({
   order: OrderSchema,
   notificationType: NotificationTypeSchema,
-  customerEmail: z.string().email().default('pons070@yahoo.in'),
+  customerEmail: z.string().email(),
   adminEmail: z.string().email().default('sangkar111@gmail.com'),
 });
 export type OrderNotificationInput = z.infer<typeof OrderNotificationInputSchema>;

@@ -77,13 +77,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             sendOrderNotification({
                 order: newOrder,
                 notificationType: 'customerConfirmation',
-                customerEmail: 'pons070@yahoo.in', // In real app, get from user session
+                customerEmail: currentUser.email,
                 adminEmail: 'sangkar111@gmail.com'
             }),
             sendOrderNotification({
                 order: newOrder,
                 notificationType: 'adminNotification',
-                customerEmail: 'pons070@yahoo.in',
+                customerEmail: currentUser.email,
                 adminEmail: 'sangkar111@gmail.com' // In real app, get from config
             })
         ]);
@@ -108,6 +108,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], reason?: string) => {
     let notificationOrder: Order | null = null;
+    let customerEmail: string | null = null;
 
     setOrders(prevOrders => {
         const newOrders = prevOrders.map(order => {
@@ -122,6 +123,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 };
                 if (status === 'Cancelled') {
                     notificationOrder = updatedOrder;
+                    // In a real app, you would fetch the customer's email from your user database
+                    // For now, we will assume the current user is the one related to the order if an admin is acting.
+                    // This is a simplification. A better approach would be to have customer email on the order object.
+                    customerEmail = currentUser?.id === updatedOrder.customerId ? currentUser.email : 'pons070@yahoo.in';
                 }
                 return updatedOrder;
             }
@@ -130,23 +135,23 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         return newOrders;
     });
 
-    if (notificationOrder) {
+    if (notificationOrder && customerEmail) {
         try {
             await sendOrderNotification({
                 order: notificationOrder,
                 notificationType: 'customerCancellation',
-                customerEmail: 'pons070@yahoo.in',
+                customerEmail: customerEmail,
                 adminEmail: 'sangkar111@gmail.com'
             });
             toast({
                 title: "Order Cancelled",
-                description: `Your order #${orderId} has been cancelled and a confirmation email has been sent.`,
+                description: `Order #${orderId} has been cancelled and a confirmation email has been sent.`,
             });
         } catch (error) {
             console.error("Failed to send cancellation email:", error);
             toast({
                 title: "Order Cancelled",
-                description: `Your order #${orderId} has been cancelled, but we failed to send a confirmation email.`,
+                description: `Order #${orderId} has been cancelled, but we failed to send a confirmation email.`,
                 variant: 'destructive',
             });
         }
@@ -156,7 +161,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             description: `Order #${orderId} has been updated to "${status}".`,
         });
     }
-}, [toast]);
+}, [toast, currentUser]);
 
   const addReviewToOrder = useCallback((orderId: string, reviewId: string) => {
       setOrders(prevOrders =>
