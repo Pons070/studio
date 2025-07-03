@@ -19,7 +19,7 @@ export default function Home() {
   const { brandInfo } = useBrand();
   const { reviews } = useReviews();
   const featuredItems = menuItems.filter(item => item.isFeatured).slice(0, 3);
-  const featuredReviews = reviews.filter(r => r.isPublished).slice(0, 5);
+  const featuredReviews = reviews.filter(r => r.isPublished).slice(0, 6);
   const isClosed = brandInfo.businessHours.status === 'closed';
 
   const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -144,12 +144,6 @@ Click below to copy the shareable link to your clipboard and start sharing with 
                             ))}
                           </div>
                           <p className="text-muted-foreground text-sm italic grow">"{review.comment}"</p>
-                           {review.adminReply && (
-                             <div className="p-3 bg-muted/50 rounded-md mt-2 border-l-2 border-primary/50">
-                                <p className="font-semibold text-xs text-primary">Restaurant's Reply</p>
-                                <p className="text-muted-foreground text-xs italic">"{review.adminReply}"</p>
-                            </div>
-                          )}
                         </CardContent>
                          <CardFooter className="p-6 pt-0">
                              <p className="font-bold text-sm self-end w-full text-right">- {review.customerName}</p>
