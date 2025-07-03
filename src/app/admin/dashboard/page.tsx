@@ -9,7 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from '@/components/ui/badge';
+import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings } from '@/lib/types';
@@ -41,10 +41,11 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
+import type { VariantProps } from 'class-variance-authority';
 
-const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
-        case 'Completed': return 'default';
+        case 'Completed': return 'success';
         case 'Confirmed': return 'secondary';
         case 'Pending':   return 'outline';
         case 'Cancelled': return 'destructive';

@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     toast({
       title: "Signup Successful!",
       description: "You can now log in with your new account.",
-      className: "bg-green-500 text-white"
+      variant: "success",
     });
     return true;
   }, [users, toast]);

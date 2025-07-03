@@ -61,7 +61,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     toast({
       title: "Review Submitted!",
       description: "Thank you for your valuable feedback. It will be reviewed by our team shortly.",
-      className: "bg-green-500 text-white"
+      variant: "success",
     });
   }, [addReviewToOrder, toast, currentUser]);
 

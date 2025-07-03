@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { Badge, badgeVariants } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -50,11 +50,12 @@ import { useBrand } from '@/store/brand';
 import { RecommendButton } from '@/components/recommend-dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import type { VariantProps } from 'class-variance-authority';
 
-const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
   switch (status) {
     case 'Completed':
-      return 'default';
+      return 'success';
     case 'Confirmed':
       return 'secondary';
     case 'Pending':

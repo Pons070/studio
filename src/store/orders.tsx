@@ -96,8 +96,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         toast({
             title: "Pre-Order Placed!",
             description: "Your order has been successfully submitted. Check your email for confirmation.",
-            variant: "default",
-            className: "bg-green-500 text-white"
+            variant: "success",
         });
 
     } catch (error) {
