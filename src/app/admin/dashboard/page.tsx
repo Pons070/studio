@@ -11,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check } from 'lucide-react';
-import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings } from '@/lib/types';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users } from 'lucide-react';
+import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,16 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
+import { useAuth } from '@/store/auth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { VariantProps } from 'class-variance-authority';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
@@ -1750,6 +1760,199 @@ function PromotionManagement() {
   );
 }
 
+function DeleteCustomerDialog({ customer, isOpen, onOpenChange, onConfirm }: { customer: User | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => void; }) {
+    if (!customer) return null;
+
+    return (
+        <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Customer?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to delete the account for "{customer.name}"? This will permanently remove their profile and cannot be undone.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onConfirm} className={buttonVariants({ variant: "destructive" })}>
+                        Yes, Delete Customer
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange }: { customer: User | null; orders: Order[]; isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
+    if (!customer) return null;
+
+    const formatAddressString = (address: Address) => {
+        return `${address.doorNumber}, ${address.apartmentName}${address.floorNumber ? `, ${address.floorNumber}` : ''}, ${address.area}, ${address.city} - ${address.pincode}`;
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Customer Details</DialogTitle>
+                    <DialogDescription>{customer.name} - {customer.email}</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[70vh] pr-6">
+                    <div className="space-y-6 py-4">
+                        <div className="space-y-2">
+                           <h4 className="font-medium">Contact Information</h4>
+                           <p className="text-sm"><strong>Email:</strong> {customer.email}</p>
+                           <p className="text-sm"><strong>Phone:</strong> {customer.phone || 'Not Provided'}</p>
+                        </div>
+                        <Separator />
+                         <div className="space-y-2">
+                            <h4 className="font-medium">Saved Addresses</h4>
+                            {customer.addresses && customer.addresses.length > 0 ? (
+                                <div className="space-y-3">
+                                    {customer.addresses.map((addr, index) => (
+                                        <div key={addr.id || index} className="text-sm p-3 border rounded-md bg-muted/50">
+                                            <p className="font-semibold">{addr.label} {addr.isDefault && <Badge variant="secondary">Default</Badge>}</p>
+                                            <p className="text-muted-foreground">{formatAddressString(addr)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : <p className="text-sm text-muted-foreground">No addresses saved.</p>}
+                        </div>
+                        <Separator />
+                        <div className="space-y-2">
+                           <h4 className="font-medium">Order History ({orders.length})</h4>
+                            {orders.length > 0 ? (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Order ID</TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="text-right">Total</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {orders.map(order => (
+                                            <TableRow key={order.id}>
+                                                <TableCell>{order.id}</TableCell>
+                                                <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
+                                                <TableCell><Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge></TableCell>
+                                                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : <p className="text-sm text-muted-foreground">No orders found for this customer.</p>}
+                        </div>
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { customers: (User & { orderCount: number })[]; onSelectCustomer: (customer: User) => void; onDeleteCustomer: (customer: User) => void; }) {
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Total Orders</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {customers.map(customer => (
+                    <TableRow key={customer.id}>
+                        <TableCell className="font-medium">{customer.name}</TableCell>
+                        <TableCell>{customer.email}</TableCell>
+                        <TableCell>{customer.phone || 'N/A'}</TableCell>
+                        <TableCell>{customer.orderCount}</TableCell>
+                        <TableCell className="text-right">
+                           <Button variant="outline" size="sm" onClick={() => onSelectCustomer(customer)}>View</Button>
+                           <Button variant="ghost" size="icon" className="ml-2 text-destructive" onClick={() => onDeleteCustomer(customer)}>
+                               <Trash2 className="h-4 w-4" />
+                           </Button>
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    );
+}
+
+function CustomerManagement() {
+  const { users, deleteUserById } = useAuth();
+  const { orders } = useOrders();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<User | null>(null);
+  const { toast } = useToast();
+
+  const customersWithOrderCount = users.map(user => ({
+    ...user,
+    orderCount: orders.filter(o => o.customerId === user.id).length
+  }));
+
+  const filteredCustomers = customersWithOrderCount.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const handleConfirmDelete = () => {
+    if (customerToDelete) {
+        deleteUserById(customerToDelete.id);
+        setCustomerToDelete(null);
+    }
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer Management</CardTitle>
+          <CardDescription>View, search, and manage your customer accounts.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+             <div className="relative flex-1 md:flex-initial md:w-1/3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search by name or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                />
+            </div>
+          </div>
+          <CustomerTable
+             customers={filteredCustomers}
+             onSelectCustomer={setSelectedCustomer}
+             onDeleteCustomer={setCustomerToDelete}
+           />
+        </CardContent>
+      </Card>
+      <CustomerDetailsDialog
+        customer={selectedCustomer}
+        orders={orders.filter(o => o.customerId === selectedCustomer?.id)}
+        isOpen={!!selectedCustomer}
+        onOpenChange={(open) => !open && setSelectedCustomer(null)}
+      />
+      <DeleteCustomerDialog
+         customer={customerToDelete}
+         isOpen={!!customerToDelete}
+         onOpenChange={(open) => !open && setCustomerToDelete(null)}
+         onConfirm={handleConfirmDelete}
+      />
+    </>
+  );
+}
+
 
 export default function AdminDashboardPage() {
   return (
@@ -1764,12 +1967,13 @@ export default function AdminDashboardPage() {
           </Button>
       </div>
       <Tabs defaultValue="orders" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
           <TabsTrigger value="orders">Manage Orders</TabsTrigger>
           <TabsTrigger value="menu">Manage Menu</TabsTrigger>
           <TabsTrigger value="reviews">Manage Reviews</TabsTrigger>
           <TabsTrigger value="promotions">Manage Promotions</TabsTrigger>
           <TabsTrigger value="brand">Manage Brand</TabsTrigger>
+          <TabsTrigger value="customers">Manage Customers</TabsTrigger>
         </TabsList>
         <TabsContent value="orders">
           <OrderManagement />
@@ -1785,6 +1989,9 @@ export default function AdminDashboardPage() {
         </TabsContent>
         <TabsContent value="brand">
           <BrandManagement />
+        </TabsContent>
+        <TabsContent value="customers">
+          <CustomerManagement />
         </TabsContent>
       </Tabs>
     </div>

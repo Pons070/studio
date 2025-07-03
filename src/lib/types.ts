@@ -22,6 +22,15 @@ export type Address = {
   longitude?: number;
 };
 
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  phone?: string;
+  addresses?: Address[];
+};
+
 export type MenuItem = {
   id: string;
   name: string;

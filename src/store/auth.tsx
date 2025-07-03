@@ -5,20 +5,12 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
-import type { Address } from '@/lib/types';
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  password?: string; // For mock purposes, password is stored. It's not secure.
-  phone?: string;
-  addresses?: Address[];
-};
+import type { Address, User } from '@/lib/types';
 
 type AuthContextType = {
   isAuthenticated: boolean;
   currentUser: User | null;
+  users: User[];
   signup: (name: string, email: string, password: string) => boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
@@ -28,6 +20,7 @@ type AuthContextType = {
   deleteAddress: (addressId: string) => void;
   setDefaultAddress: (addressId: string) => void;
   deleteUser: () => void;
+  deleteUserById: (userId: string) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -236,10 +229,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout();
   }, [currentUser, users, toast, logout]);
 
+  const deleteUserById = useCallback((userId: string) => {
+    if (currentUser?.id === userId) {
+        toast({
+            title: "Action Not Allowed",
+            description: "You cannot delete your own account from the customer management panel.",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    const userToDelete = users.find(u => u.id === userId);
+    if (!userToDelete) return;
+
+    const updatedUsers = users.filter(u => u.id !== userId);
+    persistUsers(updatedUsers);
+
+    toast({
+      title: "Customer Deleted",
+      description: `The account for ${userToDelete.name} has been deleted.`,
+    });
+  }, [users, currentUser, toast]);
+
   const isAuthenticated = !!currentUser;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, signup, login, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentUser, users, signup, login, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById }}>
       {children}
     </AuthContext.Provider>
   );
