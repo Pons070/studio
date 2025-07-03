@@ -48,6 +48,7 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClearCartAlertOpen, setClearCartAlertOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isCalendarOpen, setCalendarOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   
@@ -184,7 +185,7 @@ export default function CheckoutPage() {
                 <div className="space-y-2">
                   <Label>Pre-Order Date</Label>
                   {isClient && pickupDate ? (
-                     <Popover>
+                     <Popover open={isCalendarOpen} onOpenChange={setCalendarOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant={"outline"}
@@ -203,6 +204,7 @@ export default function CheckoutPage() {
                           selected={pickupDate}
                           onSelect={(newDate) => {
                             setPickupDate(newDate);
+                            setCalendarOpen(false);
                           }}
                           disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
                           initialFocus
