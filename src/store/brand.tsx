@@ -37,12 +37,35 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     }
   }, [brandInfo]);
 
+  useEffect(() => {
+    if (brandInfo.theme) {
+      const root = document.documentElement;
+      const theme = brandInfo.theme;
+      
+      if (theme.primaryColor) root.style.setProperty('--primary', theme.primaryColor);
+      if (theme.backgroundColor) root.style.setProperty('--background', theme.backgroundColor);
+      if (theme.accentColor) root.style.setProperty('--accent', theme.accentColor);
+      if (theme.fontHeadline) root.style.setProperty('--font-headline', theme.fontHeadline);
+      if (theme.fontBody) root.style.setProperty('--font-body', theme.fontBody);
+      if (theme.borderRadius !== undefined) root.style.setProperty('--radius', `${theme.borderRadius}rem`);
+
+      if (theme.backgroundImageUrl) {
+        document.body.style.backgroundImage = `url(${theme.backgroundImageUrl})`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundAttachment = 'fixed';
+      } else {
+        document.body.style.backgroundImage = 'none';
+      }
+    }
+  }, [brandInfo.theme]);
+
 
   const updateBrandInfo = useCallback((newInfo: Partial<BrandInfo>) => {
     setBrandInfo(prevInfo => ({ ...prevInfo, ...newInfo }));
     toast({
       title: "Brand Information Updated",
-      description: "Your brand details have been successfully saved.",
+      description: "Your brand details and theme have been successfully saved.",
     });
   }, [toast]);
 

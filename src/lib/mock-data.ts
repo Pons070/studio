@@ -21,6 +21,15 @@ export const brandInfo: BrandInfo = {
   youtubeUrl: '',
   instagramUrl: '',
   allowOrderUpdates: true,
+  theme: {
+    primaryColor: '30 85% 67%',
+    backgroundColor: '28 71% 92%',
+    accentColor: '14 66% 62%',
+    fontHeadline: 'Alegreya',
+    fontBody: 'Alegreya',
+    borderRadius: 0.5,
+    backgroundImageUrl: '',
+  },
 };
 
 const aliceAddress: Address = {

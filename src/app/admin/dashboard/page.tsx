@@ -11,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send } from 'lucide-react';
-import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion } from '@/lib/types';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette } from 'lucide-react';
+import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Slider } from '@/components/ui/slider';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -1104,6 +1105,16 @@ const initialAddressState: Address = {
     pincode: '',
 };
 
+const initialThemeState: ThemeSettings = {
+    primaryColor: '',
+    backgroundColor: '',
+    accentColor: '',
+    fontHeadline: 'Alegreya',
+    fontBody: 'Alegreya',
+    borderRadius: 0.5,
+    backgroundImageUrl: '',
+};
+
 function BrandManagement() {
   const { brandInfo, updateBrandInfo } = useBrand();
   const [name, setName] = useState(brandInfo.name);
@@ -1116,6 +1127,7 @@ function BrandManagement() {
   const [businessStatus, setBusinessStatus] = useState(brandInfo.businessHours.status);
   const [closureMessage, setClosureMessage] = useState(brandInfo.businessHours.message);
   const [allowOrderUpdates, setAllowOrderUpdates] = useState(brandInfo.allowOrderUpdates ?? true);
+  const [theme, setTheme] = useState<ThemeSettings>(brandInfo.theme || initialThemeState);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -1129,6 +1141,7 @@ function BrandManagement() {
     setBusinessStatus(brandInfo.businessHours.status);
     setClosureMessage(brandInfo.businessHours.message);
     setAllowOrderUpdates(brandInfo.allowOrderUpdates ?? true);
+    setTheme(brandInfo.theme || initialThemeState);
   }, [brandInfo]);
   
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1136,12 +1149,21 @@ function BrandManagement() {
     setAddress(prev => ({ ...prev, [id]: value }));
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThemeChange = (field: keyof ThemeSettings, value: string | number) => {
+    setTheme(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'background') => {
     if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         const reader = new FileReader();
         reader.onloadend = () => {
-            setLogoUrl(reader.result as string);
+            const result = reader.result as string;
+            if (field === 'logo') {
+              setLogoUrl(result);
+            } else {
+              setTheme(prev => ({ ...prev, backgroundImageUrl: result }));
+            }
         };
         reader.readAsDataURL(file);
     }
@@ -1162,6 +1184,7 @@ function BrandManagement() {
         message: closureMessage
       },
       allowOrderUpdates,
+      theme,
     });
     // A little delay to simulate saving and show the disabled state
     setTimeout(() => setIsSaving(false), 500);
@@ -1176,13 +1199,14 @@ function BrandManagement() {
     instagramUrl !== (brandInfo.instagramUrl || '') ||
     businessStatus !== brandInfo.businessHours.status ||
     (businessStatus === 'closed' && closureMessage !== brandInfo.businessHours.message) ||
-    allowOrderUpdates !== (brandInfo.allowOrderUpdates ?? true);
+    allowOrderUpdates !== (brandInfo.allowOrderUpdates ?? true) ||
+    JSON.stringify(theme) !== JSON.stringify(brandInfo.theme || initialThemeState);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Brand Management</CardTitle>
-        <CardDescription>Update your restaurant's branding and contact information.</CardDescription>
+        <CardDescription>Update your restaurant's branding, contact information, and theme.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1256,7 +1280,7 @@ function BrandManagement() {
                         <Building className="h-10 w-10" />
                     </div>
                 )}
-                <Input id="logo" type="file" onChange={handleFileChange} accept="image/*" className="max-w-xs" />
+                <Input id="logo" type="file" onChange={(e) => handleFileChange(e, 'logo')} accept="image/*" className="max-w-xs" />
             </div>
         </div>
         <Separator className="my-6" />
@@ -1309,10 +1333,68 @@ function BrandManagement() {
               )}
           </div>
         </div>
+
+        <Separator className="my-6" />
+        
+        <div className="space-y-6">
+          <h3 className="text-lg font-medium flex items-center gap-2"><Palette /> Theme & Appearance</h3>
+          <p className="text-sm text-muted-foreground">
+            Customize the look and feel of your storefront. For colors, use HSL values without the `hsl()` wrapper (e.g., `210 40% 96%`).
+          </p>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="primaryColor">Primary Color</Label>
+              <Input id="primaryColor" value={theme.primaryColor} onChange={(e) => handleThemeChange('primaryColor', e.target.value)} placeholder="e.g., 30 85% 67%" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="backgroundColor">Background Color</Label>
+              <Input id="backgroundColor" value={theme.backgroundColor} onChange={(e) => handleThemeChange('backgroundColor', e.target.value)} placeholder="e.g., 28 71% 92%" />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="accentColor">Accent Color</Label>
+              <Input id="accentColor" value={theme.accentColor} onChange={(e) => handleThemeChange('accentColor', e.target.value)} placeholder="e.g., 14 66% 62%" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="backgroundImage">Background Image (Optional)</Label>
+              <Input id="backgroundImage" type="file" onChange={(e) => handleFileChange(e, 'background')} accept="image/*" />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="fontHeadline">Headline Font</Label>
+              <Select onValueChange={(value) => handleThemeChange('fontHeadline', value)} value={theme.fontHeadline}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="Alegreya">Alegreya</SelectItem>
+                      <SelectItem value="Lato">Lato</SelectItem>
+                      <SelectItem value="Merriweather">Merriweather</SelectItem>
+                      <SelectItem value="Roboto">Roboto</SelectItem>
+                      <SelectItem value="Open Sans">Open Sans</SelectItem>
+                  </SelectContent>
+              </Select>
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="fontBody">Body Font</Label>
+              <Select onValueChange={(value) => handleThemeChange('fontBody', value)} value={theme.fontBody}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="Alegreya">Alegreya</SelectItem>
+                      <SelectItem value="Lato">Lato</SelectItem>
+                      <SelectItem value="Merriweather">Merriweather</SelectItem>
+                      <SelectItem value="Roboto">Roboto</SelectItem>
+                      <SelectItem value="Open Sans">Open Sans</SelectItem>
+                  </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="borderRadius">Corner Radius: {theme.borderRadius}rem</Label>
+                <Slider id="borderRadius" min={0} max={2} step={0.1} value={[theme.borderRadius || 0.5]} onValueChange={([val]) => handleThemeChange('borderRadius', val)} />
+            </div>
+          </div>
+        </div>
+
       </CardContent>
       <CardFooter>
           <Button onClick={handleSave} disabled={isSaving || !isDirty}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? 'Saving...' : 'Save All Changes'}
           </Button>
       </CardFooter>
     </Card>

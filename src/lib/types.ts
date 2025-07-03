@@ -71,6 +71,16 @@ export type Review = {
   isPublished: boolean;
 };
 
+export type ThemeSettings = {
+  primaryColor: string;
+  backgroundColor: string;
+  accentColor: string;
+  fontHeadline: string;
+  fontBody: string;
+  borderRadius: number;
+  backgroundImageUrl: string;
+};
+
 export type BrandInfo = {
   name: string;
   logoUrl: string;
@@ -84,6 +94,7 @@ export type BrandInfo = {
   youtubeUrl?: string;
   instagramUrl?: string;
   allowOrderUpdates?: boolean;
+  theme?: ThemeSettings;
 };
 
 export type Promotion = {
