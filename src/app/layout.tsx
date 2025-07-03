@@ -10,6 +10,7 @@ import { MenuProvider } from '@/store/menu';
 import { BrandProvider } from '@/store/brand';
 import { ReviewProvider } from '@/store/reviews';
 import { AuthProvider } from '@/store/auth';
+import { FavoritesProvider } from '@/store/favorites';
 
 export const metadata: Metadata = {
   title: 'CulinaPreOrder - Delicious Meals, Ordered Ahead',
@@ -38,14 +39,16 @@ export default function RootLayout({
               <CartProvider>
                 <OrderProvider>
                   <ReviewProvider>
-                    <div className="flex flex-col min-h-screen">
-                      <Header />
-                      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        {children}
-                      </main>
-                      <Footer />
-                    </div>
-                    <Toaster />
+                    <FavoritesProvider>
+                      <div className="flex flex-col min-h-screen">
+                        <Header />
+                        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                          {children}
+                        </main>
+                        <Footer />
+                      </div>
+                      <Toaster />
+                    </FavoritesProvider>
                   </ReviewProvider>
                 </OrderProvider>
               </CartProvider>

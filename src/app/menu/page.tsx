@@ -1,22 +1,19 @@
 
 "use client";
 
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMenu } from "@/store/menu";
 import { useCart } from "@/store/cart";
 import { useBrand } from "@/store/brand";
-import { PlusCircle, Utensils, Soup, Cookie, GlassWater } from "lucide-react";
+import { PlusCircle, Utensils, Soup, Cookie, GlassWater, Star, Search } from "lucide-react";
 import Image from "next/image";
-import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
-
-// This is a client component, so we can't use Metadata export.
-// We can set it in layout or a parent server component if needed.
-// export const metadata: Metadata = {
-//   title: 'Our Menu - CulinaPreOrder',
-//   description: 'Explore our delicious selection of appetizers, main courses, desserts, and drinks.',
-// };
+import { useFavorites } from '@/store/favorites';
+import { useAuth } from '@/store/auth';
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 const categoryIcons = {
   'Appetizers': <Soup className="h-6 w-6 mr-2" />,
@@ -29,8 +26,17 @@ export default function MenuPage() {
   const { addItem } = useCart();
   const { menuItems } = useMenu();
   const { brandInfo } = useBrand();
+  const { toggleFavoriteItem, isItemFavorite } = useFavorites();
+  const { isAuthenticated } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+
   const categories = ['Appetizers', 'Main Courses', 'Desserts', 'Drinks'];
   const isClosed = brandInfo.businessHours.status === 'closed';
+
+  const filteredMenuItems = menuItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-12">
@@ -39,17 +45,43 @@ export default function MenuPage() {
         <p className="text-lg text-muted-foreground mt-2">Handcrafted with love, just for you.</p>
       </div>
 
-      {categories.map((category) => (
-        <section key={category}>
-          <h2 className="text-3xl font-headline font-semibold mb-6 flex items-center">
-            {categoryIcons[category as keyof typeof categoryIcons]}
-            {category}
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {menuItems
-              .filter((item) => item.category === category)
-              .map((item) => (
+      <div className="max-w-lg mx-auto">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input 
+            type="search"
+            placeholder="Search for dishes..."
+            className="pl-10 text-base"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {categories.map((category) => {
+        const itemsInCategory = filteredMenuItems.filter((item) => item.category === category);
+        if (itemsInCategory.length === 0) return null;
+
+        return (
+          <section key={category}>
+            <h2 className="text-3xl font-headline font-semibold mb-6 flex items-center">
+              {categoryIcons[category as keyof typeof categoryIcons]}
+              {category}
+            </h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {itemsInCategory.map((item) => (
                 <Card key={item.id} className="flex flex-col overflow-hidden group transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative">
+                   {isAuthenticated && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute top-2 right-2 z-20 h-9 w-9 rounded-full bg-background/70 hover:bg-background"
+                      onClick={() => toggleFavoriteItem(item.id)}
+                      aria-label="Toggle favorite"
+                    >
+                      <Star className={cn("h-5 w-5 transition-colors", isItemFavorite(item.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground')} />
+                    </Button>
+                  )}
                   <CardHeader className="p-0">
                     <div className="aspect-video relative overflow-hidden">
                        {!item.isAvailable && (
@@ -79,9 +111,10 @@ export default function MenuPage() {
                   </CardFooter>
                 </Card>
               ))}
-          </div>
-        </section>
-      ))}
+            </div>
+          </section>
+        )
+      })}
     </div>
   );
 }

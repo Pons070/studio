@@ -44,6 +44,8 @@ import { useOrders } from '@/store/orders';
 import { useReviews } from '@/store/reviews';
 import { useAuth } from '@/store/auth';
 import Link from 'next/link';
+import { useFavorites } from '@/store/favorites';
+import { useCart } from '@/store/cart';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
@@ -250,6 +252,8 @@ export default function OrdersPage() {
   const { currentUser, isAuthenticated } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
+  const { toggleFavoriteOrder, isOrderFavorite } = useFavorites();
+  const { reorder } = useCart();
 
   const handleCancelOrder = (orderId: string) => {
     updateOrderStatus(orderId, 'Cancelled');
@@ -277,7 +281,7 @@ export default function OrdersPage() {
     )
   }
 
-  const userOrders = orders.filter(order => order.customerId === currentUser?.id);
+  const userOrders = orders.filter(order => order.customerId === currentUser?.id).sort((a,b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
   return (
     <>
@@ -316,36 +320,45 @@ export default function OrdersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>View Details</Button>
-                      {order.status === 'Completed' && (
-                        !order.reviewId ? (
-                          <Button variant="default" size="sm" onClick={() => setReviewOrder(order)}>Leave Review</Button>
-                        ) : (
-                          <Button variant="outline" size="sm" disabled>Review Submitted</Button>
-                        )
-                      )}
-                      {(order.status === 'Pending' || order.status === 'Confirmed') ? (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">Cancel</Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently cancel your pre-order.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Go Back</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleCancelOrder(order.id)}>
-                                Yes, Cancel Order
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      ) : null}
+                    <TableCell className="text-right">
+                       <div className="flex items-center justify-end space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>View</Button>
+                          
+                          {order.status !== 'Cancelled' && (
+                            <Button variant="secondary" size="sm" onClick={() => reorder(order.items)}>Reorder</Button>
+                          )}
+                          
+                          {order.status === 'Completed' && !order.reviewId ? (
+                              <Button variant="default" size="sm" onClick={() => setReviewOrder(order)}>Review</Button>
+                          ) : null}
+                          
+                          {(order.status === 'Pending' || order.status === 'Confirmed') ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">Cancel</Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently cancel your pre-order.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleCancelOrder(order.id)}>
+                                    Yes, Cancel Order
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : null}
+                          
+                          <Button variant="ghost" size="icon" onClick={() => toggleFavoriteOrder(order.id)}>
+                            <Star className={cn("h-5 w-5 transition-colors", isOrderFavorite(order.id) ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/60 hover:text-muted-foreground")} />
+                            <span className="sr-only">Toggle Favorite</span>
+                          </Button>
+                        </div>
                     </TableCell>
                   </TableRow>
                 ))}

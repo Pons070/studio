@@ -1,8 +1,10 @@
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { CartItem, MenuItem } from '@/lib/types';
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
 
 type CartContextType = {
   items: CartItem[];
@@ -11,6 +13,8 @@ type CartContextType = {
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   totalPrice: number;
+  reorder: (items: CartItem[]) => void;
+  addMultipleItems: (items: MenuItem[]) => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -20,6 +24,7 @@ const LOCAL_STORAGE_KEY = 'culina-preorder-cart';
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     try {
@@ -73,6 +78,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
       prevItems.map(item => (item.id === itemId ? { ...item, quantity } : item))
     );
   };
+  
+  const reorder = (itemsToReorder: CartItem[]) => {
+    setItems(itemsToReorder);
+    toast({
+      title: "Items Added to Cart",
+      description: "The order items have been added to your cart for reordering.",
+    });
+    router.push('/checkout');
+  };
+
+  const addMultipleItems = (itemsToAdd: MenuItem[]) => {
+    setItems(prevItems => {
+        const newItems = [...prevItems];
+        itemsToAdd.forEach(itemToAdd => {
+            if (itemToAdd.isAvailable) {
+                const existingItem = newItems.find(item => item.id === itemToAdd.id);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    newItems.push({ ...itemToAdd, quantity: 1 });
+                }
+            }
+        });
+        return newItems;
+    });
+    toast({
+        title: "Favorites Added",
+        description: `Available items from your favorites have been added to your cart.`,
+    });
+  };
 
   const clearCart = () => {
     setItems([]);
@@ -81,7 +116,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalPrice }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalPrice, reorder, addMultipleItems }}>
       {children}
     </CartContext.Provider>
   );
