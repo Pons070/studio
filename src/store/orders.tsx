@@ -45,9 +45,19 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
 
   const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to place an order.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const newOrder: Order = {
         id: `ORD-${Date.now()}`,
-        customerName: currentUser?.name || 'Guest User',
+        customerId: currentUser.id,
+        customerName: currentUser.name,
         orderDate: new Date().toISOString().split('T')[0],
         pickupDate: pickupDate.toISOString().split('T')[0],
         pickupTime: pickupTime,

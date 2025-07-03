@@ -42,6 +42,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useOrders } from '@/store/orders';
 import { useReviews } from '@/store/reviews';
+import { useAuth } from '@/store/auth';
+import Link from 'next/link';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
@@ -237,6 +239,7 @@ function ReviewDialog(
 export default function OrdersPage() {
   const { orders, updateOrderStatus } = useOrders();
   const { reviews, addReview } = useReviews();
+  const { currentUser, isAuthenticated } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
 
@@ -249,6 +252,25 @@ export default function OrdersPage() {
     setReviewOrder(null);
   };
 
+  if (!isAuthenticated) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline text-3xl">My Orders</CardTitle>
+          <CardDescription>Please log in to view your orders.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center text-center py-12">
+            <p className="text-muted-foreground mb-4">You need to be logged in to see your order history.</p>
+            <Button asChild>
+                <Link href="/login">Log In</Link>
+            </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const userOrders = orders.filter(order => order.customerId === currentUser?.id);
+
   return (
     <>
       <Card>
@@ -257,62 +279,71 @@ export default function OrdersPage() {
           <CardDescription>View your order history and manage upcoming pre-orders.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="hidden sm:table-cell">Order ID</TableHead>
-                <TableHead>Pickup Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="hidden sm:table-cell font-medium">{order.id}</TableCell>
-                  <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={getBadgeVariant(order.status)}>
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>View Details</Button>
-                    {order.status === 'Completed' && (
-                      !order.reviewId ? (
-                        <Button variant="default" size="sm" onClick={() => setReviewOrder(order)}>Leave Review</Button>
-                      ) : (
-                        <Button variant="outline" size="sm" disabled>Review Submitted</Button>
-                      )
-                    )}
-                    {(order.status === 'Pending' || order.status === 'Confirmed') ? (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">Cancel</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently cancel your pre-order.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Go Back</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleCancelOrder(order.id)}>
-                              Yes, Cancel Order
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    ) : null}
-                  </TableCell>
+          {userOrders.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p>You haven't placed any orders yet.</p>
+               <Button asChild variant="link" className="mt-2 text-primary">
+                <Link href="/menu">Browse the menu to get started!</Link>
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="hidden sm:table-cell">Order ID</TableHead>
+                  <TableHead>Pickup Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {userOrders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="hidden sm:table-cell font-medium">{order.id}</TableCell>
+                    <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant={getBadgeVariant(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>View Details</Button>
+                      {order.status === 'Completed' && (
+                        !order.reviewId ? (
+                          <Button variant="default" size="sm" onClick={() => setReviewOrder(order)}>Leave Review</Button>
+                        ) : (
+                          <Button variant="outline" size="sm" disabled>Review Submitted</Button>
+                        )
+                      )}
+                      {(order.status === 'Pending' || order.status === 'Confirmed') ? (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">Cancel</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently cancel your pre-order.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Go Back</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleCancelOrder(order.id)}>
+                                Yes, Cancel Order
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       <OrderDetailsDialog 

@@ -10,6 +10,7 @@ export const CartItemSchema = z.object({
 
 export const OrderSchema = z.object({
   id: z.string(),
+  customerId: z.string(),
   customerName: z.string(),
   orderDate: z.string().describe("The date the order was placed."),
   pickupDate: z.string().describe("The date the customer will pick up the order."),
