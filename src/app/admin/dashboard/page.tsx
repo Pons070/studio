@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin } from 'lucide-react';
-import type { Order, MenuItem, Review, BrandInfo, Promotion, Address } from '@/lib/types';
+import type { Order, MenuItem, Review, BrandInfo, Address } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,7 @@ import { usePromotions } from '@/store/promotions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -426,6 +427,7 @@ function MenuManagement() {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const { toast } = useToast();
 
   const handleEdit = (item: MenuItem) => {
     setSelectedItem(item);
@@ -468,6 +470,17 @@ function MenuManagement() {
   };
 
   const handleFeatureChange = (itemId: string, isFeatured: boolean) => {
+    if (isFeatured) {
+        const featuredCount = menuItems.filter(item => item.isFeatured).length;
+        if (featuredCount >= 3) {
+            toast({
+                title: "Featured Item Limit Reached",
+                description: "You can only feature a maximum of 3 items at a time.",
+                variant: "destructive",
+            });
+            return;
+        }
+    }
     const itemToUpdate = menuItems.find(item => item.id === itemId);
     if (itemToUpdate) {
         updateMenuItem({ ...itemToUpdate, isFeatured });
@@ -505,6 +518,23 @@ function MenuManagement() {
   };
 
   const handleBulkFeature = (isFeatured: boolean) => {
+    if (isFeatured) {
+        const currentlyFeaturedCount = menuItems.filter(item => item.isFeatured).length;
+        const newlySelectedToFeatureCount = selectedItemIds.filter(id => {
+            const item = menuItems.find(item => item.id === id);
+            return item && !item.isFeatured;
+        }).length;
+
+        if (currentlyFeaturedCount + newlySelectedToFeatureCount > 3) {
+            toast({
+                title: "Featured Item Limit Reached",
+                description: `You can only feature a maximum of 3 items. You currently have ${currentlyFeaturedCount} and tried to add ${newlySelectedToFeatureCount}.`,
+                variant: "destructive",
+            });
+            return;
+        }
+    }
+    
     const itemsToUpdate = menuItems.filter(item => selectedItemIds.includes(item.id));
     itemsToUpdate.forEach(item => {
         updateMenuItem({ ...item, isFeatured });
