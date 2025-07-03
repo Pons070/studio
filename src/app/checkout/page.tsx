@@ -42,15 +42,21 @@ export default function CheckoutPage() {
   const { addOrder } = useOrders();
   const { brandInfo } = useBrand();
   const { currentUser, isAuthenticated } = useAuth();
-  const [pickupDate, setPickupDate] = useState<Date | undefined>(new Date());
+  const [pickupDate, setPickupDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
   const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClearCartAlertOpen, setClearCartAlertOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   
   const isClosed = brandInfo.businessHours.status === 'closed';
+
+  useEffect(() => {
+    setIsClient(true);
+    setPickupDate(new Date());
+  }, []);
 
   useEffect(() => {
     if (currentUser?.addresses && currentUser.addresses.length > 0) {
@@ -179,6 +185,7 @@ export default function CheckoutPage() {
                           "w-full justify-start text-left font-normal",
                           !pickupDate && "text-muted-foreground"
                         )}
+                         disabled={!isClient}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {pickupDate ? format(pickupDate, "PPP") : <span>Pick a date</span>}
@@ -191,7 +198,7 @@ export default function CheckoutPage() {
                         onSelect={(newDate) => {
                           setPickupDate(newDate);
                         }}
-                        disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
+                        disabled={!isClient ? (d) => true : (d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
                         initialFocus
                       />
                     </PopoverContent>
