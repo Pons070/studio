@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { usePromotions } from '@/store/promotions';
 import { useAuth } from '@/store/auth';
@@ -16,6 +16,7 @@ export function PromotionBanner() {
   const { isAuthenticated, currentUser } = useAuth();
   const { orders } = useOrders();
   const [isVisible, setIsVisible] = useState(true);
+  const [activePromotion, setActivePromotion] = useState<Promotion | null>(null);
   const pathname = usePathname();
 
   const customerType = useMemo(() => {
@@ -24,7 +25,7 @@ export function PromotionBanner() {
     return hasOrders ? 'existing' : 'new';
   }, [isAuthenticated, currentUser, orders]);
 
-  const activePromotion = useMemo(() => {
+  useEffect(() => {
     const isDateActive = (promo: Promotion) => {
         const todayStr = new Date().toISOString().split('T')[0];
 
@@ -47,15 +48,16 @@ export function PromotionBanner() {
 
     const activePromos = promotions.filter(p => p.isActive && isDateActive(p) && isDayActive(p));
     
-    // Find a promotion specifically for the customer type
     const specificPromotion = activePromos.find(p => p.targetAudience === customerType);
-    if (specificPromotion) return specificPromotion;
+    if (specificPromotion) {
+        setActivePromotion(specificPromotion);
+        return;
+    }
 
-    // Fallback to a promotion for 'all' users
     const allUsersPromotion = activePromos.find(p => p.targetAudience === 'all');
-    return allUsersPromotion || null;
+    setActivePromotion(allUsersPromotion || null);
 
-  }, [promotions, customerType]);
+  }, [promotions, customerType, isAuthenticated, currentUser, orders]);
   
   if (pathname.startsWith('/admin') || !activePromotion || !isVisible) {
     return null;
