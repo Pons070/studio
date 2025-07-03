@@ -34,12 +34,9 @@ export default function Home() {
         </Alert>
       )}
       <section className="text-center bg-card p-8 md:p-12 rounded-lg shadow-lg">
-        <h1 className="text-4xl md:text-6xl font-headline font-bold text-foreground mb-4 leading-tight">
+        <h1 className="text-4xl md:text-6xl font-headline font-bold text-foreground mb-8 leading-tight">
           Savor the Moment, <span className="text-primary">Skip the Wait.</span>
         </h1>
-        <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-          Welcome to CulinaPreOrder, where exceptional flavors meet ultimate convenience. Pre-order your favorite dishes and enjoy a seamless dining experience.
-        </p>
         <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg" disabled={isClosed}>
           <Link href="/menu">
             Order Now <ArrowRight className="ml-2 h-5 w-5" />
