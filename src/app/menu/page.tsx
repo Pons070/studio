@@ -75,7 +75,7 @@ export default function MenuPage() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="absolute top-2 right-2 z-20 h-9 w-9 rounded-full bg-background/50 hover:bg-background"
+                      className="absolute top-2 right-2 z-20 h-9 w-9 rounded-full bg-background hover:bg-muted"
                       onClick={() => toggleFavoriteItem(item.id)}
                       aria-label="Toggle favorite"
                     >
@@ -85,7 +85,7 @@ export default function MenuPage() {
                   <CardHeader className="p-0">
                     <div className="aspect-video relative overflow-hidden">
                        {!item.isAvailable && (
-                        <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-background/90 z-10 flex items-center justify-center">
                             <Badge variant="destructive" className="text-base px-4 py-1">Unavailable</Badge>
                         </div>
                       )}
