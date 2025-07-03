@@ -312,7 +312,7 @@ function OrderManagement() {
   );
 }
 
-type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint'> & { id?: string };
+type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable'> & { id?: string };
 
 function MenuManagement() {
   const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
@@ -335,25 +335,32 @@ function MenuManagement() {
   
   const handleSave = (itemData: MenuItemFormData) => {
     const finalImageUrl = itemData.imageUrl || 'https://placehold.co/600x400.png';
-    const finalAiHint = itemData.name.toLowerCase();
 
     if (itemData.id) {
+       const originalItem = menuItems.find(mi => mi.id === itemData.id);
        updateMenuItem({
          ...itemData,
          id: itemData.id,
          imageUrl: finalImageUrl,
-         aiHint: finalAiHint,
+         aiHint: itemData.name.toLowerCase(),
+         isAvailable: originalItem?.isAvailable ?? true,
        });
      } else {
        const { id, ...newItemData } = itemData;
        addMenuItem({
          ...newItemData,
          imageUrl: finalImageUrl,
-         // aiHint is added in the store
        });
      }
      setDialogOpen(false);
   }
+
+  const handleAvailabilityChange = (itemId: string, isAvailable: boolean) => {
+    const itemToUpdate = menuItems.find(item => item.id === itemId);
+    if (itemToUpdate) {
+        updateMenuItem({ ...itemToUpdate, isAvailable });
+    }
+  };
 
   return (
     <Card>
@@ -373,6 +380,7 @@ function MenuManagement() {
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Price</TableHead>
+              <TableHead>Availability</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -382,6 +390,13 @@ function MenuManagement() {
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
+                <TableCell>
+                    <Switch
+                        checked={item.isAvailable}
+                        onCheckedChange={(checked) => handleAvailabilityChange(item.id, checked)}
+                        aria-label="Toggle item availability"
+                    />
+                </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
                     <Edit className="h-4 w-4" />

@@ -7,6 +7,7 @@ export type MenuItem = {
   imageUrl: string;
   category: 'Appetizers' | 'Main Courses' | 'Desserts' | 'Drinks';
   aiHint: string;
+  isAvailable: boolean;
 };
 
 export type CartItem = {

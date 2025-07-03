@@ -24,6 +24,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'bruschetta appetizer',
     category: 'Appetizers',
+    isAvailable: true,
   },
   {
     id: '2',
@@ -33,6 +34,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'caprese salad',
     category: 'Appetizers',
+    isAvailable: true,
   },
   {
     id: '3',
@@ -42,6 +44,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'spaghetti carbonara',
     category: 'Main Courses',
+    isAvailable: true,
   },
   {
     id: '4',
@@ -51,6 +54,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'margherita pizza',
     category: 'Main Courses',
+    isAvailable: true,
   },
     {
     id: '5',
@@ -60,6 +64,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'grilled salmon',
     category: 'Main Courses',
+    isAvailable: true,
   },
   {
     id: '6',
@@ -69,6 +74,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'tiramisu dessert',
     category: 'Desserts',
+    isAvailable: true,
   },
   {
     id: '7',
@@ -78,6 +84,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'panna cotta',
     category: 'Desserts',
+    isAvailable: true,
   },
   {
     id: '8',
@@ -87,6 +94,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'water bottle',
     category: 'Drinks',
+    isAvailable: true,
   },
     {
     id: '9',
@@ -96,6 +104,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     aiHint: 'orange juice',
     category: 'Drinks',
+    isAvailable: true,
   },
 ];
 
@@ -150,6 +159,7 @@ export const orders: Order[] = [
     orderDate: '2024-01-04',
     pickupDate: '2024-01-05',
     cancellationDate: '2024-01-04',
+    cancellationReason: "Admin cancelled: Ingredients unavailable",
     pickupTime: '20:00',
     status: 'Cancelled',
     total: 19.49,

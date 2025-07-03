@@ -9,6 +9,7 @@ import { useBrand } from "@/store/brand";
 import { PlusCircle, Utensils, Soup, Cookie, GlassWater } from "lucide-react";
 import Image from "next/image";
 import type { Metadata } from "next";
+import { Badge } from "@/components/ui/badge";
 
 // This is a client component, so we can't use Metadata export.
 // We can set it in layout or a parent server component if needed.
@@ -48,9 +49,14 @@ export default function MenuPage() {
             {menuItems
               .filter((item) => item.category === category)
               .map((item) => (
-                <Card key={item.id} className="flex flex-col overflow-hidden group transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <Card key={item.id} className="flex flex-col overflow-hidden group transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative">
                   <CardHeader className="p-0">
                     <div className="aspect-video relative overflow-hidden">
+                       {!item.isAvailable && (
+                        <div className="absolute inset-0 bg-black/60 z-10 flex items-center justify-center">
+                            <Badge variant="destructive" className="text-base px-4 py-1">Unavailable</Badge>
+                        </div>
+                      )}
                       <Image
                         src={item.imageUrl}
                         alt={item.name}
@@ -66,7 +72,7 @@ export default function MenuPage() {
                   </CardContent>
                   <CardFooter className="flex justify-between items-center mt-auto pt-4">
                     <p className="text-xl font-bold text-primary">Rs.{item.price.toFixed(2)}</p>
-                    <Button onClick={() => addItem(item)} className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isClosed}>
+                    <Button onClick={() => addItem(item)} className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isClosed || !item.isAvailable}>
                       <PlusCircle className="mr-2 h-5 w-5" />
                       Add
                     </Button>

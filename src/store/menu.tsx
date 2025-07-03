@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -7,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type MenuContextType = {
   menuItems: MenuItem[];
-  addMenuItem: (item: Omit<MenuItem, 'id' | 'aiHint'>) => void;
+  addMenuItem: (item: Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable'>) => void;
   updateMenuItem: (item: MenuItem) => void;
   deleteMenuItem: (itemId: string) => void;
 };
@@ -39,11 +40,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     }
   }, [menuItems]);
 
-  const addMenuItem = useCallback((itemData: Omit<MenuItem, 'id' | 'aiHint'>) => {
+  const addMenuItem = useCallback((itemData: Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable'>) => {
     const newItem: MenuItem = {
       ...itemData,
       id: `MENU-${Date.now()}`,
       aiHint: itemData.name.toLowerCase(),
+      isAvailable: true,
     };
     setMenuItems(prevItems => [newItem, ...prevItems]);
     toast({
