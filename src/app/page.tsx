@@ -38,7 +38,7 @@ export default function Home() {
           <h1 className="text-4xl md:text-6xl font-headline font-bold text-foreground mb-8 leading-tight">
             Savor the Moment, <span className="text-primary">Skip the Wait.</span>
           </h1>
-          <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg" disabled={isClosed}>
+          <Button asChild size="lg" variant="destructive" className="font-bold text-lg" disabled={isClosed}>
             <Link href="/menu">
               Order Now <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
