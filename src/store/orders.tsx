@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -7,6 +6,7 @@ import { orders as mockOrders } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 import { useAuth } from './auth';
+import { format } from 'date-fns';
 
 type OrderContextType = {
   orders: Order[];
@@ -58,8 +58,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         id: `ORD-${Date.now()}`,
         customerId: currentUser.id,
         customerName: currentUser.name,
-        orderDate: new Date().toISOString().split('T')[0],
-        pickupDate: pickupDate.toISOString().split('T')[0],
+        orderDate: format(new Date(), 'yyyy-MM-dd'),
+        pickupDate: format(pickupDate, 'yyyy-MM-dd'),
         pickupTime: pickupTime,
         status: 'Pending',
         total: total,
@@ -113,7 +113,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 const updatedOrder = { 
                     ...order, 
                     status: status,
-                    ...(status === 'Cancelled' && { cancellationDate: new Date().toISOString().split('T')[0] })
+                    ...(status === 'Cancelled' && { cancellationDate: format(new Date(), 'yyyy-MM-dd') })
                 };
                 if (status === 'Cancelled') {
                     notificationOrder = updatedOrder;
