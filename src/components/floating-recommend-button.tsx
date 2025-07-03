@@ -25,7 +25,6 @@ export function FloatingRecommendButton({ shareUrl }: { shareUrl: string }) {
             <h4 className="font-medium leading-none">Share the Love!</h4>
             <p className="text-sm text-muted-foreground whitespace-pre-line">
               Enjoying our food? Help us grow by recommending us to your friends and family!
-              Click below to copy the shareable link to your clipboard and start sharing with your peer groups!
             </p>
           </div>
           <RecommendButton
