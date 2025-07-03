@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -11,7 +12,7 @@ import { format } from 'date-fns';
 type OrderContextType = {
   orders: Order[];
   addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => Promise<void>;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  updateOrderStatus: (orderId: string, status: Order['status'], reason?: string) => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
 };
 
@@ -104,16 +105,19 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   }, [toast, currentUser]);
 
-  const updateOrderStatus = useCallback(async (orderId: string, status: Order['status']) => {
+  const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], reason?: string) => {
     let notificationOrder: Order | null = null;
 
     setOrders(prevOrders => {
         const newOrders = prevOrders.map(order => {
             if (order.id === orderId) {
-                const updatedOrder = { 
+                const updatedOrder: Order = { 
                     ...order, 
                     status: status,
-                    ...(status === 'Cancelled' && { cancellationDate: format(new Date(), 'yyyy-MM-dd') })
+                    ...(status === 'Cancelled' && { 
+                        cancellationDate: format(new Date(), 'yyyy-MM-dd'),
+                        cancellationReason: reason 
+                    })
                 };
                 if (status === 'Cancelled') {
                     notificationOrder = updatedOrder;

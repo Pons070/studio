@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to generate and send order-related email notifications.
@@ -42,6 +43,9 @@ const emailPrompt = ai.definePrompt({
     {{#if order.cancellationDate}}
     - Cancelled On: {{{order.cancellationDate}}}
     {{/if}}
+    {{#if order.cancellationReason}}
+    - Cancellation Reason: {{{order.cancellationReason}}}
+    {{/if}}
     - Total: Rs.{{{order.total}}}
     - Items:
       {{#each order.items}}
@@ -53,7 +57,7 @@ const emailPrompt = ai.definePrompt({
     Follow these instructions for each notification type:
     - "customerConfirmation": Write a confirmation email to the customer. Thank them for their order and confirm the details. Let them know you're excited to serve them.
     - "adminNotification": Write a notification email to the restaurant admin. Alert them that a new order has been placed and provide all the details.
-    - "customerCancellation": Write an email to the customer confirming that their order has been cancelled. Express regret and invite them to order again in the future.
+    - "customerCancellation": Write an email to the customer confirming that their order has been cancelled. Express regret and invite them to order again in the future. {{#if order.cancellationReason}}Clearly state that the cancellation was due to the following reason: "{{{order.cancellationReason}}}".{{/if}}
   `,
 });
 

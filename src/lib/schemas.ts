@@ -20,6 +20,7 @@ export const OrderSchema = z.object({
   items: z.array(CartItemSchema),
   reviewId: z.string().optional(),
   cancellationDate: z.string().optional().describe("The date the order was cancelled."),
+  cancellationReason: z.string().optional().describe("The reason for cancelling the order."),
 });
 
 const NotificationTypeSchema = z.enum([

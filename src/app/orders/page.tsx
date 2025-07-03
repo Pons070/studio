@@ -93,10 +93,18 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                             <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
                         </div>
                         {order.cancellationDate && (
-                          <div>
-                              <p className="font-medium">Cancelled On</p>
-                              <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
-                          </div>
+                          <>
+                            <div>
+                                <p className="font-medium">Cancelled On</p>
+                                <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
+                            </div>
+                            {order.cancellationReason && (
+                                <div className="col-span-2">
+                                    <p className="font-medium">Reason for Cancellation</p>
+                                    <p className="text-muted-foreground italic">"{order.cancellationReason}"</p>
+                                </div>
+                            )}
+                          </>
                         )}
                         <div>
                             <p className="font-medium">Order Total</p>

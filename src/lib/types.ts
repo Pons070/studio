@@ -29,6 +29,7 @@ export type Order = {
   items: CartItem[];
   reviewId?: string;
   cancellationDate?: string; // The date the order was cancelled
+  cancellationReason?: string;
 };
 
 export type Review = {

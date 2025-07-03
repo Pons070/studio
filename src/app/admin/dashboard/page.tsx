@@ -76,10 +76,18 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                             <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
                         </div>
                         {order.cancellationDate && (
-                            <div>
-                                <p className="font-medium">Cancelled On</p>
-                                <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
-                            </div>
+                           <>
+                                <div>
+                                    <p className="font-medium">Cancelled On</p>
+                                    <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
+                                </div>
+                                {order.cancellationReason && (
+                                     <div className="col-span-2">
+                                        <p className="font-medium">Reason for Cancellation</p>
+                                        <p className="text-muted-foreground italic">"{order.cancellationReason}"</p>
+                                    </div>
+                                )}
+                           </>
                         )}
                         <div>
                             <p className="font-medium">Order Total</p>
@@ -142,7 +150,55 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
     )
 }
 
-function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus: (orderId: string, status: Order['status']) => void }) {
+function CancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: (orderId: string, reason: string) => void }) {
+    const [reason, setReason] = useState('');
+
+    useEffect(() => {
+        if (!isOpen) {
+            setReason('');
+        }
+    }, [isOpen]);
+    
+    if (!order) return null;
+
+    const handleConfirm = () => {
+        if (reason.trim()) {
+            onConfirm(order.id, reason);
+            onOpenChange(false);
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Cancel Order #{order.id}</DialogTitle>
+                    <DialogDescription>
+                        Please provide a reason for cancelling this order. This will be shared with the customer.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2 py-4">
+                    <Label htmlFor="cancellation-reason">Reason for Cancellation</Label>
+                    <Textarea 
+                        id="cancellation-reason" 
+                        value={reason} 
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="e.g., Unable to source ingredients..."
+                    />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Go Back</Button>
+                    </DialogClose>
+                    <Button type="button" variant="destructive" onClick={handleConfirm} disabled={!reason.trim()}>Confirm Cancellation</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
+function OrderTable({ orders, onSelectOrder, onUpdateStatus, onCancelOrder }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus: (orderId: string, status: Order['status']) => void, onCancelOrder: (order: Order) => void }) {
   if (orders.length === 0) {
     return <p className="text-sm text-muted-foreground">No orders to display in this category.</p>;
   }
@@ -180,10 +236,10 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[]
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onUpdateStatus(order.id, 'Cancelled')}>Set as Cancelled</DropdownMenuItem>
+                    <DropdownMenuItem disabled={order.status === 'Pending'} onClick={() => onUpdateStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
+                    <DropdownMenuItem disabled={order.status === 'Confirmed'} onClick={() => onUpdateStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
+                    <DropdownMenuItem disabled={order.status === 'Completed'} onClick={() => onUpdateStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
+                    <DropdownMenuItem disabled={order.status === 'Cancelled'} className="text-destructive focus:bg-destructive/10" onClick={() => onCancelOrder(order)}>Set as Cancelled</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -199,9 +255,14 @@ function OrderManagement() {
   const { orders, updateOrderStatus } = useOrders();
   const { reviews } = useReviews();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
 
   const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Confirmed').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
   const historicalOrders = orders.filter(o => o.status === 'Completed' || o.status === 'Cancelled').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
+
+  const handleConfirmCancellation = (orderId: string, reason: string) => {
+    updateOrderStatus(orderId, 'Cancelled', reason);
+  };
 
   return (
     <>
@@ -216,6 +277,7 @@ function OrderManagement() {
               orders={activeOrders} 
               onSelectOrder={setSelectedOrder} 
               onUpdateStatus={updateOrderStatus} 
+              onCancelOrder={setOrderToCancel}
             />
           </CardContent>
         </Card>
@@ -229,6 +291,7 @@ function OrderManagement() {
               orders={historicalOrders} 
               onSelectOrder={setSelectedOrder} 
               onUpdateStatus={updateOrderStatus}
+              onCancelOrder={setOrderToCancel}
             />
           </CardContent>
         </Card>
@@ -238,6 +301,12 @@ function OrderManagement() {
         isOpen={!!selectedOrder}
         onOpenChange={(open) => !open && setSelectedOrder(null)}
         reviews={reviews}
+      />
+      <CancellationDialog
+        order={orderToCancel}
+        isOpen={!!orderToCancel}
+        onOpenChange={(open) => !open && setOrderToCancel(null)}
+        onConfirm={handleConfirmCancellation}
       />
     </>
   );
