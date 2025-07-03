@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo } from '@/lib/types';
 import {
   Dialog,
@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useOrders } from '@/store/orders';
@@ -32,6 +32,7 @@ import { useMenu } from '@/store/menu';
 import { useBrand } from '@/store/brand';
 import { Switch } from '@/components/ui/switch';
 import { useReviews } from '@/store/reviews';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -198,15 +199,39 @@ function CancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order:
 }
 
 
-function OrderTable({ orders, onSelectOrder, onUpdateStatus, onCancelOrder }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus: (orderId: string, status: Order['status']) => void, onCancelOrder: (order: Order) => void }) {
+function OrderTable({ orders, onSelectOrder, onUpdateStatus, onCancelOrder, selectedOrders, onSelectedOrdersChange }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus: (orderId: string, status: Order['status']) => void, onCancelOrder: (order: Order) => void, selectedOrders: string[], onSelectedOrdersChange: (ids: string[]) => void }) {
   if (orders.length === 0) {
-    return <p className="text-sm text-muted-foreground">No orders to display in this category.</p>;
+    return <p className="text-sm text-muted-foreground p-4">No orders to display.</p>;
   }
+
+  const handleSelectAll = (checked: boolean) => {
+    const allIds = orders.map(o => o.id);
+    if (checked) {
+        onSelectedOrdersChange([...new Set([...selectedOrders, ...allIds])]);
+    } else {
+        onSelectedOrdersChange(selectedOrders.filter(id => !allIds.includes(id)));
+    }
+  };
+
+  const handleSelectRow = (id: string, checked: boolean) => {
+    onSelectedOrdersChange(
+      checked
+        ? [...selectedOrders, id]
+        : selectedOrders.filter(orderId => orderId !== id)
+    );
+  };
   
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-[50px]">
+            <Checkbox
+              checked={orders.length > 0 && orders.every(o => selectedOrders.includes(o.id))}
+              onCheckedChange={handleSelectAll}
+              aria-label="Select all orders in this table"
+            />
+          </TableHead>
           <TableHead>Order ID</TableHead>
           <TableHead>Customer</TableHead>
           <TableHead>Pickup Date</TableHead>
@@ -217,7 +242,14 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus, onCancelOrder }: { 
       </TableHeader>
       <TableBody>
         {orders.map((order) => (
-          <TableRow key={order.id}>
+          <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""}>
+            <TableCell>
+              <Checkbox
+                checked={selectedOrders.includes(order.id)}
+                onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                aria-label={`Select order ${order.id}`}
+              />
+            </TableCell>
             <TableCell className="font-medium">{order.id}</TableCell>
             <TableCell>{order.customerName}</TableCell>
             <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
@@ -256,16 +288,54 @@ function OrderManagement() {
   const { reviews } = useReviews();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
-
-  const activeOrders = orders.filter(o => o.status === 'Pending' || o.status === 'Confirmed').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
-  const historicalOrders = orders.filter(o => o.status === 'Completed' || o.status === 'Cancelled').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
   const handleConfirmCancellation = (orderId: string, reason: string) => {
     updateOrderStatus(orderId, 'Cancelled', reason);
   };
 
+  const handleBulkUpdateStatus = (status: Order['status']) => {
+    selectedOrderIds.forEach(id => {
+      // Logic to prevent invalid status transitions can be added here
+      updateOrderStatus(id, status);
+    });
+    setSelectedOrderIds([]);
+  };
+
+  const filteredOrders = orders.filter(o =>
+    o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    o.customerName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const activeOrders = filteredOrders.filter(o => o.status === 'Pending' || o.status === 'Confirmed').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
+  const historicalOrders = filteredOrders.filter(o => o.status === 'Completed' || o.status === 'Cancelled').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
+
   return (
     <>
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative flex-1 md:flex-initial md:w-1/3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search orders by ID or customer..." 
+            className="pl-10"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" disabled={selectedOrderIds.length === 0}>
+              Bulk Actions ({selectedOrderIds.length})
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => handleBulkUpdateStatus('Pending')}>Set as Pending</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleBulkUpdateStatus('Confirmed')}>Set as Confirmed</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleBulkUpdateStatus('Completed')}>Set as Completed</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="space-y-6">
         <Card>
           <CardHeader>
@@ -278,6 +348,8 @@ function OrderManagement() {
               onSelectOrder={setSelectedOrder} 
               onUpdateStatus={updateOrderStatus} 
               onCancelOrder={setOrderToCancel}
+              selectedOrders={selectedOrderIds}
+              onSelectedOrdersChange={setSelectedOrderIds}
             />
           </CardContent>
         </Card>
@@ -292,6 +364,8 @@ function OrderManagement() {
               onSelectOrder={setSelectedOrder} 
               onUpdateStatus={updateOrderStatus}
               onCancelOrder={setOrderToCancel}
+              selectedOrders={selectedOrderIds}
+              onSelectedOrdersChange={setSelectedOrderIds}
             />
           </CardContent>
         </Card>
@@ -318,6 +392,8 @@ function MenuManagement() {
   const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
 
   const handleEdit = (item: MenuItem) => {
     setSelectedItem(item);
@@ -327,10 +403,6 @@ function MenuManagement() {
   const handleAddNew = () => {
     setSelectedItem(null);
     setDialogOpen(true);
-  }
-
-  const handleDelete = (id: string) => {
-    deleteMenuItem(id);
   }
   
   const handleSave = (itemData: MenuItemFormData) => {
@@ -362,21 +434,82 @@ function MenuManagement() {
     }
   };
 
+  const filteredItems = menuItems.filter(item => 
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    item.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSelectAllMenu = (checked: boolean) => {
+    setSelectedItemIds(checked ? filteredItems.map(i => i.id) : []);
+  };
+
+  const handleSelectMenuRow = (id: string, checked: boolean) => {
+    setSelectedItemIds(
+      checked
+        ? [...selectedItemIds, id]
+        : selectedItemIds.filter(itemId => itemId !== id)
+    );
+  };
+  
+  const handleBulkDelete = () => {
+    selectedItemIds.forEach(id => deleteMenuItem(id));
+    setSelectedItemIds([]);
+  }
+
+  const handleBulkAvailability = (isAvailable: boolean) => {
+    const itemsToUpdate = menuItems.filter(item => selectedItemIds.includes(item.id));
+    itemsToUpdate.forEach(item => {
+        updateMenuItem({ ...item, isAvailable });
+    });
+    setSelectedItemIds([]);
+  };
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Menu Items</CardTitle>
-          <CardDescription>Add, edit, or remove menu items.</CardDescription>
-        </div>
-        <Button onClick={handleAddNew}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-        </Button>
+      <CardHeader>
+        <CardTitle>Menu Items</CardTitle>
+        <CardDescription>Add, edit, or remove menu items.</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="flex items-center gap-4 mb-4">
+            <div className="relative flex-1 md:flex-initial md:w-1/3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                  placeholder="Search by name or category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+              />
+            </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" disabled={selectedItemIds.length === 0}>
+                        Bulk Actions ({selectedItemIds.length})
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleBulkAvailability(true)}>Set as Available</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkAvailability(false)}>Set as Unavailable</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleBulkDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">Delete Selected</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <div className="ml-auto">
+              <Button onClick={handleAddNew}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+              </Button>
+            </div>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={selectedItemIds.length === filteredItems.length && filteredItems.length > 0}
+                  onCheckedChange={handleSelectAllMenu}
+                  aria-label="Select all menu items"
+                />
+              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Price</TableHead>
@@ -385,8 +518,15 @@ function MenuManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {menuItems.map((item) => (
-              <TableRow key={item.id}>
+            {filteredItems.map((item) => (
+              <TableRow key={item.id} data-state={selectedItemIds.includes(item.id) ? "selected" : ""}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedItemIds.includes(item.id)}
+                    onCheckedChange={(checked) => handleSelectMenuRow(item.id, !!checked)}
+                    aria-label={`Select item ${item.name}`}
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
@@ -401,7 +541,7 @@ function MenuManagement() {
                   <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(item.id)}>
+                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteMenuItem(item.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>
