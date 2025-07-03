@@ -12,6 +12,8 @@ type ReviewContextType = {
   reviews: Review[];
   addReview: (orderId: string, rating: number, comment: string) => void;
   addAdminReply: (reviewId: string, reply: string) => void;
+  togglePublishStatus: (reviewId: string) => void;
+  deleteReview: (reviewId: string) => void;
 };
 
 const ReviewContext = createContext<ReviewContextType | undefined>(undefined);
@@ -20,7 +22,7 @@ const LOCAL_STORAGE_KEY = 'culina-preorder-reviews';
 
 export function ReviewProvider({ children }: { children: ReactNode }) {
   const [reviews, setReviews] = useState<Review[]>(mockReviews);
-  const { addReviewToOrder } = useOrders();
+  const { addReviewToOrder, removeReviewIdFromOrder } = useOrders();
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -52,12 +54,13 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
       rating,
       comment,
       date: new Date().toISOString().split('T')[0],
+      isPublished: false,
     };
     setReviews(prevReviews => [newReview, ...prevReviews]);
     addReviewToOrder(orderId, newReview.id);
     toast({
       title: "Review Submitted!",
-      description: "Thank you for your valuable feedback.",
+      description: "Thank you for your valuable feedback. It will be reviewed by our team shortly.",
       className: "bg-green-500 text-white"
     });
   }, [addReviewToOrder, toast, currentUser]);
@@ -72,8 +75,40 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
     });
   }, [toast]);
 
+  const togglePublishStatus = useCallback((reviewId: string) => {
+    let publishedState = false;
+    setReviews(prevReviews =>
+      prevReviews.map(r => {
+        if (r.id === reviewId) {
+          publishedState = !r.isPublished;
+          return { ...r, isPublished: !r.isPublished };
+        }
+        return r;
+      })
+    );
+    toast({
+      title: "Review Updated",
+      description: `Review has been ${publishedState ? 'published' : 'unpublished'}.`,
+    });
+  }, [toast]);
+
+  const deleteReview = useCallback((reviewId: string) => {
+    const reviewToDelete = reviews.find(r => r.id === reviewId);
+    if (!reviewToDelete) return;
+
+    setReviews(prevReviews => prevReviews.filter(r => r.id !== reviewId));
+    removeReviewIdFromOrder(reviewToDelete.orderId);
+
+    toast({
+      title: "Review Deleted",
+      description: "The review has been permanently deleted.",
+      variant: "destructive",
+    });
+  }, [reviews, removeReviewIdFromOrder, toast]);
+
+
   return (
-    <ReviewContext.Provider value={{ reviews, addReview, addAdminReply }}>
+    <ReviewContext.Provider value={{ reviews, addReview, addAdminReply, togglePublishStatus, deleteReview }}>
       {children}
     </ReviewContext.Provider>
   );

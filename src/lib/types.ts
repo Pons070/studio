@@ -41,6 +41,7 @@ export type Review = {
   comment: string;
   date: string;
   adminReply?: string;
+  isPublished: boolean;
 };
 
 export type BrandInfo = {

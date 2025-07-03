@@ -732,10 +732,39 @@ function ReplyDialog({ review, isOpen, onOpenChange, onSave }: { review: Review 
     )
 }
 
+function DeleteReviewDialog({ review, isOpen, onOpenChange, onConfirm }: { review: Review | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: (reviewId: string) => void }) {
+    if (!review) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Delete Review?</DialogTitle>
+                    <DialogDescription>
+                        Are you sure you want to delete this review from "{review.customerName}"? This action cannot be undone.
+                    </DialogDescription>
+                </DialogHeader>
+                 <Card className="bg-muted/50 text-sm">
+                    <CardContent className="p-4">
+                        <p className="italic">"{review.comment}"</p>
+                    </CardContent>
+                </Card>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button type="button" variant="destructive" onClick={() => onConfirm(review.id)}>Yes, Delete Review</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 function ReviewManagement() {
-  const { reviews, addAdminReply } = useReviews();
+  const { reviews, addAdminReply, togglePublishStatus, deleteReview } = useReviews();
   const [isReplyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedReviewForReply, setSelectedReviewForReply] = useState<Review | null>(null);
+  const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
 
   const handleReplyClick = (review: Review) => {
     setSelectedReviewForReply(review);
@@ -747,37 +776,65 @@ function ReviewManagement() {
     setReplyDialogOpen(false);
   };
 
+  const handleDeleteClick = (review: Review) => {
+    setReviewToDelete(review);
+  };
+
+  const handleConfirmDelete = (reviewId: string) => {
+    deleteReview(reviewId);
+    setReviewToDelete(null);
+  };
+
 
   return (
     <>
       <Card>
         <CardHeader>
           <CardTitle>Customer Reviews</CardTitle>
-          <CardDescription>View and manage all customer feedback.</CardDescription>
+          <CardDescription>View, reply to, publish, or delete customer feedback.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order ID</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Rating</TableHead>
                 <TableHead>Comment</TableHead>
+                <TableHead>Published</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {reviews.map((review) => (
                 <TableRow key={review.id}>
-                  <TableCell className="font-medium">{review.orderId}</TableCell>
-                  <TableCell>{review.customerName}</TableCell>
+                  <TableCell>
+                      <div className="font-medium">{review.customerName}</div>
+                      <div className="text-xs text-muted-foreground">{review.orderId}</div>
+                  </TableCell>
                   <TableCell>
                     <StarDisplay rating={review.rating} />
                   </TableCell>
-                  <TableCell className="max-w-[300px] truncate">{review.comment}</TableCell>
+                  <TableCell className="max-w-[300px] text-sm">
+                      <p className="italic truncate">"{review.comment}"</p>
+                       {review.adminReply && (
+                        <div className="text-xs text-muted-foreground mt-1 pl-2 border-l-2">
+                           <strong>Reply:</strong> {review.adminReply}
+                        </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                        checked={review.isPublished}
+                        onCheckedChange={() => togglePublishStatus(review.id)}
+                        aria-label="Toggle review publication status"
+                    />
+                  </TableCell>
                   <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => handleReplyClick(review)}>
                           <MessageSquare className={cn("h-4 w-4", review.adminReply ? "text-primary fill-primary/20" : "")} />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick(review)}>
+                          <Trash2 className="h-4 w-4" />
                       </Button>
                   </TableCell>
                 </TableRow>
@@ -791,6 +848,12 @@ function ReviewManagement() {
         isOpen={isReplyDialogOpen}
         onOpenChange={setReplyDialogOpen}
         onSave={handleSaveReply}
+      />
+      <DeleteReviewDialog
+        review={reviewToDelete}
+        isOpen={!!reviewToDelete}
+        onOpenChange={(open) => !open && setReviewToDelete(null)}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

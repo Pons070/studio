@@ -14,6 +14,7 @@ type OrderContextType = {
   addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string) => Promise<void>;
   updateOrderStatus: (orderId: string, status: Order['status'], reason?: string) => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
+  removeReviewIdFromOrder: (orderId: string) => void;
 };
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -165,8 +166,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       );
   }, []);
 
+  const removeReviewIdFromOrder = useCallback((orderId: string) => {
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
+        order.id === orderId ? { ...order, reviewId: undefined } : order
+      )
+    );
+  }, []);
+
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, addReviewToOrder }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, addReviewToOrder, removeReviewIdFromOrder }}>
       {children}
     </OrderContext.Provider>
   );
