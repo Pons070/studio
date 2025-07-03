@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -10,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -51,7 +50,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { VariantProps } from 'class-variance-authority';
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -1958,12 +1956,12 @@ export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState('orders');
 
   const navItems = [
-    { id: 'orders', label: 'Manage Orders', icon: ClipboardList },
-    { id: 'menu', label: 'Manage Menu', icon: Utensils },
-    { id: 'reviews', label: 'Manage Reviews', icon: Star },
-    { id: 'promotions', label: 'Manage Promotions', icon: Megaphone },
-    { id: 'brand', label: 'Manage Brand', icon: Palette },
-    { id: 'customers', label: 'Manage Customers', icon: Users },
+    { id: 'orders', label: 'Manage Orders', description: "View and process all customer orders.", icon: ClipboardList },
+    { id: 'menu', label: 'Manage Menu', description: "Add, edit, or remove menu items.", icon: Utensils },
+    { id: 'reviews', label: 'Manage Reviews', description: "Moderate and reply to feedback.", icon: Star },
+    { id: 'promotions', label: 'Manage Promotions', description: "Create and manage special offers.", icon: Megaphone },
+    { id: 'brand', label: 'Manage Brand', description: "Customize your store's appearance.", icon: Palette },
+    { id: 'customers', label: 'Manage Customers', description: "View and manage user accounts.", icon: Users },
   ];
 
   const renderContent = () => {
@@ -1978,57 +1976,38 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const activeItem = navItems.find(item => item.id === activeView);
+
   return (
-    <SidebarProvider>
-      <Sidebar className="border-r bg-muted">
-        <SidebarHeader>
-           <div className="flex h-20 items-center gap-2 px-4">
-              <Shield className="h-8 w-8 text-primary" />
-              <h2 className="text-xl font-bold group-data-[collapsible=icon]:hidden">Admin Panel</h2>
-          </div>
-        </SidebarHeader>
-        <SidebarContent className="p-2">
-          <SidebarMenu>
+      <div className="space-y-6 p-4 md:p-6">
+        <header className="space-y-2">
+            <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
+            <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
+        </header>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {navItems.map(item => (
-              <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton 
-                  onClick={() => setActiveView(item.id)} 
-                  isActive={activeView === item.id} 
-                  tooltip={item.label}
-                  className="justify-start"
+                <Card 
+                    key={item.id}
+                    className={cn(
+                        "cursor-pointer transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
+                        activeView === item.id ? "border-primary ring-2 ring-primary shadow-lg" : "border-card"
+                    )}
+                    onClick={() => setActiveView(item.id)}
                 >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+                    <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
+                        <item.icon className="h-8 w-8 text-primary" />
+                        <p className="font-semibold text-sm">{item.label}</p>
+                    </CardContent>
+                </Card>
             ))}
-          </SidebarMenu>
-        </SidebarContent>
-         <SidebarFooter className="p-2">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild className="justify-start">
-                  <Link href="/">
-                      <Home />
-                      <span>Go to Home</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-         </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <div className="p-6 space-y-6">
-          <header className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
-              <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
-            </div>
-            <SidebarTrigger />
-          </header>
-          {renderContent()}
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+
+        <Separator />
+        
+        <div className="pt-2">
+            {renderContent()}
+        </div>
+      </div>
   );
 }
