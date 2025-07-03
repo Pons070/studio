@@ -1137,6 +1137,31 @@ function BrandManagement() {
     { name: 'Forest Green', primaryColor: '142 76% 36%', backgroundColor: '120 20% 97%', accentColor: '90 57% 53%' },
     { name: 'Royal Purple', primaryColor: '262 83% 58%', backgroundColor: '270 60% 98%', accentColor: '286 75% 68%' },
     { name: 'Modern Monochrome', primaryColor: '240 10% 3.9%', backgroundColor: '0 0% 100%', accentColor: '240 5% 65%' },
+    { name: 'Sunset Orange', primaryColor: '24 94% 50%', backgroundColor: '20 50% 98%', accentColor: '35 91% 65%' },
+    { name: 'Emerald & Black', primaryColor: '158 80% 30%', backgroundColor: '240 10% 3.9%', accentColor: '158 60% 50%' },
+    { name: 'Charcoal & Gold', primaryColor: '45 85% 55%', backgroundColor: '220 15% 15%', accentColor: '45 65% 35%' },
+    { name: 'Midnight Blue', primaryColor: '240 100% 95%', backgroundColor: '225 30% 10%', accentColor: '210 100% 70%' },
+    { name: 'Slate & Crimson', primaryColor: '348 83% 47%', backgroundColor: '215 28% 17%', accentColor: '348 65% 60%' },
+    { name: 'Lavender Bliss', primaryColor: '250 60% 55%', backgroundColor: '250 100% 99%', accentColor: '250 80% 90%' },
+    { name: 'Peach & Cream', primaryColor: '25 85% 60%', backgroundColor: '35 100% 98%', accentColor: '30 90% 85%' },
+    { name: 'Minty Fresh', primaryColor: '150 60% 45%', backgroundColor: '150 100% 98%', accentColor: '150 70% 80%' },
+    { name: 'Sakura Pink', primaryColor: '340 80% 60%', backgroundColor: '340 100% 99%', accentColor: '340 90% 90%' },
+    { name: 'Terracotta & Sage', primaryColor: '15 55% 45%', backgroundColor: '90 20% 97%', accentColor: '30 30% 80%' },
+    { name: 'Sandy Beige', primaryColor: '35 30% 40%', backgroundColor: '45 60% 97%', accentColor: '40 40% 85%' },
+    { name: 'Olive Grove', primaryColor: '80 40% 35%', backgroundColor: '90 30% 98%', accentColor: '75 25% 80%' },
+    { name: 'Berry Blast', primaryColor: '310 70% 50%', backgroundColor: '320 100% 98%', accentColor: '300 80% 85%' },
+    { name: 'Electric Lime', primaryColor: '75 80% 45%', backgroundColor: '80 100% 97%', accentColor: '70 90% 75%' },
+    { name: 'Tropical Punch', primaryColor: '5 80% 55%', backgroundColor: '30 100% 98%', accentColor: '355 90% 80%' },
+    { name: 'Rose Gold', primaryColor: '350 70% 60%', backgroundColor: '350 100% 99%', accentColor: '350 50% 85%' },
+    { name: 'Wine & Dine', primaryColor: '345 60% 30%', backgroundColor: '345 100% 98%', accentColor: '345 40% 80%' },
+    { name: 'Mustard & Teal', primaryColor: '180 60% 35%', backgroundColor: '45 100% 97%', accentColor: '40 80% 60%' },
+    { name: 'Coffee House', primaryColor: '25 35% 30%', backgroundColor: '30 30% 96%', accentColor: '30 20% 80%' },
+    { name: 'Sky Blue', primaryColor: '205 80% 55%', backgroundColor: '210 100% 98%', accentColor: '200 90% 85%' },
+    { name: 'Ruby Red', primaryColor: '0 72% 51%', backgroundColor: '0 100% 98%', accentColor: '0 80% 85%' },
+    { name: 'Graphite Dark', primaryColor: '210 40% 98%', backgroundColor: '224 71% 4%', accentColor: '217 33% 17%' },
+    { name: 'Cinnamon Spice', primaryColor: '19 64% 45%', backgroundColor: '24 50% 97%', accentColor: '22 40% 85%' },
+    { name: 'Faded Denim', primaryColor: '216 34% 47%', backgroundColor: '220 40% 97%', accentColor: '218 30% 80%' },
+    { name: 'Autumn Glow', primaryColor: '38 92% 50%', backgroundColor: '30 60% 98%', accentColor: '45 80% 75%' },
   ];
 
   const handlePaletteSelect = (palette: typeof palettes[0]) => {
@@ -1362,7 +1387,7 @@ function BrandManagement() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2 md:col-span-2">
               <Label>Color Palette</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 pt-2">
                 {palettes.map((palette) => {
                   const isSelected = theme.primaryColor === palette.primaryColor && theme.backgroundColor === palette.backgroundColor;
                   return (
