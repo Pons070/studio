@@ -34,10 +34,10 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
-import type { Order, Review } from '@/lib/types';
+import type { Order, Review, UpdateRequest } from '@/lib/types';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
-import { Star } from 'lucide-react';
+import { Star, MessageSquare, Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useOrders } from '@/store/orders';
@@ -48,6 +48,8 @@ import { useFavorites } from '@/store/favorites';
 import { useCart } from '@/store/cart';
 import { useBrand } from '@/store/brand';
 import { RecommendButton } from '@/components/recommend-dialog';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
   switch (status) {
@@ -64,10 +66,73 @@ const getBadgeVariant = (status: string): "default" | "secondary" | "destructive
   }
 };
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[] }) {
+function RequestUpdateDialog({ order, isOpen, onOpenChange }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
+    const [message, setMessage] = useState('');
+    const { addUpdateRequest } = useOrders();
+    if (!order) return null;
+
+    const handleSubmit = () => {
+        addUpdateRequest(order.id, message, 'customer');
+        onOpenChange(false);
+        setMessage('');
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Request Update for Order #{order.id}</DialogTitle>
+                    <DialogDescription>
+                        Send a message to the restaurant regarding your order.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-2">
+                    <Label htmlFor="update-message">Your Message</Label>
+                    <Textarea
+                        id="update-message"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="e.g., I would like to know the status of my order..."
+                    />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose>
+                    <Button onClick={handleSubmit} disabled={!message.trim()}>Send Message</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function ConversationThread({ requests }: { requests: UpdateRequest[] }) {
+  if (!requests || requests.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <h4 className="font-medium">Conversation</h4>
+      <ScrollArea className="h-48 w-full rounded-md border p-4">
+        <div className="space-y-4">
+          {requests.map((req) => (
+            <div key={req.id} className={cn("flex flex-col", req.from === 'customer' ? 'items-start' : 'items-end')}>
+              <div className={cn("rounded-lg px-4 py-2 max-w-sm", req.from === 'customer' ? 'bg-muted' : 'bg-primary text-primary-foreground')}>
+                <p className="text-sm">{req.message}</p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {req.from === 'customer' ? 'You' : 'Restaurant'} • {formatDistanceToNow(new Date(req.timestamp), { addSuffix: true })}
+              </p>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onRequestUpdateClick }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[]; onRequestUpdateClick: () => void; }) {
     if (!order) return null;
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
+    const canRequestUpdate = (order.status === 'Pending' || order.status === 'Confirmed') && (order.updateRequests?.filter(r => r.from === 'customer').length || 0) < 3;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -78,92 +143,117 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                         Order ID: {order.id}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p className="font-medium">Order Placed On</p>
-                            <p className="text-muted-foreground">{new Date(order.orderDate).toLocaleDateString()}</p>
-                        </div>
-                        <div>
-                            <p className="font-medium">Pre-Order Date</p>
-                            <p className="text-muted-foreground">{new Date(order.pickupDate).toLocaleDateString()}</p>
-                        </div>
-                        <div>
-                            <p className="font-medium">Pickup Time</p>
-                            <p className="text-muted-foreground">{order.pickupTime}</p>
-                        </div>
-                         <div>
-                            <p className="font-medium">Status</p>
-                            <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
-                        </div>
-                        {order.cancellationDate && (
-                          <>
+                <ScrollArea className="max-h-[70vh] pr-6">
+                    <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <p className="font-medium">Cancelled On</p>
-                                <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
+                                <p className="font-medium">Order Placed On</p>
+                                <p className="text-muted-foreground">{new Date(order.orderDate).toLocaleDateString()}</p>
                             </div>
-                            {order.cancellationReason && (
-                                <div className="col-span-2">
-                                    <p className="font-medium">Reason for Cancellation</p>
-                                    <p className="text-muted-foreground italic">"{order.cancellationReason}"</p>
+                            <div>
+                                <p className="font-medium">Pre-Order Date</p>
+                                <p className="text-muted-foreground">{new Date(order.pickupDate).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                                <p className="font-medium">Pickup Time</p>
+                                <p className="text-muted-foreground">{order.pickupTime}</p>
+                            </div>
+                            <div>
+                                <p className="font-medium">Status</p>
+                                <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
+                            </div>
+                            {order.cancellationDate && (
+                            <>
+                                <div>
+                                    <p className="font-medium">Cancelled On</p>
+                                    <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
                                 </div>
+                                {order.cancellationReason && (
+                                    <div className="col-span-2">
+                                        <p className="font-medium">Reason for Cancellation</p>
+                                        <p className="text-muted-foreground italic">"{order.cancellationReason}"</p>
+                                    </div>
+                                )}
+                            </>
                             )}
-                          </>
-                        )}
-                        <div>
-                            <p className="font-medium">Order Total</p>
-                            <p className="font-bold">Rs.{order.total.toFixed(2)}</p>
-                        </div>
-                    </div>
-
-                    <Separator />
-
-                    <h4 className="font-medium">Items in this order</h4>
-                    <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
-                        {order.items.map(item => (
-                            <div key={item.id} className="flex justify-between items-center">
-                                <div className="flex items-center gap-4">
-                                    <Image src={item.imageUrl || "https://placehold.co/64x64.png"} alt={item.name} width={48} height={48} className="rounded-md" />
-                                    <div>
-                                        <p className="font-semibold">{item.name}</p>
-                                        <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
-                                    </div>
-                                </div>
-                                <p>Rs.{(item.price * item.quantity).toFixed(2)}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    {review && (
-                        <>
-                            <Separator />
                             <div>
-                                <h4 className="font-medium mb-2">Your Review</h4>
-                                <div className="space-y-3 text-sm p-4 bg-muted/50 rounded-lg border">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold">Your Rating:</span>
-                                            <div className="flex">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star key={i} className={cn("h-4 w-4", i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
-                                                ))}
-                                            </div>
-                                        </div>
-                                         <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
-                                    </div>
-                                    <p className="italic">"{review.comment}"</p>
-                                    {review.adminReply && (
-                                        <div className="p-3 bg-background rounded-md mt-2 border-l-4 border-primary">
-                                            <p className="font-semibold text-sm text-primary">Restaurant's Reply</p>
-                                            <p className="text-muted-foreground text-sm italic">"{review.adminReply}"</p>
-                                        </div>
-                                    )}
-                                </div>
+                                <p className="font-medium">Order Total</p>
+                                <p className="font-bold">Rs.{order.total.toFixed(2)}</p>
                             </div>
-                        </>
+                        </div>
+
+                        {order.cookingNotes && (
+                            <>
+                                <Separator />
+                                <div>
+                                    <h4 className="font-medium">Cooking Notes</h4>
+                                    <p className="text-sm text-muted-foreground italic p-2 bg-muted/50 rounded-md">"{order.cookingNotes}"</p>
+                                </div>
+                            </>
+                        )}
+
+                        <Separator />
+
+                        <h4 className="font-medium">Items in this order</h4>
+                        <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+                            {order.items.map(item => (
+                                <div key={item.id} className="flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <Image src={item.imageUrl || "https://placehold.co/64x64.png"} alt={item.name} width={48} height={48} className="rounded-md" />
+                                        <div>
+                                            <p className="font-semibold">{item.name}</p>
+                                            <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                                        </div>
+                                    </div>
+                                    <p>Rs.{(item.price * item.quantity).toFixed(2)}</p>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        {(order.updateRequests && order.updateRequests.length > 0) && (
+                            <>
+                                <Separator />
+                                <ConversationThread requests={order.updateRequests} />
+                            </>
+                        )}
+
+
+                        {review && (
+                            <>
+                                <Separator />
+                                <div>
+                                    <h4 className="font-medium mb-2">Your Review</h4>
+                                    <div className="space-y-3 text-sm p-4 bg-muted/50 rounded-lg border">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold">Your Rating:</span>
+                                                <div className="flex">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star key={i} className={cn("h-4 w-4", i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300")} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
+                                        </div>
+                                        <p className="italic">"{review.comment}"</p>
+                                        {review.adminReply && (
+                                            <div className="p-3 bg-background rounded-md mt-2 border-l-4 border-primary">
+                                                <p className="font-semibold text-sm text-primary">Restaurant's Reply</p>
+                                                <p className="text-muted-foreground text-sm italic">"{review.adminReply}"</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </ScrollArea>
+                <DialogFooter className="pt-4 border-t">
+                    {canRequestUpdate && (
+                       <Button variant="outline" onClick={onRequestUpdateClick}>
+                           <MessageSquare className="mr-2 h-4 w-4"/> Request Update
+                       </Button>
                     )}
-                </div>
-                <DialogFooter>
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">
                             Close
@@ -254,6 +344,7 @@ export default function OrdersPage() {
   const { currentUser, isAuthenticated } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
+  const [updateRequestOrder, setUpdateRequestOrder] = useState<Order | null>(null);
   const { toggleFavoriteOrder, isOrderFavorite } = useFavorites();
   const { reorder } = useCart();
   const { brandInfo } = useBrand();
@@ -267,6 +358,11 @@ export default function OrdersPage() {
     setReviewOrder(null);
   };
   
+  const handleRequestUpdateClick = () => {
+    setUpdateRequestOrder(selectedOrder);
+    setSelectedOrder(null); // Close the details dialog
+  }
+
   const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
 
@@ -385,18 +481,20 @@ export default function OrdersPage() {
       <OrderDetailsDialog 
         order={selectedOrder}
         isOpen={!!selectedOrder}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedOrder(null);
-          }
-        }}
+        onOpenChange={(open) => !open && setSelectedOrder(null)}
         reviews={reviews}
+        onRequestUpdateClick={handleRequestUpdateClick}
       />
       <ReviewDialog
         order={reviewOrder}
         isOpen={!!reviewOrder}
         onOpenChange={(open) => !open && setReviewOrder(null)}
         onSubmit={handleReviewSubmit}
+      />
+       <RequestUpdateDialog
+        order={updateRequestOrder}
+        isOpen={!!updateRequestOrder}
+        onOpenChange={(open) => !open && setUpdateRequestOrder(null)}
       />
     </>
   );

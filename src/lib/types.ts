@@ -1,5 +1,12 @@
 
 
+export type UpdateRequest = {
+  id: string;
+  message: string;
+  timestamp: string;
+  from: 'customer' | 'admin';
+};
+
 export type Address = {
   id?: string;
   label?: string;
@@ -49,6 +56,8 @@ export type Order = {
   reviewId?: string;
   cancellationDate?: string; // The date the order was cancelled
   cancellationReason?: string;
+  cookingNotes?: string;
+  updateRequests?: UpdateRequest[];
 };
 
 export type Review = {

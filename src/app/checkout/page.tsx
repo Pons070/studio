@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -35,6 +35,7 @@ import { useAuth } from '@/store/auth';
 import Link from 'next/link';
 import type { Address } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 
 
 export default function CheckoutPage() {
@@ -45,6 +46,7 @@ export default function CheckoutPage() {
   const [pickupDate, setPickupDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
   const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>();
+  const [cookingNotes, setCookingNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClearCartAlertOpen, setClearCartAlertOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -132,7 +134,7 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
     
-    await addOrder(items, totalPrice, pickupDate, time, deliveryAddress);
+    await addOrder(items, totalPrice, pickupDate, time, deliveryAddress, cookingNotes);
 
     setIsProcessing(false);
     clearCart();
@@ -292,12 +294,27 @@ export default function CheckoutPage() {
                     )}
                 </CardContent>
             </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> 3. Cooking Notes (Optional)</CardTitle>
+                    <CardDescription>Have any special requests? Let the chef know.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Textarea
+                        placeholder="e.g., Please make it extra spicy, no nuts."
+                        value={cookingNotes}
+                        onChange={(e) => setCookingNotes(e.target.value)}
+                    />
+                </CardContent>
+            </Card>
+
         </div>
 
         <div className="space-y-8 lg:sticky top-24 h-fit">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>3. Order Summary</CardTitle>
+                <CardTitle>4. Order Summary</CardTitle>
                 {items.length > 0 && (
                   <AlertDialog open={isClearCartAlertOpen} onOpenChange={setClearCartAlertOpen}>
                     <AlertDialogTrigger asChild>

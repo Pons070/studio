@@ -25,6 +25,13 @@ export const CartItemSchema = z.object({
   quantity: z.number().int().positive(),
 });
 
+export const UpdateRequestSchema = z.object({
+  id: z.string(),
+  message: z.string(),
+  timestamp: z.string(),
+  from: z.enum(['customer', 'admin']),
+});
+
 export const OrderSchema = z.object({
   id: z.string(),
   customerId: z.string(),
@@ -39,6 +46,8 @@ export const OrderSchema = z.object({
   reviewId: z.string().optional(),
   cancellationDate: z.string().optional().describe("The date the order was cancelled."),
   cancellationReason: z.string().optional().describe("The reason for cancelling the order."),
+  cookingNotes: z.string().optional(),
+  updateRequests: z.array(UpdateRequestSchema).optional(),
 });
 
 const NotificationTypeSchema = z.enum([

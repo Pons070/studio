@@ -199,7 +199,8 @@ export const orders: Order[] = [
       { id: '3', name: 'Spaghetti Carbonara', price: 15.99, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
       { id: '6', name: 'Tiramisu', price: 7.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
-    reviewId: 'REV-001'
+    reviewId: 'REV-001',
+    updateRequests: [],
   },
   {
     id: 'ORD-002',
@@ -215,6 +216,7 @@ export const orders: Order[] = [
       { id: '4', name: 'Margherita Pizza', price: 14.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
       { id: '2', name: 'Caprese Salad', price: 10.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
+    updateRequests: [],
   },
   {
     id: 'ORD-003',
@@ -230,6 +232,7 @@ export const orders: Order[] = [
       { id: '5', name: 'Grilled Salmon', price: 22.00, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
       { id: '9', name: 'Fresh Orange Juice', price: 5.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
+    updateRequests: [],
   },
    {
     id: 'ORD-004',
@@ -248,6 +251,7 @@ export const orders: Order[] = [
       { id: '7', name: 'Panna Cotta', price: 6.99, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
       { id: '8', name: 'Mineral Water', price: 3.00, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
+    updateRequests: [],
   },
   {
     id: 'ORD-005',
@@ -264,6 +268,7 @@ export const orders: Order[] = [
        { id: '2', name: 'Caprese Salad', price: 10.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
     reviewId: 'REV-002',
+    updateRequests: [],
   },
   {
     id: 'ORD-006',
@@ -279,6 +284,7 @@ export const orders: Order[] = [
       { id: '5', name: 'Grilled Salmon', price: 22.00, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
       { id: '9', name: 'Fresh Orange Juice', price: 5.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
+    updateRequests: [],
   },
 ];
 

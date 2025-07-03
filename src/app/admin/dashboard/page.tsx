@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -10,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin } from 'lucide-react';
-import type { Order, MenuItem, Review, BrandInfo, Address } from '@/lib/types';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send } from 'lucide-react';
+import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -36,8 +37,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { usePromotions } from '@/store/promotions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -48,6 +50,58 @@ const getBadgeVariant = (status: string): "default" | "secondary" | "destructive
         default:          return 'outline';
     }
 };
+
+function ConversationThread({ requests }: { requests: UpdateRequest[] }) {
+  if (!requests || requests.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <h4 className="font-medium">Conversation</h4>
+      <ScrollArea className="h-48 w-full rounded-md border p-4">
+        <div className="space-y-4">
+          {requests.map((req) => (
+            <div key={req.id} className={cn("flex flex-col", req.from === 'admin' ? 'items-end' : 'items-start')}>
+              <div className={cn("rounded-lg px-4 py-2 max-w-sm", req.from === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                <p className="text-sm">{req.message}</p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {req.from === 'admin' ? 'You' : 'Customer'} • {formatDistanceToNow(new Date(req.timestamp), { addSuffix: true })}
+              </p>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+function AdminReplyForm({ orderId }: { orderId: string }) {
+    const { addUpdateRequest } = useOrders();
+    const [reply, setReply] = useState('');
+
+    const handleReply = () => {
+        if (!reply.trim()) return;
+        addUpdateRequest(orderId, reply, 'admin');
+        setReply('');
+    };
+
+    return (
+        <div className="space-y-2 pt-4 border-t">
+            <h4 className="font-medium">Reply to Customer</h4>
+            <div className="flex gap-2">
+                <Textarea
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Type your reply here..."
+                    className="flex-1"
+                />
+                <Button onClick={handleReply} size="icon" disabled={!reply.trim()}>
+                    <Send />
+                </Button>
+            </div>
+        </div>
+    );
+}
 
 function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[] }) {
     if (!order) return null;
@@ -78,6 +132,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                         Order ID: {order.id} | Customer: {order.customerName}
                     </DialogDescription>
                 </DialogHeader>
+                <ScrollArea className="max-h-[70vh] pr-6">
                 <div className="space-y-4 py-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -115,6 +170,15 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                             <p className="font-bold">Rs.{order.total.toFixed(2)}</p>
                         </div>
                     </div>
+                     {order.cookingNotes && (
+                        <>
+                            <Separator />
+                            <div>
+                                <h4 className="font-medium">Cooking Notes</h4>
+                                <p className="text-sm text-muted-foreground italic p-2 bg-muted/50 rounded-md">"{order.cookingNotes}"</p>
+                            </div>
+                        </>
+                    )}
 
                     <Separator />
                      <div className="space-y-2">
@@ -147,6 +211,15 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                         ))}
                     </div>
 
+                    {(order.updateRequests && order.updateRequests.length > 0) && (
+                        <>
+                            <Separator />
+                            <ConversationThread requests={order.updateRequests} />
+                            <AdminReplyForm orderId={order.id} />
+                        </>
+                    )}
+
+
                     {review && (
                         <>
                             <Separator />
@@ -172,7 +245,8 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                         </>
                     )}
                 </div>
-                <DialogFooter>
+                </ScrollArea>
+                <DialogFooter className="border-t pt-4">
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">
                             Close
@@ -274,55 +348,123 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus, onCancelOrder, sele
         </TableRow>
       </TableHeader>
       <TableBody>
-        {orders.map((order) => (
-          <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""}>
-            <TableCell>
-              <Checkbox
-                checked={selectedOrders.includes(order.id)}
-                onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                aria-label={`Select order ${order.id}`}
-              />
-            </TableCell>
-            <TableCell className="font-medium">{order.id}</TableCell>
-            <TableCell>{order.customerName}</TableCell>
-            <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
-            <TableCell>
-              <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
-            </TableCell>
-            <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
-            <TableCell>
-              <div className="flex items-center justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => onSelectOrder(order)}>View Details</Button>
-                  <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem disabled={order.status === 'Pending'} onClick={() => onUpdateStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
-                    <DropdownMenuItem disabled={order.status === 'Confirmed'} onClick={() => onUpdateStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
-                    <DropdownMenuItem disabled={order.status === 'Completed'} onClick={() => onUpdateStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
-                    <DropdownMenuItem disabled={order.status === 'Cancelled'} className="text-destructive focus:bg-destructive/10" onClick={() => onCancelOrder(order)}>Set as Cancelled</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
+        {orders.map((order) => {
+          const lastMessage = order.updateRequests?.[(order.updateRequests?.length || 0) - 1];
+          const hasInquiry = lastMessage?.from === 'customer';
+
+          return (
+            <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""}>
+                <TableCell>
+                <Checkbox
+                    checked={selectedOrders.includes(order.id)}
+                    onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                    aria-label={`Select order ${order.id}`}
+                />
+                </TableCell>
+                <TableCell className="font-medium">{order.id}</TableCell>
+                <TableCell className="flex items-center gap-2">
+                   {order.customerName}
+                   {hasInquiry && <MessageSquare className="h-4 w-4 text-primary animate-pulse" />}
+                </TableCell>
+                <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
+                <TableCell>
+                <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
+                </TableCell>
+                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                <TableCell>
+                <div className="flex items-center justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => onSelectOrder(order)}>View Details</Button>
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem disabled={order.status === 'Pending'} onClick={() => onUpdateStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
+                        <DropdownMenuItem disabled={order.status === 'Confirmed'} onClick={() => onUpdateStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
+                        <DropdownMenuItem disabled={order.status === 'Completed'} onClick={() => onUpdateStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
+                        <DropdownMenuItem disabled={order.status === 'Cancelled'} className="text-destructive focus:bg-destructive/10" onClick={() => onCancelOrder(order)}>Set as Cancelled</DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   )
 }
 
+function AdminNotificationDialog({ order, onOpenChange }: { order: Order | null; onOpenChange: (open: boolean) => void; }) {
+    if (!order) return null;
+
+    const lastMessage = order.updateRequests?.[order.updateRequests.length - 1];
+
+    return (
+        <Dialog open={!!order} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary" /> New Inquiry on Order #{order.id}</DialogTitle>
+                    <DialogDescription>
+                       From: {order.customerName}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    {lastMessage && (
+                        <div className="p-3 bg-muted rounded-md border">
+                            <p className="text-sm italic">"{lastMessage.message}"</p>
+                            <p className="text-xs text-muted-foreground mt-2 text-right">{formatDistanceToNow(new Date(lastMessage.timestamp), { addSuffix: true })}</p>
+                        </div>
+                    )}
+                    <AdminReplyForm orderId={order.id} />
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function OrderManagement() {
-  const { orders, updateOrderStatus } = useOrders();
+  const { orders, updateOrderStatus, addUpdateRequest } = useOrders();
   const { reviews } = useReviews();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  
+  // For new inquiry popup
+  const [lastNotifiedMessageId, setLastNotifiedMessageId] = useState<string | null>(null);
+  const [orderToShowInPopup, setOrderToShowInPopup] = useState<Order | null>(null);
+  const prevOrdersRef = useRef<Order[]>([]);
+
+  useEffect(() => {
+    // Only check for new messages if the previous orders state is available
+    if (prevOrdersRef.current.length > 0) {
+      let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
+      
+      orders.forEach(order => {
+        order.updateRequests?.forEach(req => {
+            if (req.from === 'customer') {
+                if (!latestCustomerMessage || new Date(req.timestamp) > new Date(latestCustomerMessage.timestamp)) {
+                    latestCustomerMessage = { order, messageId: req.id, timestamp: req.timestamp };
+                }
+            }
+        });
+      });
+
+      if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageId) {
+          setOrderToShowInPopup(latestCustomerMessage.order);
+          setLastNotifiedMessageId(latestCustomerMessage.messageId);
+      }
+    }
+    prevOrdersRef.current = orders;
+  }, [orders, lastNotifiedMessageId]);
+
 
   const handleConfirmCancellation = (orderId: string, reason: string) => {
     updateOrderStatus(orderId, 'Cancelled', reason);
@@ -414,6 +556,10 @@ function OrderManagement() {
         isOpen={!!orderToCancel}
         onOpenChange={(open) => !open && setOrderToCancel(null)}
         onConfirm={handleConfirmCancellation}
+      />
+      <AdminNotificationDialog
+        order={orderToShowInPopup}
+        onOpenChange={(open) => !open && setOrderToShowInPopup(null)}
       />
     </>
   );

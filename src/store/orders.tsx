@@ -3,7 +3,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import type { Order, CartItem, Address } from '@/lib/types';
+import type { Order, CartItem, Address, UpdateRequest } from '@/lib/types';
 import { orders as mockOrders } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
@@ -12,10 +12,11 @@ import { format } from 'date-fns';
 
 type OrderContextType = {
   orders: Order[];
-  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address) => Promise<void>;
+  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string) => Promise<void>;
   updateOrderStatus: (orderId: string, status: Order['status'], reason?: string) => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
   removeReviewIdFromOrder: (orderId: string) => void;
+  addUpdateRequest: (orderId: string, message: string, from: 'customer' | 'admin') => void;
 };
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -47,7 +48,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, [orders]);
 
 
-  const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address) => {
+  const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string) => {
     if (!currentUser) {
       toast({
         title: "Authentication Error",
@@ -68,6 +69,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         status: 'Pending',
         total: total,
         items: items,
+        cookingNotes: cookingNotes || undefined,
+        updateRequests: [],
     };
 
     // Optimistically update UI
@@ -182,8 +185,41 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const addUpdateRequest = useCallback((orderId: string, message: string, from: 'customer' | 'admin') => {
+    if (!message.trim()) return;
+
+    const newRequest: UpdateRequest = {
+        id: `MSG-${Date.now()}`,
+        message,
+        from,
+        timestamp: new Date().toISOString(),
+    };
+
+    setOrders(prevOrders =>
+        prevOrders.map(order => {
+            if (order.id === orderId) {
+                const updatedRequests = [...(order.updateRequests || []), newRequest];
+                return { ...order, updateRequests: updatedRequests };
+            }
+            return order;
+        })
+    );
+
+    if (from === 'admin') {
+      toast({
+        title: "Reply Sent!",
+        description: "Your reply has been sent to the customer.",
+      });
+    } else {
+      toast({
+        title: "Message Sent!",
+        description: "Your inquiry has been sent to the restaurant.",
+      });
+    }
+  }, [toast]);
+
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, addReviewToOrder, removeReviewIdFromOrder }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, addReviewToOrder, removeReviewIdFromOrder, addUpdateRequest }}>
       {children}
     </OrderContext.Provider>
   );
