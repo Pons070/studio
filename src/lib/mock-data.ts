@@ -22,9 +22,9 @@ export const brandInfo: BrandInfo = {
   instagramUrl: '',
   allowOrderUpdates: true,
   theme: {
-    primaryColor: '30 85% 67%',
-    backgroundColor: '28 71% 92%',
-    accentColor: '14 66% 62%',
+    primaryColor: '222.2 47.4% 11.2%',
+    backgroundColor: '0 0% 100%',
+    accentColor: '210 40% 96.1%',
     fontHeadline: 'Alegreya',
     fontBody: 'Alegreya',
     borderRadius: 0.5,

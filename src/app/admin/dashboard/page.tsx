@@ -1131,7 +1131,7 @@ function BrandManagement() {
   const [isSaving, setIsSaving] = useState(false);
 
   const palettes = [
-    { name: 'Sunset Orange', primaryColor: '30 85% 67%', backgroundColor: '28 71% 92%', accentColor: '14 66% 62%' },
+    { name: 'Default Light', primaryColor: '222.2 47.4% 11.2%', backgroundColor: '0 0% 100%', accentColor: '210 40% 96.1%' },
     { name: 'Oceanic Blue', primaryColor: '217 91% 60%', backgroundColor: '210 40% 98%', accentColor: '198 93% 60%' },
     { name: 'Forest Green', primaryColor: '142 76% 36%', backgroundColor: '120 20% 97%', accentColor: '90 57% 53%' },
     { name: 'Royal Purple', primaryColor: '262 83% 58%', backgroundColor: '270 60% 98%', accentColor: '286 75% 68%' },
