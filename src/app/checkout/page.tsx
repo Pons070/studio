@@ -124,7 +124,7 @@ export default function CheckoutPage() {
                         <CardTitle>1. Select Pickup Time</CardTitle>
                         <CardDescription>Choose when you'd like to receive your order.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col md:flex-row gap-8">
+                    <CardContent className="grid gap-4 md:grid-cols-2 md:gap-8">
                          <div className="space-y-2">
                             <Label>Pre-Order Date</Label>
                             <Popover>
@@ -132,7 +132,7 @@ export default function CheckoutPage() {
                                     <Button
                                         variant={"outline"}
                                         className={cn(
-                                            "w-[280px] justify-start text-left font-normal",
+                                            "w-full justify-start text-left font-normal",
                                             !pickupDate && "text-muted-foreground"
                                         )}
                                     >
@@ -155,10 +155,10 @@ export default function CheckoutPage() {
                                 </PopoverContent>
                             </Popover>
                         </div>
-                        <div className="space-y-2 flex-1">
+                        <div className="space-y-2">
                              <Label>Available Times</Label>
                              <Select onValueChange={setTime} value={time}>
-                                 <SelectTrigger>
+                                 <SelectTrigger className="w-full">
                                      <SelectValue placeholder="Select a time" />
                                  </SelectTrigger>
                                  <SelectContent>
