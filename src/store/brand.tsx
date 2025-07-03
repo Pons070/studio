@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -16,9 +17,11 @@ const LOCAL_STORAGE_KEY = 'culina-preorder-brand';
 
 export function BrandProvider({ children }: { children: ReactNode }) {
   const [brandInfo, setBrandInfo] = useState<BrandInfo>(mockBrandInfo);
+  const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
+    setIsMounted(true);
     try {
       const item = window.localStorage.getItem(LOCAL_STORAGE_KEY);
       if (item) {
@@ -30,15 +33,17 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(brandInfo));
-    } catch (error) {
-      console.error("Failed to save brand info to localStorage", error);
+    if (isMounted) {
+      try {
+        window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(brandInfo));
+      } catch (error) {
+        console.error("Failed to save brand info to localStorage", error);
+      }
     }
-  }, [brandInfo]);
+  }, [brandInfo, isMounted]);
 
   useEffect(() => {
-    if (brandInfo.theme) {
+    if (isMounted && brandInfo.theme) {
       const root = document.documentElement;
       const theme = brandInfo.theme;
       
@@ -58,7 +63,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
         document.body.style.backgroundImage = 'none';
       }
     }
-  }, [brandInfo.theme]);
+  }, [brandInfo.theme, isMounted]);
 
 
   const updateBrandInfo = useCallback((newInfo: Partial<BrandInfo>) => {
