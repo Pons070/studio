@@ -83,6 +83,7 @@ export type BrandInfo = {
   };
   youtubeUrl?: string;
   instagramUrl?: string;
+  allowOrderUpdates?: boolean;
 };
 
 export type Promotion = {

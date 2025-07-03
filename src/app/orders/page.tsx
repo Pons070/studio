@@ -129,10 +129,11 @@ function ConversationThread({ requests }: { requests: UpdateRequest[] }) {
 }
 
 function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onRequestUpdateClick }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[]; onRequestUpdateClick: () => void; }) {
+    const { brandInfo } = useBrand();
     if (!order) return null;
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
-    const canRequestUpdate = (order.status === 'Pending' || order.status === 'Confirmed') && (order.updateRequests?.filter(r => r.from === 'customer').length || 0) < 3;
+    const canRequestUpdate = (brandInfo.allowOrderUpdates ?? true) && (order.status === 'Pending' || order.status === 'Confirmed') && (order.updateRequests?.filter(r => r.from === 'customer').length || 0) < 3;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>

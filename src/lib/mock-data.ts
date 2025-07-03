@@ -20,6 +20,7 @@ export const brandInfo: BrandInfo = {
   },
   youtubeUrl: '',
   instagramUrl: '',
+  allowOrderUpdates: true,
 };
 
 const aliceAddress: Address = {

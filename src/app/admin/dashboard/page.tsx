@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit, Home, Star, MessageSquare, Building, Quote, AlertTriangle, Instagram, Youtube, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send } from 'lucide-react';
-import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest } from '@/lib/types';
+import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -1115,6 +1115,7 @@ function BrandManagement() {
   const [instagramUrl, setInstagramUrl] = useState(brandInfo.instagramUrl || '');
   const [businessStatus, setBusinessStatus] = useState(brandInfo.businessHours.status);
   const [closureMessage, setClosureMessage] = useState(brandInfo.businessHours.message);
+  const [allowOrderUpdates, setAllowOrderUpdates] = useState(brandInfo.allowOrderUpdates ?? true);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -1127,6 +1128,7 @@ function BrandManagement() {
     setInstagramUrl(brandInfo.instagramUrl || '');
     setBusinessStatus(brandInfo.businessHours.status);
     setClosureMessage(brandInfo.businessHours.message);
+    setAllowOrderUpdates(brandInfo.allowOrderUpdates ?? true);
   }, [brandInfo]);
   
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1158,7 +1160,8 @@ function BrandManagement() {
       businessHours: {
         status: businessStatus,
         message: closureMessage
-      }
+      },
+      allowOrderUpdates,
     });
     // A little delay to simulate saving and show the disabled state
     setTimeout(() => setIsSaving(false), 500);
@@ -1172,7 +1175,8 @@ function BrandManagement() {
     youtubeUrl !== (brandInfo.youtubeUrl || '') ||
     instagramUrl !== (brandInfo.instagramUrl || '') ||
     businessStatus !== brandInfo.businessHours.status ||
-    (businessStatus === 'closed' && closureMessage !== brandInfo.businessHours.message);
+    (businessStatus === 'closed' && closureMessage !== brandInfo.businessHours.message) ||
+    allowOrderUpdates !== (brandInfo.allowOrderUpdates ?? true);
 
   return (
     <Card>
@@ -1256,32 +1260,54 @@ function BrandManagement() {
             </div>
         </div>
         <Separator className="my-6" />
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Business Hours</h3>
-          <div className="flex items-center space-x-2 rounded-lg border p-4">
-            <Switch
-              id="business-status"
-              checked={businessStatus === 'open'}
-              onCheckedChange={(checked) => setBusinessStatus(checked ? 'open' : 'closed')}
-            />
-            <Label htmlFor="business-status" className="text-base flex-grow">
-              {businessStatus === 'open' ? 'Open for Pre-Orders' : 'Closed for Pre-Orders'}
-            </Label>
-          </div>
-          {businessStatus === 'closed' && (
-            <div className="space-y-2">
-              <Label htmlFor="closure-message">Closure Message</Label>
-              <Textarea
-                id="closure-message"
-                value={closureMessage}
-                onChange={(e) => setClosureMessage(e.target.value)}
-                placeholder="E.g., Closed for a private event."
-              />
-              <p className="text-sm text-muted-foreground">
-                This message will be shown to customers when you are closed.
-              </p>
+        <div className="space-y-6">
+          <h3 className="text-lg font-medium">Business Settings</h3>
+          <div className="space-y-4">
+            <div className="flex items-start space-x-4 rounded-lg border p-4">
+                <Switch
+                id="allow-order-updates"
+                checked={allowOrderUpdates}
+                onCheckedChange={setAllowOrderUpdates}
+                />
+                <div className="grid gap-1.5 flex-1">
+                    <Label htmlFor="allow-order-updates" className="text-base flex-grow cursor-pointer pt-0.5">
+                        Enable Customer Inquiries
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                        Allow customers to send messages about their active orders.
+                    </p>
+                </div>
             </div>
-          )}
+            <div className="flex items-start space-x-4 rounded-lg border p-4">
+                <Switch
+                  id="business-status"
+                  checked={businessStatus === 'open'}
+                  onCheckedChange={(checked) => setBusinessStatus(checked ? 'open' : 'closed')}
+                />
+                <div className="grid gap-1.5 flex-1">
+                  <Label htmlFor="business-status" className="text-base flex-grow cursor-pointer pt-0.5">
+                    {businessStatus === 'open' ? 'Open for Pre-Orders' : 'Closed for Pre-Orders'}
+                  </Label>
+                   <p className="text-sm text-muted-foreground">
+                        Control whether customers can place new pre-orders.
+                    </p>
+                </div>
+            </div>
+            {businessStatus === 'closed' && (
+                <div className="space-y-2 pl-4">
+                  <Label htmlFor="closure-message">Closure Message</Label>
+                  <Textarea
+                    id="closure-message"
+                    value={closureMessage}
+                    onChange={(e) => setClosureMessage(e.target.value)}
+                    placeholder="E.g., Closed for a private event."
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    This message will be shown to customers when you are closed.
+                  </p>
+                </div>
+              )}
+          </div>
         </div>
       </CardContent>
       <CardFooter>
