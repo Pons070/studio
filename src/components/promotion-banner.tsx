@@ -35,7 +35,15 @@ export function PromotionBanner() {
         return true;
     };
 
-    const activePromos = promotions.filter(p => p.isActive && isDateActive(p));
+    const isDayActive = (promo: Promotion) => {
+        if (!promo.activeDays || promo.activeDays.length === 0) {
+            return true; // Active on all days if not specified
+        }
+        const today = new Date().getDay(); // Sunday - 0, Monday - 1, ...
+        return promo.activeDays.includes(today);
+    }
+
+    const activePromos = promotions.filter(p => p.isActive && isDateActive(p) && isDayActive(p));
     
     // Find a promotion specifically for the customer type
     const specificPromotion = activePromos.find(p => p.targetAudience === customerType);

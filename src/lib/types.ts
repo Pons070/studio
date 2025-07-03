@@ -66,4 +66,5 @@ export type Promotion = {
   isActive: boolean;
   startDate?: string;
   endDate?: string;
+  activeDays?: number[]; // 0 = Sun, 1 = Mon, ..., 6 = Sat
 };

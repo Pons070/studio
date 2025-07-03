@@ -914,7 +914,8 @@ function BrandManagement() {
         message: closureMessage
       }
     });
-    setIsSaving(false);
+    // A little delay to simulate saving and show the disabled state
+    setTimeout(() => setIsSaving(false), 500);
   }
 
   const isDirty = name !== brandInfo.name ||
@@ -1019,6 +1020,13 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
     const [targetAudience, setTargetAudience] = useState<Promotion['targetAudience']>('all');
     const [startDate, setStartDate] = useState<Date | undefined>();
     const [endDate, setEndDate] = useState<Date | undefined>();
+    const [activeDays, setActiveDays] = useState<number[]>([]);
+
+    const daysOfWeek = [
+        { id: 1, label: 'Mon' }, { id: 2, label: 'Tue' }, { id: 3, label: 'Wed' },
+        { id: 4, label: 'Thu' }, { id: 5, label: 'Fri' }, { id: 6, label: 'Sat' },
+        { id: 0, label: 'Sun' },
+    ];
 
     useEffect(() => {
         if (isOpen) {
@@ -1028,15 +1036,23 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                 setTargetAudience(item.targetAudience);
                 setStartDate(item.startDate ? new Date(item.startDate) : undefined);
                 setEndDate(item.endDate ? new Date(item.endDate) : undefined);
+                setActiveDays(item.activeDays || []);
             } else {
                 setTitle('');
                 setDescription('');
                 setTargetAudience('all');
                 setStartDate(undefined);
                 setEndDate(undefined);
+                setActiveDays([]);
             }
         }
     }, [item, isOpen]);
+
+    const handleDayToggle = (dayId: number) => {
+        setActiveDays(prev => 
+            prev.includes(dayId) ? prev.filter(d => d !== dayId) : [...prev, dayId]
+        );
+    }
 
     const handleSubmit = () => {
         onSave({ 
@@ -1047,6 +1063,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
             isActive: item?.isActive ?? true,
             startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
             endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
+            activeDays: activeDays.length > 0 ? activeDays : undefined,
         });
     }
 
@@ -1077,6 +1094,26 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                                 <SelectItem value="existing">Existing Customers</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+                     <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">Active Days</Label>
+                        <div className="col-span-3">
+                            <div className="flex flex-wrap gap-2">
+                                {daysOfWeek.map(day => (
+                                    <Button
+                                        key={day.id}
+                                        type="button"
+                                        variant={activeDays.includes(day.id) ? 'secondary' : 'outline'}
+                                        size="sm"
+                                        onClick={() => handleDayToggle(day.id)}
+                                        className="w-12"
+                                    >
+                                        {day.label}
+                                    </Button>
+                                ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">Leave blank to run on all days.</p>
+                        </div>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="promo-start-date" className="text-right">Start Date</Label>
@@ -1188,6 +1225,17 @@ function PromotionManagement() {
     if (end) return `Ends ${end}`;
     return "Always Active";
   };
+  
+  const formatActiveDays = (days?: number[]) => {
+    if (!days || days.length === 0 || days.length === 7) return "All Days";
+    
+    const sortedDays = [...days].sort();
+    if (sortedDays.join(',') === '1,2,3,4,5') return "Weekdays";
+    if (sortedDays.join(',') === '0,6') return "Weekends";
+
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return sortedDays.map(d => dayLabels[d]).join(', ');
+  };
 
 
   return (
@@ -1207,7 +1255,8 @@ function PromotionManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
-                <TableHead>Target Audience</TableHead>
+                <TableHead>Target</TableHead>
+                <TableHead>Active Days</TableHead>
                 <TableHead>Date Range</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -1218,6 +1267,7 @@ function PromotionManagement() {
                 <TableRow key={promo.id}>
                   <TableCell className="font-medium">{promo.title}</TableCell>
                   <TableCell>{targetAudienceMap[promo.targetAudience]}</TableCell>
+                  <TableCell>{formatActiveDays(promo.activeDays)}</TableCell>
                   <TableCell>{formatDateRange(promo.startDate, promo.endDate)}</TableCell>
                   <TableCell>
                     <Switch

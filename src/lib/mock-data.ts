@@ -260,11 +260,12 @@ export const promotions: Promotion[] = [
   },
   {
     id: 'PROMO-2',
-    title: 'Loyalty Bonus for Our regulars!',
-    description: 'Enjoy a free dessert on your next order as a thank you for your continued support.',
+    title: 'Weekday Special for Regulars!',
+    description: 'Enjoy a free dessert on your next order as a thank you for your continued support. Valid on weekdays.',
     targetAudience: 'existing',
     isActive: true,
     startDate: '2024-06-01',
+    activeDays: [1, 2, 3, 4, 5], // Mon-Fri
   },
    {
     id: 'PROMO-3',
