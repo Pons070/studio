@@ -23,8 +23,6 @@ export default function Home() {
   const isClosed = brandInfo.businessHours.status === 'closed';
 
   const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const shareText = `Check out ${brandInfo.name} for delicious pre-ordered meals!`;
-  const shareTitle = `Recommend ${brandInfo.name}`;
 
   return (
     <div className="space-y-20">
@@ -113,14 +111,13 @@ export default function Home() {
         <h2 className="text-3xl font-headline font-bold text-center mb-6">Share the Love</h2>
         <Card className="max-w-2xl mx-auto shadow-lg">
             <CardContent className="p-8 text-center">
-                  <p className="text-lg text-muted-foreground mb-6">
+                  <p className="text-lg text-muted-foreground mb-6 whitespace-pre-line">
                     Enjoying our food? Help us grow by recommending us to your friends and family!
+Click below to copy the shareable link to your clipboard and start sharing with your peer groups!
                 </p>
                 <RecommendButton 
                     shareUrl={shareUrl}
-                    shareTitle={shareTitle}
-                    shareText={shareText}
-                    triggerText="Share with Friends"
+                    triggerText="Copy Shareable Link"
                     variant="accent"
                     size="lg"
                   />

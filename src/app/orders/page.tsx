@@ -268,8 +268,6 @@ export default function OrdersPage() {
   };
   
   const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const shareText = `I just had a great meal from ${brandInfo.name}! You should check them out for delicious pre-ordered meals.`;
-  const shareTitle = `Recommend ${brandInfo.name}`;
 
 
   if (!isAuthenticated) {
@@ -342,11 +340,9 @@ export default function OrdersPage() {
                                 ) : (
                                     <RecommendButton 
                                         shareUrl={shareUrl}
-                                        shareTitle={shareTitle}
-                                        shareText={shareText}
                                         size="sm"
                                         variant="outline"
-                                        triggerText="Recommend"
+                                        triggerText="Share Link"
                                     />
                                 )
                             ) : null}
