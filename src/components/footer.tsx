@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Utensils, Twitter, Facebook, Instagram } from "lucide-react";
+import { Utensils, Twitter, Facebook, Instagram, Youtube } from "lucide-react";
 import { useBrand } from "@/store/brand";
 import Image from "next/image";
 
@@ -48,6 +48,11 @@ export function Footer() {
               <Link href="#" className="text-muted-foreground hover:text-primary">
                 <Instagram className="h-5 w-5" />
               </Link>
+              {brandInfo.youtubeUrl && (
+                <Link href={brandInfo.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                  <Youtube className="h-5 w-5" />
+                </Link>
+              )}
             </div>
              <Link href="/admin/login" className="text-xs text-muted-foreground hover:text-primary mt-2">
               Admin Login

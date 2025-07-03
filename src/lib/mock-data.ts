@@ -11,6 +11,7 @@ export const brandInfo: BrandInfo = {
     status: 'open',
     message: 'We are temporarily closed. Please check back later!',
   },
+  youtubeUrl: '',
 };
 
 export const menuItems: MenuItem[] = [

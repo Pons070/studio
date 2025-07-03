@@ -569,6 +569,7 @@ function BrandManagement() {
   const [phone, setPhone] = useState(brandInfo.phone);
   const [address, setAddress] = useState(brandInfo.address);
   const [about, setAbout] = useState(brandInfo.about || '');
+  const [youtubeUrl, setYoutubeUrl] = useState(brandInfo.youtubeUrl || '');
   const [businessStatus, setBusinessStatus] = useState(brandInfo.businessHours.status);
   const [closureMessage, setClosureMessage] = useState(brandInfo.businessHours.message);
   const [isSaving, setIsSaving] = useState(false);
@@ -592,6 +593,7 @@ function BrandManagement() {
       phone,
       address,
       about,
+      youtubeUrl,
       businessHours: {
         status: businessStatus,
         message: closureMessage
@@ -624,6 +626,10 @@ function BrandManagement() {
         <div className="space-y-2">
             <Label htmlFor="brand-about">About Section</Label>
             <Textarea id="brand-about" value={about} onChange={(e) => setAbout(e.target.value)} placeholder="Tell your customers about your restaurant..." rows={4} />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="brand-youtube">YouTube Channel URL</Label>
+            <Input id="brand-youtube" type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/yourchannel" />
         </div>
         <div className="space-y-2">
             <Label htmlFor="logo">Logo</Label>

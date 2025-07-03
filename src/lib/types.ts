@@ -47,4 +47,5 @@ export type BrandInfo = {
     status: 'open' | 'closed';
     message: string;
   };
+  youtubeUrl?: string;
 };
