@@ -2018,7 +2018,7 @@ export default function AdminDashboardPage() {
          </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <div className="p-4 md:p-8 space-y-8">
+        <div className="p-6 space-y-6">
           <header className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
