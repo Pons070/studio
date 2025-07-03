@@ -1980,7 +1980,7 @@ export default function AdminDashboardPage() {
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-r bg-muted/20">
+      <Sidebar className="border-r bg-muted">
         <SidebarHeader>
            <div className="flex h-20 items-center gap-2 px-4">
               <Shield className="h-8 w-8 text-primary" />
