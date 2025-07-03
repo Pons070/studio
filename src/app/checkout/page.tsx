@@ -35,6 +35,7 @@ import { useAuth } from '@/store/auth';
 import Link from 'next/link';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { Address } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
 
 
 export default function CheckoutPage() {
@@ -55,8 +56,13 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setIsClient(true);
-    setPickupDate(new Date());
   }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      setPickupDate(new Date());
+    }
+  }, [isClient]);
 
   useEffect(() => {
     if (currentUser?.addresses && currentUser.addresses.length > 0) {
@@ -177,32 +183,42 @@ export default function CheckoutPage() {
               <CardContent className="grid gap-4 md:grid-cols-2 md:gap-8">
                 <div className="space-y-2">
                   <Label>Pre-Order Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
+                  {isClient && pickupDate ? (
+                     <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !pickupDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {pickupDate ? format(pickupDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={pickupDate}
+                          onSelect={(newDate) => {
+                            setPickupDate(newDate);
+                          }}
+                          disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                     <Button
                         variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !pickupDate && "text-muted-foreground"
-                        )}
-                         disabled={!isClient}
+                        className="w-full justify-start text-left font-normal text-muted-foreground"
+                        disabled
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {pickupDate ? format(pickupDate, "PPP") : <span>Pick a date</span>}
+                       <CalendarIcon className="mr-2 h-4 w-4" />
+                       <span>Pick a date</span>
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={pickupDate}
-                        onSelect={(newDate) => {
-                          setPickupDate(newDate);
-                        }}
-                        disabled={!isClient ? (d) => true : (d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Available Times</Label>
@@ -239,7 +255,7 @@ export default function CheckoutPage() {
                     ) : (
                         <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId} className="space-y-4">
                             {(currentUser?.addresses || []).map(address => (
-                                <Label key={address.id} htmlFor={address.id} className="flex flex-col p-4 border rounded-md has-[:checked]:bg-secondary has-[:checked]:border-primary cursor-pointer">
+                                <Label key={address.id} htmlFor={address.id!} className="flex flex-col p-4 border rounded-md has-[:checked]:bg-secondary has-[:checked]:border-primary cursor-pointer">
                                      <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <RadioGroupItem value={address.id!} id={address.id} />
