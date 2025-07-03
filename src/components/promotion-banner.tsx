@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import { usePromotions } from '@/store/promotions';
 import { useAuth } from '@/store/auth';
 import { useOrders } from '@/store/orders';
@@ -15,6 +16,7 @@ export function PromotionBanner() {
   const { isAuthenticated, currentUser } = useAuth();
   const { orders } = useOrders();
   const [isVisible, setIsVisible] = useState(true);
+  const pathname = usePathname();
 
   const customerType = useMemo(() => {
     if (!isAuthenticated || !currentUser) return 'new';
@@ -55,7 +57,7 @@ export function PromotionBanner() {
 
   }, [promotions, customerType]);
   
-  if (!activePromotion || !isVisible) {
+  if (pathname.startsWith('/admin') || !activePromotion || !isVisible) {
     return null;
   }
 
