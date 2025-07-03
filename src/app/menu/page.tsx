@@ -64,7 +64,7 @@ export default function MenuPage() {
 
         return (
           <section key={category}>
-            <h2 className="text-3xl font-headline font-semibold mb-6 flex items-center">
+            <h2 className="text-3xl font-headline font-semibold mb-6 flex items-center bg-primary text-primary-foreground p-3 rounded-lg shadow-md">
               {categoryIcons[category as keyof typeof categoryIcons]}
               {category}
             </h2>
