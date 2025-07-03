@@ -936,7 +936,7 @@ export default function AdminDashboardPage() {
           </Button>
       </div>
       <Tabs defaultValue="orders" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 md:w-[800px]">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
           <TabsTrigger value="orders">Manage Orders</TabsTrigger>
           <TabsTrigger value="menu">Manage Menu</TabsTrigger>
           <TabsTrigger value="reviews">Manage Reviews</TabsTrigger>
