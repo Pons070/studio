@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { usePromotions } from '@/store/promotions';
 import { useAuth } from '@/store/auth';
 import { useOrders } from '@/store/orders';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Megaphone, X } from 'lucide-react';
 import { Button } from './ui/button';
 import type { Promotion } from '@/lib/types';
@@ -73,25 +72,24 @@ export function PromotionBanner() {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-      <Alert className="bg-accent border-accent text-accent-foreground relative pr-10">
-        <Megaphone className="h-4 w-4 text-accent-foreground" />
-        <AlertTitle className="font-bold">{activePromotion.title}</AlertTitle>
-        <AlertDescription>
-          {activePromotion.description}
-          {activePromotion.couponCode && (
-            <span className="font-semibold block mt-1">Use code: {activePromotion.couponCode}</span>
-          )}
-        </AlertDescription>
-         <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute top-1/2 right-2 -translate-y-1/2 h-7 w-7 text-accent-foreground/70 hover:text-accent-foreground hover:bg-transparent"
-            onClick={() => setIsVisible(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-      </Alert>
+    <div className="fixed top-6 right-6 z-50 w-full max-w-sm">
+        <div className="bg-card/90 backdrop-blur-sm p-3.5 rounded-lg shadow-lg border flex items-center gap-3 animate-in fade-in-0 slide-in-from-top-4">
+            <Megaphone className="h-5 w-5 text-primary shrink-0" />
+            <p className="flex-1 text-sm text-muted-foreground">
+                <span className="font-medium text-card-foreground">{activePromotion.title}</span>
+                {activePromotion.couponCode && (
+                    <span className="ml-1 font-semibold text-primary">Code: {activePromotion.couponCode}</span>
+                )}
+            </p>
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={() => setIsVisible(false)}
+            >
+                <X className="h-4 w-4" />
+            </Button>
+        </div>
     </div>
   );
 }
