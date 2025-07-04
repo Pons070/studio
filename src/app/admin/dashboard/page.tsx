@@ -2888,9 +2888,30 @@ export default function AdminDashboardPage() {
   
   const notifiedMessageIdsRef = useRef(new Set<string>());
   const notifiedOrderIdsRef = useRef(new Set<string>());
+  const isInitializedRef = useRef(false);
   
   useEffect(() => {
-    // Inquiry detection logic
+    // This effect runs whenever the 'orders' array changes.
+
+    // One-time initialization: Mark all existing data as "seen" on first load
+    // to prevent notifications for old orders/messages.
+    if (!isInitializedRef.current && orders.length > 0) {
+        orders.forEach(order => {
+            notifiedOrderIdsRef.current.add(order.id);
+            order.updateRequests?.forEach(req => {
+                notifiedMessageIdsRef.current.add(req.id);
+            });
+        });
+        isInitializedRef.current = true;
+        return; // Exit early, no need to check for notifications on initial population.
+    }
+
+    // Don't run notification logic if initialization hasn't happened yet (e.g., orders are still loading)
+    if (!isInitializedRef.current) {
+        return;
+    }
+
+    // --- Inquiry Detection Logic ---
     let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
     orders.forEach(order => {
         order.updateRequests?.forEach(req => {
@@ -2907,25 +2928,18 @@ export default function AdminDashboardPage() {
         notifiedMessageIdsRef.current.add(latestCustomerMessage.messageId);
     }
 
-    // New order detection logic
-    const newOrders = orders.filter(o => !notifiedOrderIdsRef.current.has(o.id));
+    // --- New Order Detection Logic ---
+    // Only consider orders that are 'Pending' and haven't been notified yet.
+    const newOrders = orders.filter(o => o.status === 'Pending' && !notifiedOrderIdsRef.current.has(o.id));
 
     if (newOrders.length > 0) {
+        // Find the most recent new order to display in the pop-up.
         const mostRecentNewOrder = newOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())[0];
         setNewOrderInPopup(mostRecentNewOrder);
-        notifiedOrderIdsRef.current.add(mostRecentNewOrder.id);
+        
+        // Mark all newly found orders as notified to prevent repeated pop-ups.
+        newOrders.forEach(o => notifiedOrderIdsRef.current.add(o.id));
     }
-    
-    // Initial population of notified IDs to prevent old notifications
-    if (notifiedOrderIdsRef.current.size === 0 && notifiedMessageIdsRef.current.size === 0) {
-        orders.forEach(order => {
-            notifiedOrderIdsRef.current.add(order.id);
-            order.updateRequests?.forEach(req => {
-                notifiedMessageIdsRef.current.add(req.id);
-            });
-        });
-    }
-
   }, [orders]);
 
 
