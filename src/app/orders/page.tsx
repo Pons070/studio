@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -373,6 +373,8 @@ export default function OrdersPage() {
   const { brandInfo } = useBrand();
   const [shareUrl, setShareUrl] = useState('');
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     setShareUrl(window.location.origin);
@@ -390,6 +392,14 @@ export default function OrdersPage() {
       }
     }
   }, [searchParams, userOrders]);
+  
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      setSelectedOrder(null);
+      // Remove the query param from URL to prevent re-opening
+      router.replace(pathname, { scroll: false });
+    }
+  };
 
   const handleCancelOrder = (orderId: string) => {
     updateOrderStatus(orderId, 'Cancelled', 'customer');
@@ -518,7 +528,7 @@ export default function OrdersPage() {
       <OrderDetailsDialog 
         order={selectedOrder}
         isOpen={!!selectedOrder}
-        onOpenChange={(open) => !open && setSelectedOrder(null)}
+        onOpenChange={handleDialogChange}
         reviews={reviews}
         onRequestUpdateClick={handleRequestUpdateClick}
       />
