@@ -15,17 +15,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -41,6 +30,7 @@ import { Separator } from '@/components/ui/separator';
 import { Star, MessageSquare, Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useOrders } from '@/store/orders';
 import { useReviews } from '@/store/reviews';
 import { useAuth } from '@/store/auth';
@@ -360,6 +350,79 @@ function ReviewDialog(
     );
 }
 
+function CustomerCancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: (orderId: string, reason: string) => void }) {
+    const [reason, setReason] = useState('');
+    const [customReason, setCustomReason] = useState('');
+
+    const predefinedReasons = [
+        "Change of plans",
+        "Ordered by mistake",
+        "Delivery time is too late",
+        "Found a better option elsewhere",
+    ];
+
+    useEffect(() => {
+        if (!isOpen) {
+            setReason('');
+            setCustomReason('');
+        }
+    }, [isOpen]);
+    
+    if (!order) return null;
+
+    const handleConfirm = () => {
+        const finalReason = reason === 'Other' ? customReason : reason;
+        if (finalReason.trim()) {
+            onConfirm(order.id, finalReason);
+            onOpenChange(false);
+        }
+    }
+
+    const isConfirmDisabled = !reason || (reason === 'Other' && !customReason.trim());
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Cancel Order #{order.id}</DialogTitle>
+                    <DialogDescription>
+                        Please let us know why you're cancelling. Your feedback helps us improve.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <RadioGroup value={reason} onValueChange={setReason} className="space-y-2">
+                        {predefinedReasons.map(r => (
+                            <div key={r} className="flex items-center space-x-2">
+                                <RadioGroupItem value={r} id={r} />
+                                <Label htmlFor={r}>{r}</Label>
+                            </div>
+                        ))}
+                         <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="Other" id="other" />
+                            <Label htmlFor="other">Other</Label>
+                        </div>
+                    </RadioGroup>
+                    {reason === 'Other' && (
+                        <Textarea 
+                            value={customReason} 
+                            onChange={(e) => setCustomReason(e.target.value)}
+                            placeholder="Please specify your reason..."
+                            className="mt-2"
+                        />
+                    )}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Go Back</Button>
+                    </DialogClose>
+                    <Button type="button" variant="destructive" onClick={handleConfirm} disabled={isConfirmDisabled}>Confirm Cancellation</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 export default function OrdersPage() {
   const { orders, updateOrderStatus } = useOrders();
   const { reviews, addReview } = useReviews();
@@ -367,6 +430,7 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [updateRequestOrder, setUpdateRequestOrder] = useState<Order | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const { toggleFavoriteOrder, isOrderFavorite } = useFavorites();
   const { reorder } = useCart();
   const { brandInfo } = useBrand();
@@ -378,9 +442,9 @@ export default function OrdersPage() {
 
   const userOrders = orders.filter(order => order.customerId === currentUser?.id).sort((a,b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
-  const handleCancelOrder = (orderId: string) => {
-    updateOrderStatus(orderId, 'Cancelled', 'customer');
-  }
+  const handleConfirmCancellation = (orderId: string, reason: string) => {
+    updateOrderStatus(orderId, 'Cancelled', 'customer', reason);
+  };
 
   const handleReviewSubmit = (orderId: string, rating: number, comment: string) => {
     addReview(orderId, rating, comment);
@@ -468,25 +532,7 @@ export default function OrdersPage() {
                             ) : null}
                           
                           {(order.status === 'Pending' || order.status === 'Confirmed') ? (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">Cancel</Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently cancel your pre-order.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Go Back</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleCancelOrder(order.id)}>
-                                    Yes, Cancel Order
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button variant="destructive" size="sm" onClick={() => setOrderToCancel(order)}>Cancel</Button>
                           ) : null}
                           
                           <Button variant="ghost" size="icon" onClick={() => toggleFavoriteOrder(order.id)}>
@@ -519,6 +565,12 @@ export default function OrdersPage() {
         order={updateRequestOrder}
         isOpen={!!updateRequestOrder}
         onOpenChange={(open) => !open && setUpdateRequestOrder(null)}
+      />
+      <CustomerCancellationDialog 
+        order={orderToCancel}
+        isOpen={!!orderToCancel}
+        onOpenChange={(open) => !open && setOrderToCancel(null)}
+        onConfirm={handleConfirmCancellation}
       />
     </>
   );
