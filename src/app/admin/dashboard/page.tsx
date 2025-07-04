@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -36,9 +36,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { usePromotions } from '@/store/promotions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/store/auth';
 import {
@@ -62,6 +63,9 @@ import ReactCrop, {
 import 'react-image-crop/dist/ReactCrop.css';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useRouter } from 'next/navigation';
+import { getBusinessInsights, type BusinessInsightsOutput } from '@/ai/flows/business-insights-flow';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -348,7 +352,7 @@ function CancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order:
 }
 
 
-function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus?: (orderId: string, status: Order['status']) => void, isActionable?: boolean }) {
+function OrderTable({ orders, onSelectOrder, onUpdateStatus, onDeleteOrder }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus?: (orderId: string, status: Order['status']) => void, onDeleteOrder: (order: Order) => void }) {
   if (orders.length === 0) {
     return <p className="text-sm text-muted-foreground p-4">No orders to display.</p>;
   }
@@ -362,6 +366,7 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[]
           <TableHead>Pickup Date</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Total</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -394,6 +399,31 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[]
                    )}
                 </TableCell>
                 <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    {(order.status === 'Pending' || order.status === 'Confirmed') && (
+                       <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will cancel the order. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDeleteOrder(order)}>
+                                        Yes, Cancel Order
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                </TableCell>
             </TableRow>
           );
         })}
@@ -469,7 +499,6 @@ function OrderManagement() {
 
   const handleConfirmCancellation = (order: Order) => {
     setOrderToCancel(order);
-    setSelectedOrder(null);
   };
   
   const confirmCancelAction = (orderId: string, reason: string) => {
@@ -509,7 +538,7 @@ function OrderManagement() {
               orders={activeOrders} 
               onSelectOrder={setSelectedOrder}
               onUpdateStatus={updateOrderStatus}
-              isActionable
+              onDeleteOrder={handleConfirmCancellation}
             />
           </CardContent>
         </Card>
@@ -522,6 +551,7 @@ function OrderManagement() {
             <OrderTable 
               orders={historicalOrders} 
               onSelectOrder={setSelectedOrder}
+              onDeleteOrder={handleConfirmCancellation}
             />
           </CardContent>
         </Card>
@@ -658,7 +688,7 @@ function MenuManagement() {
           </TableHeader>
           <TableBody>
             {filteredItems.map((item) => (
-              <TableRow key={item.id} data-state={selectedItem?.id === item.id ? "selected" : ""}>
+              <TableRow key={item.id}>
                 <TableCell className="font-medium cursor-pointer" onClick={() => handleEdit(item)}>{item.name}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
@@ -2100,6 +2130,266 @@ function CustomerManagement() {
   );
 }
 
+function AnalyticsAndReports() {
+  const { orders } = useOrders();
+  const { menuItems } = useMenu();
+  const { reviews } = useReviews();
+
+  const [insights, setInsights] = useState<BusinessInsightsOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const stats = useMemo(() => {
+    const completedOrders = orders.filter((o) => o.status === 'Completed');
+    const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
+    const totalCompletedOrders = completedOrders.length;
+    const averageOrderValue = totalCompletedOrders > 0 ? totalRevenue / totalCompletedOrders : 0;
+    const averageRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
+
+    return {
+      totalRevenue,
+      totalCompletedOrders,
+      averageOrderValue,
+      averageRating: averageRating.toFixed(1),
+      totalReviews: reviews.length,
+    };
+  }, [orders, reviews]);
+
+  const salesByMonth = useMemo(() => {
+    const monthlyData: { [key: string]: number } = {};
+    orders.forEach((order) => {
+      if (order.status === 'Completed') {
+        const month = format(parseISO(order.orderDate), 'MMM yyyy');
+        if (!monthlyData[month]) {
+          monthlyData[month] = 0;
+        }
+        monthlyData[month] += order.total;
+      }
+    });
+
+    const sortedMonths = Object.keys(monthlyData).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    
+    return sortedMonths.map((month) => ({
+      name: month,
+      revenue: monthlyData[month],
+    }));
+  }, [orders]);
+
+  const itemPopularity = useMemo(() => {
+    const itemCounts: { [key: string]: { name: string; count: number } } = {};
+    menuItems.forEach(item => {
+        itemCounts[item.id] = { name: item.name, count: 0 };
+    });
+
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
+        if(itemCounts[item.id]) {
+            itemCounts[item.id].count += item.quantity;
+        }
+      });
+    });
+
+    return Object.values(itemCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [orders, menuItems]);
+
+  useEffect(() => {
+    async function fetchInsights() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const allItems = menuItems.map(item => item.name);
+        const soldItems = new Set(orders.flatMap(o => o.items.map(i => i.name)));
+        const unsoldItems = allItems.filter(name => !soldItems.has(name));
+
+        const insightsData = await getBusinessInsights({
+          totalRevenue: stats.totalRevenue,
+          totalOrders: stats.totalCompletedOrders,
+          averageOrderValue: stats.averageOrderValue,
+          totalReviews: stats.totalReviews,
+          averageRating: parseFloat(stats.averageRating),
+          bestSellingItems: itemPopularity.map(i => i.name),
+          worstSellingItems: unsoldItems.length > 0 ? unsoldItems : ['None'],
+        });
+        setInsights(insightsData);
+      } catch (e) {
+        console.error("Failed to get business insights:", e);
+        setError("Could not load AI-powered insights at this time.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchInsights();
+  }, [stats, itemPopularity, menuItems, orders]);
+
+  const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Rs.{stats.totalRevenue.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
+            <Package />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCompletedOrders}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
+            <FileText />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Rs.{stats.averageOrderValue.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Reviews</CardTitle>
+            <MessageSquare />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalReviews}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
+            <Star />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.averageRating} / 5</div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
+          <CardHeader>
+            <CardTitle>Sales Over Time</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={salesByMonth}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip
+                  content={({ active, payload, label }) =>
+                    active && payload && payload.length ? (
+                      <div className="rounded-lg border bg-background p-2 shadow-sm">
+                        <p className="font-bold">{label}</p>
+                        <p className="text-sm text-muted-foreground">Revenue: Rs.{payload[0].value.toFixed(2)}</p>
+                      </div>
+                    ) : null
+                  }
+                />
+                <Bar dataKey="revenue" fill="currentColor" radius={[4, 4, 0, 0]} className="fill-primary" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Top 5 Menu Items</CardTitle>
+            <CardDescription>By quantity sold across all orders.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <Tooltip
+                  content={({ active, payload }) =>
+                    active && payload && payload.length ? (
+                      <div className="rounded-lg border bg-background p-2 shadow-sm">
+                        <p className="font-bold">{payload[0].name}</p>
+                        <p className="text-sm text-muted-foreground">Sold: {payload[0].value}</p>
+                      </div>
+                    ) : null
+                  }
+                />
+                <Pie data={itemPopularity} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={120} labelLine={false} label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
+                  {itemPopularity.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Lightbulb /> AI-Powered Business Insights</CardTitle>
+            <CardDescription>Actionable recommendations based on your restaurant's data.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            {isLoading ? (
+                <div className="space-y-4">
+                    <Skeleton className="h-8 w-3/4" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                </div>
+            ) : error ? (
+                <div className="text-destructive text-center py-8">{error}</div>
+            ) : insights && (
+                <div className="space-y-6">
+                    <div>
+                        <h3 className="font-semibold flex items-center gap-2"><Activity /> Executive Summary</h3>
+                        <p className="text-muted-foreground mt-2">{insights.executiveSummary}</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                             <h3 className="font-semibold flex items-center gap-2"><CheckCircle /> Strengths</h3>
+                             <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                                {insights.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                             </ul>
+                        </div>
+                         <div className="space-y-2">
+                             <h3 className="font-semibold flex items-center gap-2"><TrendingUp /> Opportunities</h3>
+                             <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                                {insights.opportunities.map((o, i) => <li key={i}>{o}</li>)}
+                             </ul>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 className="font-semibold flex items-center gap-2 mb-2"><Terminal /> Recommendations</h3>
+                        <div className="space-y-4">
+                            {insights.recommendations.map((rec, i) => (
+                                <Card key={i} className="bg-muted/50">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-base">{rec.title}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm text-muted-foreground">{rec.description}</p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 
 export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState('dashboard');
@@ -2120,6 +2410,7 @@ export default function AdminDashboardPage() {
     { id: 'promotions', label: 'Manage Promotions', description: "Create and manage special offers.", icon: Megaphone },
     { id: 'brand', label: 'Manage Brand', description: "Customize your store's appearance.", icon: Palette },
     { id: 'customers', label: 'Manage Customers', description: "View and manage user accounts.", icon: Users },
+    { id: 'analytics', label: 'Analytics', description: "Gain insights into your business performance.", icon: BarChart2 },
   ];
 
   const renderContent = () => {
@@ -2130,6 +2421,7 @@ export default function AdminDashboardPage() {
       case 'promotions': return <PromotionManagement />;
       case 'brand': return <BrandManagement />;
       case 'customers': return <CustomerManagement />;
+      case 'analytics': return <AnalyticsAndReports />;
       default: return null;
     }
   };
@@ -2156,7 +2448,7 @@ export default function AdminDashboardPage() {
             </div>
         </header>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pt-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4">
             {navItems.map(item => (
                 <Card 
                     key={item.id}
