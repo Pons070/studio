@@ -2,11 +2,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Utensils, Instagram, Youtube } from "lucide-react";
 import { useBrand } from "@/store/brand";
 import Image from "next/image";
 import type { Address } from "@/lib/types";
+import { useState, useRef, useCallback } from "react";
 
 const formatAddress = (address: Address) => {
     if (!address) return '';
@@ -16,7 +17,29 @@ const formatAddress = (address: Address) => {
 
 export function Footer() {
   const pathname = usePathname();
+  const router = useRouter();
   const { brandInfo } = useBrand();
+  const [clickCount, setClickCount] = useState(0);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleLogoClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+
+    if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+    }
+
+    if (newCount === 5) {
+        router.push('/admin/login');
+        setClickCount(0);
+    } else {
+        clickTimeoutRef.current = setTimeout(() => {
+            setClickCount(0);
+        }, 2000); // 2 second window for clicks
+    }
+  }, [clickCount, router]);
 
   if (pathname.startsWith('/admin')) {
     return null;
@@ -28,7 +51,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:text-left">
           
           <div className="flex flex-col items-center md:items-start col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" onClick={handleLogoClick} className="flex items-center gap-2 cursor-pointer">
                {brandInfo.logoUrl ? (
                 <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={32} height={32} className="rounded-md object-contain" />
               ) : (
@@ -39,9 +62,6 @@ export function Footer() {
             <p className="text-xs text-muted-foreground mt-2">
               © {new Date().getFullYear()} {brandInfo.name}. All rights reserved.
             </p>
-             <Link href="/admin/login" className="text-xs text-muted-foreground hover:text-primary mt-4">
-              Admin Login
-            </Link>
           </div>
 
           <div className="text-muted-foreground text-sm space-y-2">
