@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -465,43 +465,20 @@ function AdminNotificationDialog({ order, onOpenChange }: { order: Order | null;
 function OrderManagement() {
   const { orders, updateOrderStatus } = useOrders();
   const { reviews } = useReviews();
+  const { users } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [lastNotifiedMessageId, setLastNotifiedMessageId] = useState<string | null>(null);
-  const [orderToShowInPopup, setOrderToShowInPopup] = useState<Order | null>(null);
-  const prevOrdersRef = useRef<Order[]>([]);
-
-  useEffect(() => {
-    if (prevOrdersRef.current.length > 0) {
-      let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
-      
-      orders.forEach(order => {
-        order.updateRequests?.forEach(req => {
-            if (req.from === 'customer') {
-                if (!latestCustomerMessage || new Date(req.timestamp) > new Date(latestCustomerMessage.timestamp)) {
-                    latestCustomerMessage = { order, messageId: req.id, timestamp: req.timestamp };
-                }
-            }
-        });
-      });
-
-      if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageId) {
-          setOrderToShowInPopup(latestCustomerMessage.order);
-          setLastNotifiedMessageId(latestCustomerMessage.messageId);
-      }
-    }
-    prevOrdersRef.current = orders;
-  }, [orders, lastNotifiedMessageId]);
-
-
   const handleConfirmCancellation = (order: Order) => {
     setOrderToCancel(order);
   };
   
   const confirmCancelAction = (orderId: string, reason: string) => {
-    updateOrderStatus(orderId, 'Cancelled', reason);
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const customer = users.find(u => u.id === order.customerId);
+    updateOrderStatus(orderId, 'Cancelled', reason, customer?.email);
     setOrderToCancel(null);
   }
 
@@ -567,10 +544,6 @@ function OrderManagement() {
         isOpen={!!orderToCancel}
         onOpenChange={(open) => !open && setOrderToCancel(null)}
         onConfirm={confirmCancelAction}
-      />
-      <AdminNotificationDialog
-        order={orderToShowInPopup}
-        onOpenChange={(open) => !open && setOrderToShowInPopup(null)}
       />
     </>
   );
@@ -2129,7 +2102,7 @@ function CustomerManagement() {
   );
 }
 
-function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange }: { details: { reason: string; orders: Order[] } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
+function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange, onExport }: { details: { reason: string; orders: Order[] } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; }) {
     if (!details) return null;
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -2163,14 +2136,15 @@ function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange }: { de
                     </Table>
                 </ScrollArea>
                 <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
+                    <Button variant="outline" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export to CSV</Button>
+                    <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
 
-function MetricDetailsDialog({ details, isOpen, onOpenChange }: { details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
+function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport }: { details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; }) {
     if (!details) return null;
 
     const renderOrderRow = (order: Order) => {
@@ -2232,7 +2206,8 @@ function MetricDetailsDialog({ details, isOpen, onOpenChange }: { details: { tit
                     </Table>
                 </ScrollArea>
                  <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
+                    <Button variant="outline" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export to CSV</Button>
+                    <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -2334,6 +2309,65 @@ function AnalyticsAndReports() {
     }
   };
 
+  const downloadCsv = (data: any[], filename: string) => {
+    if (!data || data.length === 0) return;
+    const headers = Object.keys(data[0]);
+    const csvRows = [
+        headers.join(','),
+        ...data.map(row => 
+            headers.map(fieldName => 
+                JSON.stringify(row[fieldName] ?? '', (key, value) => value === null ? '' : value)
+            ).join(',')
+        )
+    ];
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+  };
+
+  const handleExport = (details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | { reason: string; orders: Order[] }) => {
+    let dataToExport: any[];
+    let filename: string;
+
+    if ('reason' in details) { // CancellationReasonDetails
+        dataToExport = details.orders.map(o => ({
+            order_id: o.id,
+            customer_name: o.customerName,
+            cancelled_on: o.cancellationDate,
+            total: o.total,
+        }));
+        filename = `cancelled_orders_${details.reason.replace(/\s+/g, '_').toLowerCase()}.csv`;
+    } else { // MetricDetails
+        if (details.type === 'orders') {
+            dataToExport = (details.data as Order[]).map(o => ({
+                order_id: o.id,
+                customer_name: o.customerName,
+                date: o.status === 'Cancelled' ? o.cancellationDate : o.pickupDate,
+                status: o.status,
+                total: o.total
+            }));
+        } else {
+             dataToExport = (details.data as Review[]).map(r => ({
+                customer_name: r.customerName,
+                rating: r.rating,
+                comment: r.comment,
+                date: r.date
+            }));
+        }
+        filename = `${details.title.replace(/\s+/g, '_').toLowerCase()}.csv`;
+    }
+    
+    downloadCsv(dataToExport, filename);
+  };
+
   useEffect(() => {
     async function fetchInsights() {
       setIsLoading(true);
@@ -2369,7 +2403,10 @@ function AnalyticsAndReports() {
 
   return (
     <>
-    <div className="space-y-6">
+    <div id="analytics-printable-area" className="space-y-6">
+      <div className="flex justify-end print:hidden">
+          <Button onClick={() => window.print()} variant="outline"><Printer className="mr-2 h-4 w-4"/>Print Report</Button>
+      </div>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -2407,7 +2444,7 @@ function AnalyticsAndReports() {
             <div className="text-2xl font-bold">Rs.{stats.averageOrderValue.toFixed(2)}</div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'All Customer Reviews', data: reviews, type: 'reviews' })}>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Reviews</CardTitle>
             <MessageSquare />
@@ -2586,11 +2623,13 @@ function AnalyticsAndReports() {
         details={cancellationDetails}
         isOpen={!!cancellationDetails}
         onOpenChange={(open) => !open && setCancellationDetails(null)}
+        onExport={() => cancellationDetails && handleExport(cancellationDetails)}
     />
      <MetricDetailsDialog 
         details={metricDetails}
         isOpen={!!metricDetails}
         onOpenChange={(open) => !open && setMetricDetails(null)}
+        onExport={() => metricDetails && handleExport(metricDetails)}
     />
     </>
   );
@@ -2600,8 +2639,43 @@ function AnalyticsAndReports() {
 export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState('dashboard');
   const router = useRouter();
+  const { orders } = useOrders();
+
+  const [lastNotifiedMessageId, setLastNotifiedMessageId] = useState<string | null>(null);
+  const [orderToShowInPopup, setOrderToShowInPopup] = useState<Order | null>(null);
+  const prevOrdersRef = useRef<Order[]>([]);
+
+  useEffect(() => {
+    // This effect runs on the client and will re-run when `orders` changes.
+    // Don't run on the first render to avoid notifying on initial load.
+    if (prevOrdersRef.current.length > 0) {
+      let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
+      
+      orders.forEach(order => {
+        order.updateRequests?.forEach(req => {
+            if (req.from === 'customer') {
+                if (!latestCustomerMessage || new Date(req.timestamp) > new Date(latestCustomerMessage.timestamp)) {
+                    latestCustomerMessage = { order, messageId: req.id, timestamp: req.timestamp };
+                }
+            }
+        });
+      });
+
+      // If we found a new latest message that we haven't notified about yet...
+      if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageId) {
+          setOrderToShowInPopup(latestCustomerMessage.order);
+          setLastNotifiedMessageId(latestCustomerMessage.messageId); // Mark as notified
+      }
+    }
+
+    // Store the current orders for the next comparison.
+    prevOrdersRef.current = orders;
+  }, [orders, lastNotifiedMessageId]);
+
 
   const handleLogout = () => {
+    // In a real app, you would have a proper auth context logout method.
+    // For this mock app, we'll just navigate.
     router.push('/admin/login');
   };
 
@@ -2668,13 +2742,17 @@ export default function AdminDashboardPage() {
                 </Card>
             ))}
         </div>
+         <AdminNotificationDialog
+            order={orderToShowInPopup}
+            onOpenChange={(open) => !open && setOrderToShowInPopup(null)}
+          />
       </div>
     );
   }
 
   return (
       <div className="space-y-6 p-4 md:p-6">
-        <header className="flex items-center justify-between gap-4">
+        <header className="flex items-center justify-between gap-4 print:hidden">
             <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" onClick={() => setActiveView('dashboard')}>
                 <ArrowLeft className="h-4 w-4" />
@@ -2697,14 +2775,18 @@ export default function AdminDashboardPage() {
             </div>
         </header>
 
-        <Separator />
+        <Separator className="print:hidden" />
         
         <div className="pt-2">
             {renderContent()}
         </div>
+
+        <AdminNotificationDialog
+            order={orderToShowInPopup}
+            onOpenChange={(open) => !open && setOrderToShowInPopup(null)}
+        />
       </div>
   );
 }
 
     
-

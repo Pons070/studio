@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 type OrderContextType = {
   orders: Order[];
   addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string) => Promise<void>;
-  updateOrderStatus: (orderId: string, status: Order['status'], reason?: string) => void;
+  updateOrderStatus: (orderId: string, status: Order['status'], reason?: string, customerEmail?: string) => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
   removeReviewIdFromOrder: (orderId: string) => void;
   addUpdateRequest: (orderId: string, message: string, from: 'customer' | 'admin') => void;
@@ -110,10 +110,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   }, [toast, currentUser]);
 
-  const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], reason?: string) => {
+  const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], reason?: string, customerEmail?: string) => {
     let notificationOrder: Order | null = null;
-    let customerEmail: string | null = null;
-
+    
     setOrders(prevOrders => {
         const newOrders = prevOrders.map(order => {
             if (order.id === orderId) {
@@ -127,11 +126,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                 };
                 if (status === 'Cancelled') {
                     notificationOrder = updatedOrder;
-                    // In a real app, you would fetch the customer's email from your user database
-                    // For this app, we retrieve it from the order itself if needed, or assume current user.
-                    // This simplification is okay for now, but a real app should have the email on the order.
-                     const customer = {email: 'pons070@yahoo.in'}; // Mock, as we dont have users list here
-                     customerEmail = customer.email;
                 }
                 return updatedOrder;
             }
@@ -166,7 +160,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             description: `Order #${orderId} has been updated to "${status}".`,
         });
     }
-}, [toast, currentUser]);
+}, [toast]);
 
   const addReviewToOrder = useCallback((orderId: string, reviewId: string) => {
       setOrders(prevOrders =>
