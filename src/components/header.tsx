@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
-import { Utensils, User, ShoppingCart, LogOut, History, LogIn, UserPlus, Settings, Star } from 'lucide-react';
+import { Utensils, User, LogOut, History, LogIn, UserPlus, Settings, Star } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,8 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CartSheet } from './cart-sheet';
-import { useCart } from '@/store/cart';
 import { useBrand } from '@/store/brand';
 import Image from 'next/image';
 import { useAuth } from '@/store/auth';
@@ -22,10 +20,8 @@ import { cn } from '@/lib/utils';
 
 export function Header() {
   const pathname = usePathname();
-  const { items } = useCart();
   const { brandInfo } = useBrand();
   const { isAuthenticated, currentUser, logout } = useAuth();
-  const cartItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   if (pathname.startsWith('/admin')) {
     return null;
@@ -57,20 +53,6 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <CartSheet>
-                <Button variant="ghost" size="icon">
-                  <ShoppingCart className="h-6 w-6" />
-                  <span className="sr-only">Open Cart</span>
-                </Button>
-              </CartSheet>
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold">
-                  {cartItemCount}
-                </span>
-              )}
-            </div>
-            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="rounded-full">

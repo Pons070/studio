@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 
 type OrderContextType = {
   orders: Order[];
-  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number) => Promise<void>;
+  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number) => Promise<Order | undefined>;
   updateOrderStatus: (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string) => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
   removeReviewIdFromOrder: (orderId: string) => void;
@@ -55,7 +55,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         description: "You must be logged in to place an order.",
         variant: "destructive",
       });
-      return;
+      return undefined;
     }
     
     const newOrder: Order = {
@@ -100,6 +100,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             description: "Your order has been successfully submitted. Check your email for confirmation.",
             variant: "success",
         });
+        
+        return newOrder;
 
     } catch (error) {
         console.error("Failed to send order notifications:", error);
@@ -109,6 +111,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             variant: "destructive",
         });
         // Here you might want to handle the error, e.g., rollback the optimistic update if placement is transactional
+        // For now, we still return the order so the user is navigated correctly.
+        return newOrder;
     }
   }, [toast, currentUser]);
 

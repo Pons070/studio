@@ -197,11 +197,13 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
     
-    await addOrder(items, finalTotal, pickupDate, time, deliveryAddress, cookingNotes, appliedPromotion?.couponCode, discount > 0 ? discount : undefined);
+    const newOrder = await addOrder(items, finalTotal, pickupDate, time, deliveryAddress, cookingNotes, appliedPromotion?.couponCode, discount > 0 ? discount : undefined);
 
     setIsProcessing(false);
-    clearCart();
-    router.push('/orders');
+    if (newOrder) {
+      clearCart();
+      router.push(`/orders?orderId=${newOrder.id}`);
+    }
   };
 
   const handleClearCart = () => {

@@ -14,6 +14,7 @@ import { useFavorites } from '@/store/favorites';
 import { useAuth } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { FloatingCheckoutButton } from '@/components/floating-checkout-button';
 
 const categoryIcons = {
   'Appetizers': <Soup className="h-6 w-6 mr-2" />,
@@ -115,6 +116,7 @@ export default function MenuPage() {
           </section>
         )
       })}
+      <FloatingCheckoutButton />
     </div>
   );
 }
