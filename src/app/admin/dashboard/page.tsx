@@ -31,7 +31,7 @@ import { useMenu } from '@/store/menu';
 import { useBrand } from '@/store/brand';
 import { Switch } from "@/components/ui/switch";
 import { useReviews } from '@/store/reviews';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Checkbox } from "@/components/ui/checkbox";
 import { usePromotions } from '@/store/promotions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -65,8 +65,6 @@ import { useRouter } from 'next/navigation';
 import { getBusinessInsights, type BusinessInsightsOutput } from '@/ai/flows/business-insights-flow';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, Tooltip, ResponsiveContainer, Cell, YAxis, Legend } from 'recharts';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -2370,39 +2368,39 @@ function AnalyticsAndReports() {
     downloadCsv(dataToExport, filename);
   };
   
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     const input = document.getElementById('analytics-printable-area');
     if (input) {
-        html2canvas(input, { scale: 2, useCORS: true, backgroundColor: null }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
+      const { default: jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
 
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvas = await html2canvas(input, { scale: 2, useCORS: true, backgroundColor: null });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
 
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / canvasHeight;
 
-            const ratio = canvasWidth / canvasHeight;
+      let imgWidth = pdfWidth - 20;
+      let imgHeight = imgWidth / ratio;
 
-            let imgWidth = pdfWidth - 20; 
-            let imgHeight = imgWidth / ratio;
+      if (imgHeight > pdfHeight - 20) {
+        imgHeight = pdfHeight - 20;
+        imgWidth = imgHeight * ratio;
+      }
 
-            if (imgHeight > pdfHeight - 20) {
-                imgHeight = pdfHeight - 20;
-                imgWidth = imgHeight * ratio;
-            }
-            
-            const x = (pdfWidth - imgWidth) / 2;
-            const y = 10;
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = 10;
 
-            pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-            pdf.save('analytics-report.pdf');
-        });
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+      pdf.save('analytics-report.pdf');
     }
   };
 
