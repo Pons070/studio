@@ -1931,7 +1931,7 @@ function BlockCustomerDialog({ customer, isOpen, onOpenChange, onConfirm, isBloc
     );
 }
 
-function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggleBlockStatus, isBlocked }: { customer: User | null; orders: Order[]; isOpen: boolean; onOpenChange: (open: boolean) => void; onToggleBlockStatus: (customer: User) => void; isBlocked: boolean; }) {
+function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggleBlockStatus, isBlocked, onSelectOrder }: { customer: User | null; orders: Order[]; isOpen: boolean; onOpenChange: (open: boolean) => void; onToggleBlockStatus: (customer: User) => void; isBlocked: boolean; onSelectOrder: (order: Order) => void; }) {
     if (!customer) return null;
 
     const formatAddressString = (address: Address) => {
@@ -1977,16 +1977,16 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggl
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Order ID</TableHead>
-                                            <TableHead>Date</TableHead>
+                                            <TableHead>Pickup Date</TableHead>
                                             <TableHead>Status</TableHead>
                                             <TableHead className="text-right">Total</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {orders.map(order => (
-                                            <TableRow key={order.id}>
+                                            <TableRow key={order.id} onClick={() => onSelectOrder(order)} className="cursor-pointer">
                                                 <TableCell>{order.id}</TableCell>
-                                                <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
+                                                <TableCell>{new Date(`${order.pickupDate}T00:00:00`).toLocaleDateString()}</TableCell>
                                                 <TableCell><Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge></TableCell>
                                                 <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
                                             </TableRow>
@@ -2063,11 +2063,13 @@ function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { cust
 
 function CustomerManagement() {
   const { users, deleteUserById } = useAuth();
-  const { orders } = useOrders();
+  const { orders, updateOrderStatus } = useOrders();
+  const { reviews } = useReviews();
   const { brandInfo, blockCustomer, unblockCustomer } = useBrand();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
-  const [customerToDelete, setCustomerToDelete] = useState<User | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const { toast } = useToast();
 
   const blockedEmails = brandInfo.blockedCustomerEmails || [];
@@ -2099,6 +2101,19 @@ function CustomerManagement() {
         blockCustomer(customer.email);
     }
     setSelectedCustomer(null); // Close dialog after action
+  };
+  
+  const handleConfirmCancellation = (order: Order) => {
+    setSelectedOrder(null);
+    setOrderToCancel(order);
+  };
+  
+  const confirmCancelAction = (orderId: string, reason: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const customer = users.find(u => u.id === order.customerId);
+    updateOrderStatus(orderId, 'Cancelled', reason, customer?.email);
+    setOrderToCancel(null);
   };
 
   return (
@@ -2134,6 +2149,23 @@ function CustomerManagement() {
         onOpenChange={(open) => !open && setSelectedCustomer(null)}
         onToggleBlockStatus={handleToggleBlockStatus}
         isBlocked={!!selectedCustomer && blockedEmails.includes(selectedCustomer.email)}
+        onSelectOrder={(order) => {
+            setSelectedCustomer(null);
+            setSelectedOrder(order);
+        }}
+      />
+      <OrderDetailsDialog
+        order={selectedOrder}
+        isOpen={!!selectedOrder}
+        onOpenChange={(open) => !open && setSelectedOrder(null)}
+        reviews={reviews}
+        onCancelOrder={handleConfirmCancellation}
+      />
+      <CancellationDialog
+        order={orderToCancel}
+        isOpen={!!orderToCancel}
+        onOpenChange={(open) => !open && setOrderToCancel(null)}
+        onConfirm={confirmCancelAction}
       />
     </>
   );
@@ -2936,5 +2968,3 @@ export default function AdminDashboardPage() {
       </div>
   );
 }
-
-    
