@@ -171,6 +171,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onRequestUpd
                                     <p className="font-medium">Cancelled On</p>
                                     <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
                                 </div>
+                                {order.cancelledBy && (
+                                    <div>
+                                        <p className="font-medium">Cancelled By</p>
+                                        <p className="text-muted-foreground capitalize">{order.cancelledBy}</p>
+                                    </div>
+                                )}
                                 {order.cancellationReason && (
                                     <div className="col-span-2">
                                         <p className="font-medium">Reason for Cancellation</p>
@@ -358,7 +364,7 @@ export default function OrdersPage() {
   }, []);
 
   const handleCancelOrder = (orderId: string) => {
-    updateOrderStatus(orderId, 'Cancelled');
+    updateOrderStatus(orderId, 'Cancelled', 'customer');
   }
 
   const handleReviewSubmit = (orderId: string, rating: number, comment: string) => {

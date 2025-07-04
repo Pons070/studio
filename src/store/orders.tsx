@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 type OrderContextType = {
   orders: Order[];
   addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string) => Promise<void>;
-  updateOrderStatus: (orderId: string, status: Order['status'], reason?: string, customerEmail?: string) => void;
+  updateOrderStatus: (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string) => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
   removeReviewIdFromOrder: (orderId: string) => void;
   addUpdateRequest: (orderId: string, message: string, from: 'customer' | 'admin') => void;
@@ -110,7 +110,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   }, [toast, currentUser]);
 
-  const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], reason?: string, customerEmail?: string) => {
+  const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string) => {
     let notificationOrder: Order | null = null;
     
     setOrders(prevOrders => {
@@ -121,7 +121,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                     status: status,
                     ...(status === 'Cancelled' && { 
                         cancellationDate: format(new Date(), 'yyyy-MM-dd'),
-                        cancellationReason: reason 
+                        cancellationReason: reason,
+                        cancelledBy: cancelledBy
                     })
                 };
                 if (status === 'Cancelled') {

@@ -43,6 +43,9 @@ const emailPrompt = ai.definePrompt({
     {{#if order.cancellationDate}}
     - Cancelled On: {{{order.cancellationDate}}}
     {{/if}}
+    {{#if order.cancelledBy}}
+    - Cancelled By: {{{order.cancelledBy}}}
+    {{/if}}
     {{#if order.cancellationReason}}
     - Cancellation Reason: {{{order.cancellationReason}}}
     {{/if}}

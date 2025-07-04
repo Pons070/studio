@@ -181,6 +181,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                                     <p className="font-medium">Cancelled On</p>
                                     <p className="text-muted-foreground">{new Date(order.cancellationDate).toLocaleDateString()}</p>
                                 </div>
+                                {order.cancelledBy && (
+                                    <div>
+                                        <p className="font-medium">Cancelled By</p>
+                                        <p className="text-muted-foreground capitalize">{order.cancelledBy}</p>
+                                    </div>
+                                )}
                                 {order.cancellationReason && (
                                      <div className="col-span-2">
                                         <p className="font-medium">Reason for Cancellation</p>
@@ -515,7 +521,7 @@ function OrderManagement() {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     const customer = users.find(u => u.id === order.customerId);
-    updateOrderStatus(orderId, 'Cancelled', reason, customer?.email);
+    updateOrderStatus(orderId, 'Cancelled', 'admin', reason, customer?.email);
     setOrderToCancel(null);
   }
 
@@ -977,7 +983,7 @@ function ReviewManagement() {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     const customer = users.find(u => u.id === order.customerId);
-    updateOrderStatus(orderId, 'Cancelled', reason, customer?.email);
+    updateOrderStatus(orderId, 'Cancelled', 'admin', reason, customer?.email);
     setOrderToCancel(null);
   };
 
@@ -2154,7 +2160,7 @@ function CustomerManagement() {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     const customer = users.find(u => u.id === order.customerId);
-    updateOrderStatus(orderId, 'Cancelled', reason, customer?.email);
+    updateOrderStatus(orderId, 'Cancelled', 'admin', reason, customer?.email);
     setOrderToCancel(null);
   };
 
@@ -2428,7 +2434,7 @@ function AnalyticsAndReports() {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     const customer = users.find(u => u.id === order.customerId);
-    updateOrderStatus(orderId, 'Cancelled', reason, customer?.email);
+    updateOrderStatus(orderId, 'Cancelled', 'admin', reason, customer?.email);
     setOrderToCancel(null);
   };
   
@@ -2834,17 +2840,17 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const { orders } = useOrders();
 
-  const [lastNotifiedMessageId, setLastNotifiedMessageId] = useState<string | null>(null);
   const [orderToShowInInquiryPopup, setOrderToShowInInquiryPopup] = useState<Order | null>(null);
-  
-  const [lastNotifiedOrderId, setLastNotifiedOrderId] = useState<string | null>(null);
   const [newOrderInPopup, setNewOrderInPopup] = useState<Order | null>(null);
-
+  
   const prevOrdersRef = useRef<Order[]>([]);
-
+  const lastNotifiedMessageIdRef = useRef<string | null>(null);
+  const lastNotifiedOrderIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
-    // This effect runs on the client and will re-run when `orders` changes.
     // Don't run on the first render to avoid notifying on initial load.
+    if (prevOrdersRef.current === orders) return;
+
     if (prevOrdersRef.current.length > 0) {
       // Inquiry detection logic
       let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
@@ -2858,9 +2864,9 @@ export default function AdminDashboardPage() {
         });
       });
 
-      if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageId) {
+      if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageIdRef.current) {
           setOrderToShowInInquiryPopup(latestCustomerMessage.order);
-          setLastNotifiedMessageId(latestCustomerMessage.messageId); // Mark as notified
+          lastNotifiedMessageIdRef.current = latestCustomerMessage.messageId; // Mark as notified
       }
 
       // New order detection logic
@@ -2869,9 +2875,9 @@ export default function AdminDashboardPage() {
 
       if (newOrders.length > 0) {
         const mostRecentNewOrder = newOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())[0];
-        if (mostRecentNewOrder.id !== lastNotifiedOrderId) {
+        if (mostRecentNewOrder.id !== lastNotifiedOrderIdRef.current) {
             setNewOrderInPopup(mostRecentNewOrder);
-            setLastNotifiedOrderId(mostRecentNewOrder.id);
+            lastNotifiedOrderIdRef.current = mostRecentNewOrder.id;
         }
       }
     }

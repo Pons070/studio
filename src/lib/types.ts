@@ -65,6 +65,7 @@ export type Order = {
   reviewId?: string;
   cancellationDate?: string; // The date the order was cancelled
   cancellationReason?: string;
+  cancelledBy?: 'admin' | 'customer';
   cookingNotes?: string;
   updateRequests?: UpdateRequest[];
 };
@@ -118,5 +119,3 @@ export type Promotion = {
   endDate?: string;
   activeDays?: number[]; // 0 = Sun, 1 = Mon, ..., 6 = Sat
 };
-
-    

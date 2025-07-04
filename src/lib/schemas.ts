@@ -46,6 +46,7 @@ export const OrderSchema = z.object({
   reviewId: z.string().optional(),
   cancellationDate: z.string().optional().describe("The date the order was cancelled."),
   cancellationReason: z.string().optional().describe("The reason for cancelling the order."),
+  cancelledBy: z.enum(['admin', 'customer']).optional().describe("Who cancelled the order."),
   cookingNotes: z.string().optional(),
   updateRequests: z.array(UpdateRequestSchema).optional(),
 });
@@ -63,5 +64,3 @@ export const OrderNotificationInputSchema = z.object({
   adminEmail: z.string().email().default('sangkar111@gmail.com'),
 });
 export type OrderNotificationInput = z.infer<typeof OrderNotificationInputSchema>;
-
-    
