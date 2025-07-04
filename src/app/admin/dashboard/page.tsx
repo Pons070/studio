@@ -30,7 +30,7 @@ import { Separator } from '@/components/ui/separator';
 import { useOrders } from '@/store/orders';
 import { useMenu } from '@/store/menu';
 import { useBrand } from '@/store/brand';
-import { Switch } from '@/components/ui/switch';
+import { Switch } from "@/components/ui/switch";
 import { useReviews } from '@/store/reviews';
 import { Checkbox } from '@/components/ui/checkbox';
 import { usePromotions } from '@/store/promotions';
@@ -116,7 +116,7 @@ function AdminReplyForm({ orderId }: { orderId: string }) {
     );
 }
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[] }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onUpdateStatus }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[]; onUpdateStatus: (orderId: string, status: Order['status']) => void; }) {
     if (!order) return null;
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
@@ -134,6 +134,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
     const mapsUrl = order.address.latitude && order.address.longitude
         ? `https://www.google.com/maps/search/?api=1&query=${order.address.latitude},${order.address.longitude}`
         : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+        
+    const handleStatusChange = (newStatus: Order['status']) => {
+        if (order && newStatus !== order.status) {
+            onUpdateStatus(order.id, newStatus);
+        }
+    }
 
 
     return (
@@ -259,7 +265,20 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                     )}
                 </div>
                 </ScrollArea>
-                <DialogFooter className="border-t pt-4">
+                <DialogFooter className="border-t pt-4 sm:justify-between">
+                    <div className="flex items-center gap-2">
+                        <Label>Status:</Label>
+                        <Select onValueChange={(value) => handleStatusChange(value as Order['status'])} value={order.status} disabled={order.status === 'Cancelled'}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Pending">Pending</SelectItem>
+                                <SelectItem value="Confirmed">Confirmed</SelectItem>
+                                <SelectItem value="Completed">Completed</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">
                             Close
@@ -319,7 +338,7 @@ function CancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order:
 }
 
 
-function OrderTable({ orders, onSelectOrder, onUpdateStatus, onCancelOrder, selectedOrders, onSelectedOrdersChange }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus: (orderId: string, status: Order['status']) => void, onCancelOrder: (order: Order) => void, selectedOrders: string[], onSelectedOrdersChange: (ids: string[]) => void }) {
+function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSelectedOrdersChange }: { orders: Order[], onSelectOrder: (order: Order) => void, onCancelOrder: (order: Order) => void, selectedOrders: string[], onSelectedOrdersChange: (ids: string[]) => void }) {
   if (orders.length === 0) {
     return <p className="text-sm text-muted-foreground p-4">No orders to display.</p>;
   }
@@ -366,13 +385,13 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus, onCancelOrder, sele
           const hasInquiry = lastMessage?.from === 'customer';
 
           return (
-            <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""}>
-                <TableCell>
-                <Checkbox
-                    checked={selectedOrders.includes(order.id)}
-                    onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                    aria-label={`Select order ${order.id}`}
-                />
+            <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""} onClick={() => onSelectOrder(order)} className="cursor-pointer">
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                        checked={selectedOrders.includes(order.id)}
+                        onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                        aria-label={`Select order ${order.id}`}
+                    />
                 </TableCell>
                 <TableCell className="font-medium">{order.id}</TableCell>
                 <TableCell className="flex items-center gap-2">
@@ -384,24 +403,19 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus, onCancelOrder, sele
                 <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
                 </TableCell>
                 <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
-                <TableCell>
-                <div className="flex items-center justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => onSelectOrder(order)}>View Details</Button>
-                    <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
+                <TableCell className="text-center">
+                    {(order.status === 'Pending' || order.status === 'Confirmed') && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCancelOrder(order);
+                            }}
+                        >
+                            Cancel
                         </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem disabled={order.status === 'Pending'} onClick={() => onUpdateStatus(order.id, 'Pending')}>Set as Pending</DropdownMenuItem>
-                        <DropdownMenuItem disabled={order.status === 'Confirmed'} onClick={() => onUpdateStatus(order.id, 'Confirmed')}>Set as Confirmed</DropdownMenuItem>
-                        <DropdownMenuItem disabled={order.status === 'Completed'} onClick={() => onUpdateStatus(order.id, 'Completed')}>Set as Completed</DropdownMenuItem>
-                        <DropdownMenuItem disabled={order.status === 'Cancelled'} className="text-destructive focus:bg-destructive/10" onClick={() => onCancelOrder(order)}>Set as Cancelled</DropdownMenuItem>
-                    </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                    )}
                 </TableCell>
             </TableRow>
           );
@@ -450,13 +464,11 @@ function OrderManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   
-  // For new inquiry popup
   const [lastNotifiedMessageId, setLastNotifiedMessageId] = useState<string | null>(null);
   const [orderToShowInPopup, setOrderToShowInPopup] = useState<Order | null>(null);
   const prevOrdersRef = useRef<Order[]>([]);
 
   useEffect(() => {
-    // Only check for new messages if the previous orders state is available
     if (prevOrdersRef.current.length > 0) {
       let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
       
@@ -485,7 +497,6 @@ function OrderManagement() {
 
   const handleBulkUpdateStatus = (status: Order['status']) => {
     selectedOrderIds.forEach(id => {
-      // Logic to prevent invalid status transitions can be added here
       updateOrderStatus(id, status);
     });
     setSelectedOrderIds([]);
@@ -534,7 +545,6 @@ function OrderManagement() {
             <OrderTable 
               orders={activeOrders} 
               onSelectOrder={setSelectedOrder} 
-              onUpdateStatus={updateOrderStatus} 
               onCancelOrder={setOrderToCancel}
               selectedOrders={selectedOrderIds}
               onSelectedOrdersChange={setSelectedOrderIds}
@@ -550,7 +560,6 @@ function OrderManagement() {
             <OrderTable 
               orders={historicalOrders} 
               onSelectOrder={setSelectedOrder} 
-              onUpdateStatus={updateOrderStatus}
               onCancelOrder={setOrderToCancel}
               selectedOrders={selectedOrderIds}
               onSelectedOrdersChange={setSelectedOrderIds}
@@ -563,6 +572,7 @@ function OrderManagement() {
         isOpen={!!selectedOrder}
         onOpenChange={(open) => !open && setSelectedOrder(null)}
         reviews={reviews}
+        onUpdateStatus={updateOrderStatus}
       />
       <CancellationDialog
         order={orderToCancel}
@@ -578,7 +588,7 @@ function OrderManagement() {
   );
 }
 
-type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint' | 'isAvailable' | 'isFeatured'> & { id?: string };
+type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint'>;
 
 function MenuManagement() {
   const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
@@ -601,18 +611,15 @@ function MenuManagement() {
   const handleSave = (itemData: MenuItemFormData) => {
     const finalImageUrl = itemData.imageUrl || 'https://placehold.co/600x400.png';
 
-    if (itemData.id) {
-       const originalItem = menuItems.find(mi => mi.id === itemData.id);
+    if ('id' in itemData && itemData.id) {
        updateMenuItem({
          ...itemData,
          id: itemData.id,
          imageUrl: finalImageUrl,
          aiHint: itemData.name.toLowerCase(),
-         isAvailable: originalItem?.isAvailable ?? true,
-         isFeatured: originalItem?.isFeatured ?? false,
        });
      } else {
-       const { id, ...newItemData } = itemData;
+       const { id, ...newItemData } = itemData as MenuItem;
        addMenuItem({
          ...newItemData,
          imageUrl: finalImageUrl,
@@ -760,8 +767,8 @@ function MenuManagement() {
           </TableHeader>
           <TableBody>
             {filteredItems.map((item) => (
-              <TableRow key={item.id} data-state={selectedItemIds.includes(item.id) ? "selected" : ""}>
-                <TableCell>
+              <TableRow key={item.id} data-state={selectedItemIds.includes(item.id) ? "selected" : ""} onClick={() => handleEdit(item)} className="cursor-pointer">
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedItemIds.includes(item.id)}
                     onCheckedChange={(checked) => handleSelectMenuRow(item.id, !!checked)}
@@ -772,23 +779,16 @@ function MenuManagement() {
                 <TableCell>{item.category}</TableCell>
                 <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
                 <TableCell>
-                    <Switch
-                        checked={item.isAvailable}
-                        onCheckedChange={(checked) => handleAvailabilityChange(item.id, checked)}
-                        aria-label="Toggle item availability"
-                    />
+                    <Badge variant={item.isAvailable ? "success" : "destructive"}>
+                        {item.isAvailable ? "Available" : "Unavailable"}
+                    </Badge>
                 </TableCell>
                 <TableCell>
-                    <Switch
-                        checked={!!item.isFeatured}
-                        onCheckedChange={(checked) => handleFeatureChange(item.id, checked)}
-                        aria-label="Toggle featured status"
-                    />
+                    <Badge variant={item.isFeatured ? "default" : "outline"}>
+                        {item.isFeatured ? "Featured" : "No"}
+                    </Badge>
                 </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -830,6 +830,8 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
     const [price, setPrice] = useState(0);
     const [category, setCategory] = useState<MenuItem['category']>('Main Courses');
     const [imageUrl, setImageUrl] = useState('');
+    const [isAvailable, setAvailable] = useState(true);
+    const [isFeatured, setFeatured] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -839,12 +841,16 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
                 setPrice(item.price);
                 setCategory(item.category);
                 setImageUrl(item.imageUrl);
+                setAvailable(item.isAvailable);
+                setFeatured(item.isFeatured ?? false);
             } else {
                 setName('');
                 setDescription('');
                 setPrice(0);
                 setCategory('Main Courses');
                 setImageUrl('');
+                setAvailable(true);
+                setFeatured(false);
             }
         }
     }, [item, isOpen]);
@@ -861,19 +867,19 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
     };
 
     const handleSubmit = () => {
-        onSave({ id: item?.id, name, description, price, category, imageUrl });
+        onSave({ id: item?.id, name, description, price, category, imageUrl, isAvailable, isFeatured });
     }
 
     return (
         <Dialog open={isOpen} onOpenChange={setOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{item ? 'Edit Menu Item' : 'Add New Menu Item'}</DialogTitle>
                     <DialogDescription>
                         {item ? 'Make changes to the menu item here.' : 'Add a new item to your menu.'}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="name" className="text-right">Name</Label>
                         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
@@ -909,6 +915,18 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
                                   <Image src={imageUrl} alt="Menu item preview" fill className="object-cover" />
                               </div>
                           )}
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right">Availability</Label>
+                        <div className="col-span-3">
+                            <Switch checked={isAvailable} onCheckedChange={setAvailable} />
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right">Featured</Label>
+                        <div className="col-span-3">
+                            <Switch checked={isFeatured} onCheckedChange={setFeatured} />
                         </div>
                     </div>
                 </div>
@@ -1498,6 +1516,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
     const [startDate, setStartDate] = useState<Date | undefined>();
     const [endDate, setEndDate] = useState<Date | undefined>();
     const [activeDays, setActiveDays] = useState<number[]>([]);
+    const [isActive, setIsActive] = useState(true);
 
     const daysOfWeek = [
         { id: 1, label: 'Mon' }, { id: 2, label: 'Tue' }, { id: 3, label: 'Wed' },
@@ -1514,6 +1533,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                 setStartDate(item.startDate ? new Date(item.startDate) : undefined);
                 setEndDate(item.endDate ? new Date(item.endDate) : undefined);
                 setActiveDays(item.activeDays || []);
+                setIsActive(item.isActive);
             } else {
                 setTitle('');
                 setDescription('');
@@ -1521,6 +1541,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                 setStartDate(undefined);
                 setEndDate(undefined);
                 setActiveDays([]);
+                setIsActive(true);
             }
         }
     }, [item, isOpen]);
@@ -1537,7 +1558,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
             title, 
             description, 
             targetAudience, 
-            isActive: item?.isActive ?? true,
+            isActive,
             startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
             endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
             activeDays: activeDays.length > 0 ? activeDays : undefined,
@@ -1643,6 +1664,12 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                             </PopoverContent>
                         </Popover>
                     </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="promo-active" className="text-right">Active</Label>
+                        <div className="col-span-3">
+                            <Switch id="promo-active" checked={isActive} onCheckedChange={setIsActive} />
+                        </div>
+                    </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
@@ -1678,10 +1705,6 @@ function PromotionManagement() {
       addPromotion(newPromoData);
     }
     setDialogOpen(false);
-  };
-
-  const handleStatusChange = (promo: Promotion, isActive: boolean) => {
-    updatePromotion({ ...promo, isActive });
   };
   
   const targetAudienceMap = {
@@ -1741,22 +1764,17 @@ function PromotionManagement() {
             </TableHeader>
             <TableBody>
               {promotions.map((promo) => (
-                <TableRow key={promo.id}>
+                <TableRow key={promo.id} onClick={() => handleEdit(promo)} className="cursor-pointer">
                   <TableCell className="font-medium">{promo.title}</TableCell>
                   <TableCell>{targetAudienceMap[promo.targetAudience]}</TableCell>
                   <TableCell>{formatActiveDays(promo.activeDays)}</TableCell>
                   <TableCell>{formatDateRange(promo.startDate, promo.endDate)}</TableCell>
                   <TableCell>
-                    <Switch
-                      checked={promo.isActive}
-                      onCheckedChange={(checked) => handleStatusChange(promo, checked)}
-                      aria-label="Toggle promotion status"
-                    />
+                     <Badge variant={promo.isActive ? 'success' : 'secondary'}>
+                        {promo.isActive ? 'Active' : 'Inactive'}
+                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(promo)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -1843,7 +1861,7 @@ function BlockCustomerDialog({ customer, isOpen, onOpenChange, onConfirm, isBloc
     );
 }
 
-function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange }: { customer: User | null; orders: Order[]; isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
+function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggleBlockStatus, isBlocked }: { customer: User | null; orders: Order[]; isOpen: boolean; onOpenChange: (open: boolean) => void; onToggleBlockStatus: (customer: User) => void; isBlocked: boolean; }) {
     if (!customer) return null;
 
     const formatAddressString = (address: Address) => {
@@ -1863,6 +1881,9 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange }: { cus
                            <h4 className="font-medium">Contact Information</h4>
                            <p className="text-sm"><strong>Email:</strong> {customer.email}</p>
                            <p className="text-sm"><strong>Phone:</strong> {customer.phone || 'Not Provided'}</p>
+                           <p className="text-sm">
+                                <strong>Status:</strong> {isBlocked ? <Badge variant="destructive">Blocked</Badge> : <Badge variant="success">Active</Badge>}
+                           </p>
                         </div>
                         <Separator />
                          <div className="space-y-2">
@@ -1906,15 +1927,18 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange }: { cus
                         </div>
                     </div>
                 </ScrollArea>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
+                <DialogFooter className="justify-between">
+                    <Button variant={isBlocked ? "secondary" : "destructive"} onClick={() => customer && onToggleBlockStatus(customer)}>
+                        {isBlocked ? 'Unblock Customer' : 'Block Customer'}
+                    </Button>
+                    <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     )
 }
 
-function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer, onToggleBlockStatus }: { customers: (User & { orderCount: number; isBlocked: boolean; })[]; onSelectCustomer: (customer: User) => void; onDeleteCustomer: (customer: User) => void; onToggleBlockStatus: (customer: User) => void; }) {
+function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { customers: (User & { orderCount: number; isBlocked: boolean; })[]; onSelectCustomer: (customer: User) => void; onDeleteCustomer: (customer: User) => void; }) {
     return (
         <Table>
             <TableHeader>
@@ -1929,20 +1953,16 @@ function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer, onToggle
             </TableHeader>
             <TableBody>
                 {customers.map(customer => (
-                    <TableRow key={customer.id}>
+                    <TableRow key={customer.id} onClick={() => onSelectCustomer(customer)} className="cursor-pointer">
                         <TableCell className="font-medium">{customer.name}</TableCell>
                         <TableCell>{customer.email}</TableCell>
                         <TableCell>{customer.phone || 'N/A'}</TableCell>
                         <TableCell>{customer.orderCount}</TableCell>
                         <TableCell>
-                            {customer.isBlocked && <Badge variant="destructive">Blocked</Badge>}
+                            {customer.isBlocked ? <Badge variant="destructive">Blocked</Badge> : <Badge variant="success">Active</Badge>}
                         </TableCell>
-                        <TableCell className="text-right">
-                           <Button variant="outline" size="sm" onClick={() => onSelectCustomer(customer)}>View</Button>
-                           <Button variant="outline" size="sm" className="ml-2" onClick={() => onToggleBlockStatus(customer)}>
-                               {customer.isBlocked ? 'Unblock' : 'Block'}
-                           </Button>
-                           <Button variant="ghost" size="icon" className="ml-2 text-destructive" onClick={() => onDeleteCustomer(customer)}>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDeleteCustomer(customer)}>
                                <Trash2 className="h-4 w-4" />
                            </Button>
                         </TableCell>
@@ -1989,18 +2009,11 @@ function CustomerManagement() {
       toast({ title: "Action Not Allowed", description: "You cannot block the primary admin account.", variant: "destructive"});
       return;
     }
-    setIsBlocking(!blockedEmails.includes(customer.email));
-    setCustomerToBlock(customer);
-  };
-  
-  const handleConfirmBlock = () => {
-    if (customerToBlock) {
-        if (isBlocking) {
-            blockCustomer(customerToBlock.email);
-        } else {
-            unblockCustomer(customerToBlock.email);
-        }
-        setCustomerToBlock(null);
+    
+    if (blockedEmails.includes(customer.email)) {
+        unblockCustomer(customer.email);
+    } else {
+        blockCustomer(customer.email);
     }
   };
 
@@ -2027,7 +2040,6 @@ function CustomerManagement() {
              customers={filteredCustomers}
              onSelectCustomer={setSelectedCustomer}
              onDeleteCustomer={setCustomerToDelete}
-             onToggleBlockStatus={handleToggleBlockStatus}
            />
         </CardContent>
       </Card>
@@ -2036,19 +2048,14 @@ function CustomerManagement() {
         orders={orders.filter(o => o.customerId === selectedCustomer?.id)}
         isOpen={!!selectedCustomer}
         onOpenChange={(open) => !open && setSelectedCustomer(null)}
+        onToggleBlockStatus={handleToggleBlockStatus}
+        isBlocked={!!selectedCustomer && blockedEmails.includes(selectedCustomer.email)}
       />
       <DeleteCustomerDialog
          customer={customerToDelete}
          isOpen={!!customerToDelete}
          onOpenChange={(open) => !open && setCustomerToDelete(null)}
          onConfirm={handleConfirmDelete}
-      />
-      <BlockCustomerDialog
-         customer={customerToBlock}
-         isOpen={!!customerToBlock}
-         onOpenChange={(open) => !open && setCustomerToBlock(null)}
-         onConfirm={handleConfirmBlock}
-         isBlocking={isBlocking}
       />
     </>
   );
@@ -2128,3 +2135,4 @@ export default function AdminDashboardPage() {
       </div>
   );
 }
+
