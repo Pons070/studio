@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -48,6 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  AlertDialogDescription
 } from "@/components/ui/alert-dialog";
 import type { VariantProps } from 'class-variance-authority';
 
@@ -786,9 +787,25 @@ function MenuManagement() {
                   <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteMenuItem(item.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the menu item "{item.name}".
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteMenuItem(item.id)} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </TableCell>
               </TableRow>
             ))}
@@ -1738,9 +1755,25 @@ function PromotionManagement() {
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(promo)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deletePromotion(promo.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the promotion "{promo.title}".
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deletePromotion(promo.id)} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
@@ -1953,7 +1986,7 @@ function CustomerManagement() {
 
 
 export default function AdminDashboardPage() {
-  const [activeView, setActiveView] = useState('orders');
+  const [activeView, setActiveView] = useState('dashboard');
 
   const navItems = [
     { id: 'orders', label: 'Manage Orders', description: "View and process all customer orders.", icon: ClipboardList },
@@ -1972,36 +2005,50 @@ export default function AdminDashboardPage() {
       case 'promotions': return <PromotionManagement />;
       case 'brand': return <BrandManagement />;
       case 'customers': return <CustomerManagement />;
-      default: return <OrderManagement />;
+      default: return null;
     }
   };
 
   const activeItem = navItems.find(item => item.id === activeView);
 
-  return (
+  if (activeView === 'dashboard') {
+    return (
       <div className="space-y-6 p-4 md:p-6">
         <header className="space-y-2">
             <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
             <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
         </header>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pt-4">
             {navItems.map(item => (
                 <Card 
                     key={item.id}
-                    className={cn(
-                        "cursor-pointer transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
-                        activeView === item.id ? "border-primary ring-2 ring-primary shadow-lg" : "border-card"
-                    )}
+                    className="cursor-pointer transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                     onClick={() => setActiveView(item.id)}
                 >
-                    <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
+                    <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2 h-32">
                         <item.icon className="h-8 w-8 text-primary" />
                         <p className="font-semibold text-sm">{item.label}</p>
                     </CardContent>
                 </Card>
             ))}
         </div>
+      </div>
+    );
+  }
+
+  return (
+      <div className="space-y-6 p-4 md:p-6">
+        <header className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => setActiveView('dashboard')}>
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Back to Dashboard</span>
+            </Button>
+            <div>
+                <h1 className="text-3xl font-headline font-bold text-white">{activeItem?.label}</h1>
+                <p className="text-muted-foreground">{activeItem?.description}</p>
+            </div>
+        </header>
 
         <Separator />
         
