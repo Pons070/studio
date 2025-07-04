@@ -53,6 +53,14 @@ import {
   AlertDialogDescription
 } from "@/components/ui/alert-dialog";
 import type { VariantProps } from 'class-variance-authority';
+import ReactCrop, {
+  centerCrop,
+  makeAspectCrop,
+  type Crop,
+  type PixelCrop,
+} from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -1146,6 +1154,117 @@ const initialThemeState: ThemeSettings = {
     backgroundImageUrl: '',
 };
 
+function getCroppedImgDataUrl(image: HTMLImageElement, crop: PixelCrop): string {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    canvas.width = crop.width * scaleX;
+    canvas.height = crop.height * scaleY;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return '';
+    }
+
+    ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        crop.width * scaleX,
+        crop.height * scaleY
+    );
+    
+    return canvas.toDataURL('image/png');
+}
+
+function LogoCropDialog({ 
+  isOpen, 
+  onOpenChange, 
+  imgSrc, 
+  onSave, 
+  shape 
+}: { 
+  isOpen: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  imgSrc: string; 
+  onSave: (dataUrl: string) => void;
+  shape: 'square' | 'circle';
+}) {
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const { width, height } = e.currentTarget;
+    const newCrop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 90,
+        },
+        1, // aspect ratio 1:1
+        width,
+        height
+      ),
+      width,
+      height
+    );
+    setCrop(newCrop);
+  }
+
+  const handleSaveCrop = () => {
+    if (completedCrop && imgRef.current) {
+      const dataUrl = getCroppedImgDataUrl(imgRef.current, completedCrop);
+      onSave(dataUrl);
+      onOpenChange(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Crop Your Logo</DialogTitle>
+          <DialogDescription>
+            Adjust the selection to crop your logo.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-center my-4">
+          {imgSrc && (
+            <ReactCrop
+              crop={crop}
+              onChange={(_, percentCrop) => setCrop(percentCrop)}
+              onComplete={(c) => setCompletedCrop(c)}
+              aspect={1}
+              circularCrop={shape === 'circle'}
+            >
+              <img
+                ref={imgRef}
+                alt="Crop me"
+                src={imgSrc}
+                onLoad={onImageLoad}
+                style={{ maxHeight: '70vh' }}
+              />
+            </ReactCrop>
+          )}
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleSaveCrop}>Save Logo</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 function BrandManagement() {
   const { brandInfo, updateBrandInfo } = useBrand();
   const [name, setName] = useState(brandInfo.name);
@@ -1160,6 +1279,9 @@ function BrandManagement() {
   const [allowOrderUpdates, setAllowOrderUpdates] = useState(brandInfo.allowOrderUpdates ?? true);
   const [theme, setTheme] = useState<ThemeSettings>(brandInfo.theme || initialThemeState);
   const [isSaving, setIsSaving] = useState(false);
+  const [logoShape, setLogoShape] = useState(brandInfo.logoShape || 'square');
+  const [isCropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imgSrcToCrop, setImgSrcToCrop] = useState('');
 
   const palettes = [
     { name: 'Oceanic Blue', primaryColor: '217 91% 60%', backgroundColor: '210 40% 98%', accentColor: '198 93% 60%' },
@@ -1205,6 +1327,7 @@ function BrandManagement() {
     setClosureMessage(brandInfo.businessHours.message);
     setAllowOrderUpdates(brandInfo.allowOrderUpdates ?? true);
     setTheme(brandInfo.theme || initialThemeState);
+    setLogoShape(brandInfo.logoShape || 'square');
   }, [brandInfo]);
   
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1216,17 +1339,25 @@ function BrandManagement() {
     setTheme(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'background') => {
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         const reader = new FileReader();
         reader.onloadend = () => {
-            const result = reader.result as string;
-            if (field === 'logo') {
-              setLogoUrl(result);
-            } else {
-              setTheme(prev => ({ ...prev, backgroundImageUrl: result }));
-            }
+            setImgSrcToCrop(reader.result as string);
+            setCropDialogOpen(true);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBackgroundFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          setTheme(prev => ({ ...prev, backgroundImageUrl: result }));
         };
         reader.readAsDataURL(file);
     }
@@ -1237,6 +1368,7 @@ function BrandManagement() {
     updateBrandInfo({
       name,
       logoUrl,
+      logoShape,
       phone,
       address,
       about,
@@ -1255,6 +1387,7 @@ function BrandManagement() {
 
   const isDirty = name !== brandInfo.name ||
     logoUrl !== brandInfo.logoUrl ||
+    logoShape !== (brandInfo.logoShape || 'square') ||
     phone !== brandInfo.phone ||
     JSON.stringify(address) !== JSON.stringify(brandInfo.address) ||
     about !== (brandInfo.about || '') ||
@@ -1266,6 +1399,7 @@ function BrandManagement() {
     JSON.stringify(theme) !== JSON.stringify(brandInfo.theme || initialThemeState);
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Brand Management</CardTitle>
@@ -1333,20 +1467,47 @@ function BrandManagement() {
             <Label htmlFor="brand-instagram">Instagram Page URL</Label>
             <Input id="brand-instagram" type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/yourpage" />
         </div>
-        <div className="space-y-2">
-            <Label htmlFor="logo">Logo</Label>
-             <div className="flex items-center gap-4">
-                {logoUrl ? (
-                    <Image src={logoUrl} alt="Brand Logo" width={80} height={80} className="rounded-md border p-1" />
-                ) : (
-                    <div className="h-20 w-20 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
-                        <Building className="h-10 w-10" />
+
+        <Separator />
+        
+        <div className="space-y-4">
+            <h3 className="text-base font-medium">Logo & Branding</h3>
+            <div className="flex items-start gap-6">
+                 <div className="space-y-2 flex-1">
+                    <Label htmlFor="logo">Logo</Label>
+                    <div className="flex items-center gap-4">
+                        {logoUrl ? (
+                            <Image src={logoUrl} alt="Brand Logo" width={80} height={80} className={cn("border p-1 bg-muted", logoShape === 'circle' ? 'rounded-full' : 'rounded-md')} />
+                        ) : (
+                            <div className="h-20 w-20 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+                                <Building className="h-10 w-10" />
+                            </div>
+                        )}
+                        <Input id="logo" type="file" onChange={handleLogoFileChange} accept="image/*" className="max-w-xs" />
                     </div>
-                )}
-                <Input id="logo" type="file" onChange={(e) => handleFileChange(e, 'logo')} accept="image/*" className="max-w-xs" />
+                </div>
+                <div className="space-y-2">
+                    <Label>Logo Shape</Label>
+                    <RadioGroup
+                        value={logoShape}
+                        onValueChange={(value: 'square' | 'circle') => setLogoShape(value)}
+                        className="flex gap-4 pt-2"
+                    >
+                        <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="square" id="square" />
+                        <Label htmlFor="square">Square</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="circle" id="circle" />
+                        <Label htmlFor="circle">Circle</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
             </div>
         </div>
+
         <Separator className="my-6" />
+
         <div className="space-y-6">
           <h3 className="text-lg font-medium">Business Settings</h3>
           <div className="space-y-4">
@@ -1476,7 +1637,7 @@ function BrandManagement() {
 
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="backgroundImage">Background Image (Optional)</Label>
-              <Input id="backgroundImage" type="file" onChange={(e) => handleFileChange(e, 'background')} accept="image/*" />
+              <Input id="backgroundImage" type="file" onChange={handleBackgroundFileChange} accept="image/*" />
             </div>
           </div>
         </div>
@@ -1488,6 +1649,17 @@ function BrandManagement() {
           </Button>
       </CardFooter>
     </Card>
+      <LogoCropDialog
+        isOpen={isCropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imgSrc={imgSrcToCrop}
+        shape={logoShape}
+        onSave={(dataUrl) => {
+          setLogoUrl(dataUrl);
+          setCropDialogOpen(false);
+        }}
+      />
+    </>
   );
 }
 

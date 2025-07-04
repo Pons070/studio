@@ -93,6 +93,7 @@ export type ThemeSettings = {
 export type BrandInfo = {
   name: string;
   logoUrl: string;
+  logoShape?: 'square' | 'circle';
   phone: string;
   address: Address;
   about: string;

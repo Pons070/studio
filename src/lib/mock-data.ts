@@ -4,6 +4,7 @@ import type { MenuItem, Order, Review, BrandInfo, Promotion, Address } from './t
 export const brandInfo: BrandInfo = {
   name: 'CulinaPreOrder',
   logoUrl: '',
+  logoShape: 'square',
   phone: '123-456-7890',
   address: {
     doorNumber: '123',

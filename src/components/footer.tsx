@@ -8,6 +8,7 @@ import { useBrand } from "@/store/brand";
 import Image from "next/image";
 import type { Address } from "@/lib/types";
 import { useState, useRef, useCallback, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 const formatAddress = (address: Address) => {
     if (!address) return '';
@@ -57,7 +58,7 @@ export function Footer() {
           <div className="flex flex-col items-center md:items-start md:col-span-1">
             <Link href="/" className="flex items-center gap-2">
                {brandInfo.logoUrl ? (
-                <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={32} height={32} className="rounded-md object-contain" />
+                <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={32} height={32} className={cn("object-contain", brandInfo.logoShape === 'circle' ? 'rounded-full' : 'rounded-md')} />
               ) : (
                 <Utensils className="h-6 w-6 text-primary" />
               )}

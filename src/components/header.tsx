@@ -18,6 +18,7 @@ import { useCart } from '@/store/cart';
 import { useBrand } from '@/store/brand';
 import Image from 'next/image';
 import { useAuth } from '@/store/auth';
+import { cn } from '@/lib/utils';
 
 export function Header() {
   const pathname = usePathname();
@@ -36,7 +37,7 @@ export function Header() {
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-2">
             {brandInfo.logoUrl ? (
-              <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={40} height={40} className="rounded-md object-contain" />
+              <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={40} height={40} className={cn("object-contain", brandInfo.logoShape === 'circle' ? 'rounded-full' : 'rounded-md')} />
             ) : (
               <Utensils className="h-8 w-8 text-primary" />
             )}
