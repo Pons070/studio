@@ -116,7 +116,7 @@ function AdminReplyForm({ orderId }: { orderId: string }) {
     );
 }
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onUpdateStatus }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[]; onUpdateStatus: (orderId: string, status: Order['status']) => void; }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[]; }) {
     if (!order) return null;
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
@@ -135,13 +135,6 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onUpdateStat
         ? `https://www.google.com/maps/search/?api=1&query=${order.address.latitude},${order.address.longitude}`
         : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
         
-    const handleStatusChange = (newStatus: Order['status']) => {
-        if (order && newStatus !== order.status) {
-            onUpdateStatus(order.id, newStatus);
-        }
-    }
-
-
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
@@ -265,20 +258,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onUpdateStat
                     )}
                 </div>
                 </ScrollArea>
-                <DialogFooter className="border-t pt-4 sm:justify-between">
-                    <div className="flex items-center gap-2">
-                        <Label>Status:</Label>
-                        <Select onValueChange={(value) => handleStatusChange(value as Order['status'])} value={order.status} disabled={order.status === 'Cancelled'}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Pending">Pending</SelectItem>
-                                <SelectItem value="Confirmed">Confirmed</SelectItem>
-                                <SelectItem value="Completed">Completed</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <DialogFooter className="border-t pt-4">
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">
                             Close
@@ -338,7 +318,7 @@ function CancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order:
 }
 
 
-function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSelectedOrdersChange }: { orders: Order[], onSelectOrder: (order: Order) => void, onCancelOrder: (order: Order) => void, selectedOrders: string[], onSelectedOrdersChange: (ids: string[]) => void }) {
+function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSelectedOrdersChange, onUpdateStatus, isActionable }: { orders: Order[], onSelectOrder: (order: Order) => void, onCancelOrder: (order: Order) => void, selectedOrders: string[], onSelectedOrdersChange: (ids: string[]) => void, isActionable?: boolean, onUpdateStatus?: (orderId: string, status: Order['status']) => void }) {
   if (orders.length === 0) {
     return <p className="text-sm text-muted-foreground p-4">No orders to display.</p>;
   }
@@ -385,7 +365,7 @@ function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSe
           const hasInquiry = lastMessage?.from === 'customer';
 
           return (
-            <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""} onClick={() => onSelectOrder(order)} className="cursor-pointer">
+            <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""}>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                         checked={selectedOrders.includes(order.id)}
@@ -393,16 +373,29 @@ function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSe
                         aria-label={`Select order ${order.id}`}
                     />
                 </TableCell>
-                <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell className="flex items-center gap-2">
+                <TableCell className="font-medium" onClick={() => onSelectOrder(order)}>{order.id}</TableCell>
+                <TableCell className="flex items-center gap-2" onClick={() => onSelectOrder(order)}>
                    {order.customerName}
                    {hasInquiry && <MessageSquare className="h-4 w-4 text-primary animate-pulse" />}
                 </TableCell>
-                <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
-                <TableCell>
-                <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
+                <TableCell onClick={() => onSelectOrder(order)}>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
+                <TableCell onClick={(e) => { if (isActionable) e.stopPropagation(); else onSelectOrder(order); }}>
+                   {isActionable && onUpdateStatus ? (
+                     <Select onValueChange={(value) => onUpdateStatus(order.id, value as Order['status'])} defaultValue={order.status}>
+                       <SelectTrigger className="w-[140px]">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="Pending">Pending</SelectItem>
+                         <SelectItem value="Confirmed">Confirmed</SelectItem>
+                         <SelectItem value="Completed">Completed</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   ) : (
+                     <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
+                   )}
                 </TableCell>
-                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right" onClick={() => onSelectOrder(order)}>Rs.{order.total.toFixed(2)}</TableCell>
                 <TableCell className="text-center">
                     {(order.status === 'Pending' || order.status === 'Confirmed') && (
                         <Button
@@ -548,6 +541,8 @@ function OrderManagement() {
               onCancelOrder={setOrderToCancel}
               selectedOrders={selectedOrderIds}
               onSelectedOrdersChange={setSelectedOrderIds}
+              isActionable={true}
+              onUpdateStatus={updateOrderStatus}
             />
           </CardContent>
         </Card>
@@ -572,7 +567,6 @@ function OrderManagement() {
         isOpen={!!selectedOrder}
         onOpenChange={(open) => !open && setSelectedOrder(null)}
         reviews={reviews}
-        onUpdateStatus={updateOrderStatus}
       />
       <CancellationDialog
         order={orderToCancel}
@@ -1089,14 +1083,14 @@ function ReviewManagement() {
             <TableBody>
               {reviews.map((review) => (
                 <TableRow key={review.id}>
-                  <TableCell>
+                  <TableCell onClick={() => handleReplyClick(review)} className="cursor-pointer">
                       <div className="font-medium">{review.customerName}</div>
                       <div className="text-xs text-muted-foreground">{review.orderId}</div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={() => handleReplyClick(review)} className="cursor-pointer">
                     <StarDisplay rating={review.rating} />
                   </TableCell>
-                  <TableCell className="max-w-[300px] text-sm">
+                  <TableCell className="max-w-[300px] text-sm cursor-pointer" onClick={() => handleReplyClick(review)}>
                       <p className="italic truncate">"{review.comment}"</p>
                        {review.adminReply && (
                         <div className="text-xs text-muted-foreground mt-1 pl-2 border-l-2">
@@ -1112,9 +1106,6 @@ function ReviewManagement() {
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleReplyClick(review)}>
-                          <MessageSquare className={cn("h-4 w-4", review.adminReply ? "text-primary fill-primary/20" : "")} />
-                      </Button>
                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick(review)}>
                           <Trash2 className="h-4 w-4" />
                       </Button>
@@ -2136,3 +2127,6 @@ export default function AdminDashboardPage() {
   );
 }
 
+
+
+    
