@@ -365,7 +365,7 @@ function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSe
           const hasInquiry = lastMessage?.from === 'customer';
 
           return (
-            <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""}>
+            <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""} className="cursor-pointer" onClick={() => onSelectOrder(order)}>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                         checked={selectedOrders.includes(order.id)}
@@ -373,13 +373,13 @@ function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSe
                         aria-label={`Select order ${order.id}`}
                     />
                 </TableCell>
-                <TableCell className="font-medium" onClick={() => onSelectOrder(order)}>{order.id}</TableCell>
-                <TableCell className="flex items-center gap-2" onClick={() => onSelectOrder(order)}>
+                <TableCell className="font-medium">{order.id}</TableCell>
+                <TableCell className="flex items-center gap-2">
                    {order.customerName}
                    {hasInquiry && <MessageSquare className="h-4 w-4 text-primary animate-pulse" />}
                 </TableCell>
-                <TableCell onClick={() => onSelectOrder(order)}>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
-                <TableCell onClick={(e) => { if (isActionable) e.stopPropagation(); else onSelectOrder(order); }}>
+                <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
+                <TableCell onClick={(e) => { if (isActionable) e.stopPropagation(); }}>
                    {isActionable && onUpdateStatus ? (
                      <Select onValueChange={(value) => onUpdateStatus(order.id, value as Order['status'])} defaultValue={order.status}>
                        <SelectTrigger className="w-[140px]">
@@ -395,16 +395,13 @@ function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSe
                      <Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge>
                    )}
                 </TableCell>
-                <TableCell className="text-right" onClick={() => onSelectOrder(order)}>Rs.{order.total.toFixed(2)}</TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                     {(order.status === 'Pending' || order.status === 'Confirmed') && (
                         <Button
                             variant="destructive"
                             size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onCancelOrder(order);
-                            }}
+                            onClick={() => onCancelOrder(order)}
                         >
                             Cancel
                         </Button>
@@ -582,7 +579,7 @@ function OrderManagement() {
   );
 }
 
-type MenuItemFormData = Omit<MenuItem, 'id' | 'aiHint'>;
+type MenuItemDialogSaveData = Omit<MenuItem, 'aiHint' | 'isAvailable' | 'isFeatured'> & { id?: string };
 
 function MenuManagement() {
   const { menuItems, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
@@ -602,18 +599,24 @@ function MenuManagement() {
     setDialogOpen(true);
   }
   
-  const handleSave = (itemData: MenuItemFormData) => {
+  const handleSave = (itemData: MenuItemDialogSaveData) => {
     const finalImageUrl = itemData.imageUrl || 'https://placehold.co/600x400.png';
 
-    if ('id' in itemData && itemData.id) {
+    if (itemData.id) { // Editing existing item
+       const existingItem = menuItems.find(i => i.id === itemData.id);
+       if (!existingItem) return;
+
        updateMenuItem({
-         ...itemData,
-         id: itemData.id,
+         ...existingItem, // Preserves isAvailable & isFeatured
+         name: itemData.name,
+         description: itemData.description,
+         price: itemData.price,
+         category: itemData.category,
          imageUrl: finalImageUrl,
          aiHint: itemData.name.toLowerCase(),
        });
-     } else {
-       const { id, ...newItemData } = itemData as MenuItem;
+     } else { // Adding new item
+       const { id, ...newItemData } = itemData;
        addMenuItem({
          ...newItemData,
          imageUrl: finalImageUrl,
@@ -772,15 +775,19 @@ function MenuManagement() {
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
-                <TableCell>
-                    <Badge variant={item.isAvailable ? "success" : "destructive"}>
-                        {item.isAvailable ? "Available" : "Unavailable"}
-                    </Badge>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                        checked={item.isAvailable}
+                        onCheckedChange={(checked) => handleAvailabilityChange(item.id, checked)}
+                        aria-label="Toggle availability"
+                    />
                 </TableCell>
-                <TableCell>
-                    <Badge variant={item.isFeatured ? "default" : "outline"}>
-                        {item.isFeatured ? "Featured" : "No"}
-                    </Badge>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                        checked={!!item.isFeatured}
+                        onCheckedChange={(checked) => handleFeatureChange(item.id, checked)}
+                        aria-label="Toggle featured status"
+                    />
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <AlertDialog>
@@ -818,14 +825,12 @@ function MenuManagement() {
   );
 }
 
-function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, setOpen: (open: boolean) => void, item: MenuItem | null, onSave: (data: MenuItemFormData) => void }) {
+function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, setOpen: (open: boolean) => void, item: MenuItem | null, onSave: (data: MenuItemDialogSaveData) => void }) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState(0);
     const [category, setCategory] = useState<MenuItem['category']>('Main Courses');
     const [imageUrl, setImageUrl] = useState('');
-    const [isAvailable, setAvailable] = useState(true);
-    const [isFeatured, setFeatured] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -835,16 +840,12 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
                 setPrice(item.price);
                 setCategory(item.category);
                 setImageUrl(item.imageUrl);
-                setAvailable(item.isAvailable);
-                setFeatured(item.isFeatured ?? false);
             } else {
                 setName('');
                 setDescription('');
                 setPrice(0);
                 setCategory('Main Courses');
                 setImageUrl('');
-                setAvailable(true);
-                setFeatured(false);
             }
         }
     }, [item, isOpen]);
@@ -861,7 +862,7 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
     };
 
     const handleSubmit = () => {
-        onSave({ id: item?.id, name, description, price, category, imageUrl, isAvailable, isFeatured });
+        onSave({ id: item?.id, name, description, price, category, imageUrl });
     }
 
     return (
@@ -909,18 +910,6 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
                                   <Image src={imageUrl} alt="Menu item preview" fill className="object-cover" />
                               </div>
                           )}
-                        </div>
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right">Availability</Label>
-                        <div className="col-span-3">
-                            <Switch checked={isAvailable} onCheckedChange={setAvailable} />
-                        </div>
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right">Featured</Label>
-                        <div className="col-span-3">
-                            <Switch checked={isFeatured} onCheckedChange={setFeatured} />
                         </div>
                     </div>
                 </div>
