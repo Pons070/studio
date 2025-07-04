@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -1814,6 +1815,33 @@ function DeleteCustomerDialog({ customer, isOpen, onOpenChange, onConfirm }: { c
     );
 }
 
+function BlockCustomerDialog({ customer, isOpen, onOpenChange, onConfirm, isBlocking }: { customer: User | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => void; isBlocking: boolean }) {
+    if (!customer) return null;
+
+    return (
+        <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{isBlocking ? 'Block' : 'Unblock'} Customer?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to {isBlocking ? 'block' : 'unblock'} "{customer.name}"?
+                        {isBlocking
+                          ? ' This will prevent them from logging in, signing up with this email, or placing new orders.'
+                          : ' They will be able to access their account and place orders again.'
+                        }
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onConfirm} className={buttonVariants({ variant: isBlocking ? "destructive" : "secondary" })}>
+                        {isBlocking ? 'Yes, Block Customer' : 'Yes, Unblock Customer'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
 function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange }: { customer: User | null; orders: Order[]; isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
     if (!customer) return null;
 
@@ -1885,7 +1913,7 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange }: { cus
     )
 }
 
-function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { customers: (User & { orderCount: number })[]; onSelectCustomer: (customer: User) => void; onDeleteCustomer: (customer: User) => void; }) {
+function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer, onToggleBlockStatus }: { customers: (User & { orderCount: number; isBlocked: boolean; })[]; onSelectCustomer: (customer: User) => void; onDeleteCustomer: (customer: User) => void; onToggleBlockStatus: (customer: User) => void; }) {
     return (
         <Table>
             <TableHeader>
@@ -1894,6 +1922,7 @@ function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { cust
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Total Orders</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -1904,8 +1933,14 @@ function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { cust
                         <TableCell>{customer.email}</TableCell>
                         <TableCell>{customer.phone || 'N/A'}</TableCell>
                         <TableCell>{customer.orderCount}</TableCell>
+                        <TableCell>
+                            {customer.isBlocked && <Badge variant="destructive">Blocked</Badge>}
+                        </TableCell>
                         <TableCell className="text-right">
                            <Button variant="outline" size="sm" onClick={() => onSelectCustomer(customer)}>View</Button>
+                           <Button variant="outline" size="sm" className="ml-2" onClick={() => onToggleBlockStatus(customer)}>
+                               {customer.isBlocked ? 'Unblock' : 'Block'}
+                           </Button>
                            <Button variant="ghost" size="icon" className="ml-2 text-destructive" onClick={() => onDeleteCustomer(customer)}>
                                <Trash2 className="h-4 w-4" />
                            </Button>
@@ -1920,14 +1955,20 @@ function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { cust
 function CustomerManagement() {
   const { users, deleteUserById } = useAuth();
   const { orders } = useOrders();
+  const { brandInfo, blockCustomer, unblockCustomer } = useBrand();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<User | null>(null);
+  const [customerToBlock, setCustomerToBlock] = useState<User | null>(null);
+  const [isBlocking, setIsBlocking] = useState(false);
   const { toast } = useToast();
+
+  const blockedEmails = brandInfo.blockedCustomerEmails || [];
 
   const customersWithOrderCount = users.map(user => ({
     ...user,
-    orderCount: orders.filter(o => o.customerId === user.id).length
+    orderCount: orders.filter(o => o.customerId === user.id).length,
+    isBlocked: blockedEmails.includes(user.email)
   }));
 
   const filteredCustomers = customersWithOrderCount.filter(c =>
@@ -1940,7 +1981,27 @@ function CustomerManagement() {
         deleteUserById(customerToDelete.id);
         setCustomerToDelete(null);
     }
-  }
+  };
+
+  const handleToggleBlockStatus = (customer: User) => {
+    if (customer.email === 'admin@example.com') {
+      toast({ title: "Action Not Allowed", description: "You cannot block the primary admin account.", variant: "destructive"});
+      return;
+    }
+    setIsBlocking(!blockedEmails.includes(customer.email));
+    setCustomerToBlock(customer);
+  };
+  
+  const handleConfirmBlock = () => {
+    if (customerToBlock) {
+        if (isBlocking) {
+            blockCustomer(customerToBlock.email);
+        } else {
+            unblockCustomer(customerToBlock.email);
+        }
+        setCustomerToBlock(null);
+    }
+  };
 
   return (
     <>
@@ -1965,6 +2026,7 @@ function CustomerManagement() {
              customers={filteredCustomers}
              onSelectCustomer={setSelectedCustomer}
              onDeleteCustomer={setCustomerToDelete}
+             onToggleBlockStatus={handleToggleBlockStatus}
            />
         </CardContent>
       </Card>
@@ -1979,6 +2041,13 @@ function CustomerManagement() {
          isOpen={!!customerToDelete}
          onOpenChange={(open) => !open && setCustomerToDelete(null)}
          onConfirm={handleConfirmDelete}
+      />
+      <BlockCustomerDialog
+         customer={customerToBlock}
+         isOpen={!!customerToBlock}
+         onOpenChange={(open) => !open && setCustomerToBlock(null)}
+         onConfirm={handleConfirmBlock}
+         isBlocking={isBlocking}
       />
     </>
   );

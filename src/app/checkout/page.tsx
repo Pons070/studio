@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -77,9 +78,10 @@ export default function CheckoutPage() {
   const isProfileIncomplete = isAuthenticated && !currentUser?.phone;
   const hasNoAddress = isAuthenticated && (!currentUser?.addresses || currentUser.addresses.length === 0);
   const selectedAddress = currentUser?.addresses?.find(a => a.id === selectedAddressId);
+  const isUserBlocked = isAuthenticated && currentUser ? (brandInfo.blockedCustomerEmails || []).includes(currentUser.email) : false;
 
   const handlePlaceOrder = async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !currentUser) {
       toast({
         title: "Please Log In",
         description: "You need to be logged in to place an order.",
@@ -87,6 +89,15 @@ export default function CheckoutPage() {
       });
       router.push('/login');
       return;
+    }
+
+    if (isUserBlocked) {
+        toast({
+            title: "Order Failed",
+            description: "Your account has been blocked. You cannot place new orders.",
+            variant: "destructive",
+        });
+        return;
     }
 
     if (isProfileIncomplete || hasNoAddress) {
@@ -177,6 +188,15 @@ export default function CheckoutPage() {
       <h1 className="text-4xl font-headline font-bold text-center mb-10">Checkout</h1>
       <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-8">
+            {isUserBlocked && (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Account Blocked</AlertTitle>
+                    <AlertDescription>
+                        Your account is currently blocked. You cannot place new orders. Please contact support for assistance.
+                    </AlertDescription>
+                </Alert>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle>1. Select Pickup Time</CardTitle>
@@ -365,7 +385,7 @@ export default function CheckoutPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || hasNoAddress || isProfileIncomplete || items.length === 0} size="lg" className="w-full">
+                <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || hasNoAddress || isProfileIncomplete || items.length === 0 || isUserBlocked} size="lg" className="w-full">
                   {isProcessing ? 'Processing...' : 'Place Pre-Order'}
                 </Button>
               </CardFooter>

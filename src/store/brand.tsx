@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
@@ -9,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 type BrandContextType = {
   brandInfo: BrandInfo;
   updateBrandInfo: (newInfo: Partial<BrandInfo>) => void;
+  blockCustomer: (email: string) => void;
+  unblockCustomer: (email: string) => void;
 };
 
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
@@ -74,8 +77,36 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     });
   }, [toast]);
 
+  const blockCustomer = useCallback((email: string) => {
+    setBrandInfo(prevInfo => {
+        const currentBlocked = prevInfo.blockedCustomerEmails || [];
+        if (currentBlocked.includes(email)) {
+            return prevInfo; // Already blocked
+        }
+        const newBlockedEmails = [...currentBlocked, email];
+        toast({
+            title: "Customer Blocked",
+            description: `Future orders and access for ${email} will be prevented.`,
+            variant: "destructive"
+        });
+        return { ...prevInfo, blockedCustomerEmails: newBlockedEmails };
+    });
+  }, [toast]);
+
+  const unblockCustomer = useCallback((email: string) => {
+      setBrandInfo(prevInfo => {
+          const currentBlocked = prevInfo.blockedCustomerEmails || [];
+          const newBlockedEmails = currentBlocked.filter(e => e !== email);
+          toast({
+              title: "Customer Unblocked",
+              description: `${email} can now access the store and place orders again.`,
+          });
+          return { ...prevInfo, blockedCustomerEmails: newBlockedEmails };
+      });
+  }, [toast]);
+
   return (
-    <BrandContext.Provider value={{ brandInfo, updateBrandInfo }}>
+    <BrandContext.Provider value={{ brandInfo, updateBrandInfo, blockCustomer, unblockCustomer }}>
       {children}
     </BrandContext.Provider>
   );

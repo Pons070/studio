@@ -30,6 +30,7 @@ export const brandInfo: BrandInfo = {
     borderRadius: 0.5,
     backgroundImageUrl: '',
   },
+  blockedCustomerEmails: [],
 };
 
 const aliceAddress: Address = {

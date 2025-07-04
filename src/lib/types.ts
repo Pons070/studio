@@ -104,6 +104,7 @@ export type BrandInfo = {
   instagramUrl?: string;
   allowOrderUpdates?: boolean;
   theme?: ThemeSettings;
+  blockedCustomerEmails?: string[];
 };
 
 export type Promotion = {

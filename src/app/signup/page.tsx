@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -9,6 +10,8 @@ import Link from "next/link";
 import { Utensils } from 'lucide-react';
 import { useAuth } from "@/store/auth";
 import { useRouter } from 'next/navigation';
+import { useBrand } from "@/store/brand";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -16,12 +19,25 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signup } = useAuth();
+  const { brandInfo } = useBrand();
+  const { toast } = useToast();
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) return;
     setIsSubmitting(true);
+
+    const blockedEmails = brandInfo.blockedCustomerEmails || [];
+    if (blockedEmails.includes(email)) {
+        toast({
+            title: "Signup Failed",
+            description: "This email address has been blocked and cannot be used for registration.",
+            variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+    }
     
     const success = signup(name, email, password);
     
