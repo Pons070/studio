@@ -84,8 +84,8 @@ export type ThemeSettings = {
   primaryColor: string;
   backgroundColor: string;
   accentColor: string;
-  fontHeadline: string;
-  fontBody: string;
+  cardColor: string;
+  cardOpacity: number;
   borderRadius: number;
   backgroundImageUrl: string;
 };

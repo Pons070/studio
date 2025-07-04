@@ -53,8 +53,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
       if (theme.primaryColor) root.style.setProperty('--primary', theme.primaryColor);
       if (theme.backgroundColor) root.style.setProperty('--background', theme.backgroundColor);
       if (theme.accentColor) root.style.setProperty('--accent', theme.accentColor);
-      if (theme.fontHeadline) root.style.setProperty('--font-headline', theme.fontHeadline);
-      if (theme.fontBody) root.style.setProperty('--font-body', theme.fontBody);
+      if (theme.cardColor) root.style.setProperty('--card', theme.cardColor);
+      if (theme.cardOpacity !== undefined) root.style.setProperty('--card-alpha', String(theme.cardOpacity));
       if (theme.borderRadius !== undefined) root.style.setProperty('--radius', `${theme.borderRadius}rem`);
 
       if (theme.backgroundImageUrl) {

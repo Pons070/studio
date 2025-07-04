@@ -10,15 +10,15 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['var(--font-body)', 'sans-serif'],
-        headline: ['var(--font-headline)', 'serif'],
+        body: ['Alegreya', 'sans-serif'],
+        headline: ['Alegreya', 'serif'],
         code: ['monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
-          DEFAULT: 'hsl(var(--card))',
+          DEFAULT: 'hsl(var(--card) / var(--card-alpha, 1))',
           foreground: 'hsl(var(--card-foreground))',
         },
         popover: {
