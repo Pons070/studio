@@ -168,6 +168,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onRequestUpd
                                         <p className="text-muted-foreground capitalize">{order.cancelledBy}</p>
                                     </div>
                                 )}
+                                {order.cancellationAction && (
+                                     <div>
+                                        <p className="font-medium">Requested Action</p>
+                                        <p className="text-muted-foreground capitalize">{order.cancellationAction === 'refund' ? 'Refund Requested' : 'Food Donated'}</p>
+                                    </div>
+                                )}
                                 {order.cancellationReason && (
                                     <div className="col-span-2">
                                         <p className="font-medium">Reason for Cancellation</p>
@@ -350,9 +356,10 @@ function ReviewDialog(
     );
 }
 
-function CustomerCancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: (orderId: string, reason: string) => void }) {
+function CustomerCancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onConfirm: (orderId: string, reason: string, action: 'refund' | 'donate') => void }) {
     const [reason, setReason] = useState('');
     const [customReason, setCustomReason] = useState('');
+    const [action, setAction] = useState<'refund' | 'donate'>('refund');
 
     const predefinedReasons = [
         "Change of plans",
@@ -365,6 +372,7 @@ function CustomerCancellationDialog({ order, isOpen, onOpenChange, onConfirm }: 
         if (!isOpen) {
             setReason('');
             setCustomReason('');
+            setAction('refund');
         }
     }, [isOpen]);
     
@@ -372,13 +380,13 @@ function CustomerCancellationDialog({ order, isOpen, onOpenChange, onConfirm }: 
 
     const handleConfirm = () => {
         const finalReason = reason === 'Other' ? customReason : reason;
-        if (finalReason.trim()) {
-            onConfirm(order.id, finalReason);
+        if (finalReason.trim() && action) {
+            onConfirm(order.id, finalReason, action);
             onOpenChange(false);
         }
     }
 
-    const isConfirmDisabled = !reason || (reason === 'Other' && !customReason.trim());
+    const isConfirmDisabled = !reason || (reason === 'Other' && !customReason.trim()) || !action;
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -391,6 +399,7 @@ function CustomerCancellationDialog({ order, isOpen, onOpenChange, onConfirm }: 
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <RadioGroup value={reason} onValueChange={setReason} className="space-y-2">
+                        <Label>Reason for Cancellation</Label>
                         {predefinedReasons.map(r => (
                             <div key={r} className="flex items-center space-x-2">
                                 <RadioGroupItem value={r} id={r} />
@@ -410,6 +419,23 @@ function CustomerCancellationDialog({ order, isOpen, onOpenChange, onConfirm }: 
                             className="mt-2"
                         />
                     )}
+
+                    <Separator />
+
+                    <RadioGroup value={action} onValueChange={(value: 'refund' | 'donate') => setAction(value)} className="space-y-2">
+                        <Label>Preferred Action</Label>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="refund" id="refund" />
+                            <Label htmlFor="refund">Request a refund</Label>
+                        </div>
+                         <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="donate" id="donate" />
+                            <Label htmlFor="donate">Donate food if already prepared</Label>
+                        </div>
+                    </RadioGroup>
+                    <p className="text-xs text-muted-foreground p-2 bg-muted/50 rounded-md">
+                        Please note: A refund can only be processed if the restaurant has not yet started preparing your food.
+                    </p>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
@@ -442,8 +468,8 @@ export default function OrdersPage() {
 
   const userOrders = orders.filter(order => order.customerId === currentUser?.id).sort((a,b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 
-  const handleConfirmCancellation = (orderId: string, reason: string) => {
-    updateOrderStatus(orderId, 'Cancelled', 'customer', reason);
+  const handleConfirmCancellation = (orderId: string, reason: string, action: 'refund' | 'donate') => {
+    updateOrderStatus(orderId, 'Cancelled', 'customer', reason, undefined, action);
   };
 
   const handleReviewSubmit = (orderId: string, rating: number, comment: string) => {

@@ -188,6 +188,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                                         <p className="text-muted-foreground capitalize">{order.cancelledBy}</p>
                                     </div>
                                 )}
+                                {order.cancellationAction && (
+                                     <div>
+                                        <p className="font-medium">Customer Action</p>
+                                        <p className="text-muted-foreground capitalize">{order.cancellationAction === 'refund' ? 'Refund Requested' : 'Food Donated'}</p>
+                                    </div>
+                                )}
                                 {order.cancellationReason && (
                                      <div className="col-span-2">
                                         <p className="font-medium">Reason for Cancellation</p>

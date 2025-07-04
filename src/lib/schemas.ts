@@ -47,6 +47,7 @@ export const OrderSchema = z.object({
   cancellationDate: z.string().optional().describe("The date the order was cancelled."),
   cancellationReason: z.string().optional().describe("The reason for cancelling the order."),
   cancelledBy: z.enum(['admin', 'customer']).optional().describe("Who cancelled the order."),
+  cancellationAction: z.enum(['refund', 'donate']).optional().describe("The desired action for a cancelled order."),
   cookingNotes: z.string().optional(),
   updateRequests: z.array(UpdateRequestSchema).optional(),
   appliedCoupon: z.string().optional(),

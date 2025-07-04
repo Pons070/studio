@@ -66,6 +66,7 @@ export type Order = {
   cancellationDate?: string; // The date the order was cancelled
   cancellationReason?: string;
   cancelledBy?: 'admin' | 'customer';
+  cancellationAction?: 'refund' | 'donate';
   cookingNotes?: string;
   updateRequests?: UpdateRequest[];
   appliedCoupon?: string;
