@@ -953,9 +953,33 @@ function DeleteReviewDialog({ review, isOpen, onOpenChange, onConfirm }: { revie
 
 function ReviewManagement() {
   const { reviews, addAdminReply, togglePublishStatus, deleteReview } = useReviews();
+  const { orders, updateOrderStatus } = useOrders();
+  const { users } = useAuth();
   const [isReplyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedReviewForReply, setSelectedReviewForReply] = useState<Review | null>(null);
   const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+
+  const handleSelectOrder = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      setSelectedOrder(order);
+    }
+  };
+
+  const handleConfirmCancellation = (order: Order) => {
+    setSelectedOrder(null);
+    setOrderToCancel(order);
+  };
+  
+  const confirmCancelAction = (orderId: string, reason: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const customer = users.find(u => u.id === order.customerId);
+    updateOrderStatus(orderId, 'Cancelled', reason, customer?.email);
+    setOrderToCancel(null);
+  };
 
   const handleReplyClick = (review: Review) => {
     setSelectedReviewForReply(review);
@@ -1000,7 +1024,12 @@ function ReviewManagement() {
                 <TableRow key={review.id}>
                   <TableCell onClick={() => handleReplyClick(review)} className="cursor-pointer">
                       <div className="font-medium">{review.customerName}</div>
-                      <div className="text-xs text-muted-foreground">{review.orderId}</div>
+                      <div 
+                        className="text-xs text-muted-foreground hover:underline"
+                        onClick={(e) => { e.stopPropagation(); handleSelectOrder(review.orderId); }}
+                      >
+                        {review.orderId}
+                      </div>
                   </TableCell>
                   <TableCell onClick={() => handleReplyClick(review)} className="cursor-pointer">
                     <StarDisplay rating={review.rating} />
@@ -1042,6 +1071,19 @@ function ReviewManagement() {
         isOpen={!!reviewToDelete}
         onOpenChange={(open) => !open && setReviewToDelete(null)}
         onConfirm={handleConfirmDelete}
+      />
+       <OrderDetailsDialog
+        order={selectedOrder}
+        isOpen={!!selectedOrder}
+        onOpenChange={(open) => !open && setSelectedOrder(null)}
+        reviews={reviews}
+        onCancelOrder={handleConfirmCancellation}
+      />
+      <CancellationDialog
+        order={orderToCancel}
+        isOpen={!!orderToCancel}
+        onOpenChange={(open) => !open && setOrderToCancel(null)}
+        onConfirm={confirmCancelAction}
       />
     </>
   );
@@ -2472,7 +2514,7 @@ function AnalyticsAndReports() {
     const input = document.getElementById('analytics-printable-area');
     if (input) {
       const { default: jsPDF } = await import('jspdf');
-      const html2canvas = (await import('html2canvas')).default;
+      const { default: html2canvas } = await import('html2canvas');
 
       const canvas = await html2canvas(input, { scale: 2, useCORS: true, backgroundColor: null });
       const imgData = canvas.toDataURL('image/png');
