@@ -2147,6 +2147,8 @@ function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange, onExpo
 function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport }: { details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; }) {
     if (!details) return null;
 
+    const dateColumnHeader = details.title.includes('Cancelled') ? 'Cancelled On' : 'Pickup Date';
+
     const renderOrderRow = (order: Order) => {
         const dateString = order.status === 'Cancelled' ? order.cancellationDate : order.pickupDate;
         return (
@@ -2187,7 +2189,7 @@ function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport }: { deta
                                <TableRow>
                                     <TableHead>Order ID</TableHead>
                                     <TableHead>Customer</TableHead>
-                                    <TableHead>Date</TableHead>
+                                    <TableHead>{dateColumnHeader}</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Total</TableHead>
                                 </TableRow>
@@ -2347,13 +2349,24 @@ function AnalyticsAndReports() {
         filename = `cancelled_orders_${details.reason.replace(/\s+/g, '_').toLowerCase()}.csv`;
     } else { // MetricDetails
         if (details.type === 'orders') {
-            dataToExport = (details.data as Order[]).map(o => ({
-                order_id: o.id,
-                customer_name: o.customerName,
-                date: o.status === 'Cancelled' ? o.cancellationDate : o.pickupDate,
-                status: o.status,
-                total: o.total
-            }));
+            const isCancelledReport = details.title.includes('Cancelled');
+            if (isCancelledReport) {
+                dataToExport = (details.data as Order[]).map(o => ({
+                    order_id: o.id,
+                    customer_name: o.customerName,
+                    cancelled_on: o.cancellationDate,
+                    status: o.status,
+                    total: o.total,
+                }));
+            } else {
+                 dataToExport = (details.data as Order[]).map(o => ({
+                    order_id: o.id,
+                    customer_name: o.customerName,
+                    pickup_date: o.pickupDate,
+                    status: o.status,
+                    total: o.total,
+                }));
+            }
         } else {
              dataToExport = (details.data as Review[]).map(r => ({
                 customer_name: r.customerName,
