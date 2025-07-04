@@ -202,7 +202,7 @@ export default function CheckoutPage() {
     setIsProcessing(false);
     if (newOrder) {
       clearCart();
-      router.push(`/orders?orderId=${newOrder.id}`);
+      router.push(`/orders/${newOrder.id}`);
     }
   };
 

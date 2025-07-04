@@ -3,7 +3,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -372,34 +371,12 @@ export default function OrdersPage() {
   const { reorder } = useCart();
   const { brandInfo } = useBrand();
   const [shareUrl, setShareUrl] = useState('');
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     setShareUrl(window.location.origin);
   }, []);
 
   const userOrders = orders.filter(order => order.customerId === currentUser?.id).sort((a,b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const orderIdParam = searchParams.get('orderId');
-    if (orderIdParam) {
-      const orderToView = userOrders.find(o => o.id === orderIdParam);
-      if (orderToView) {
-        setSelectedOrder(orderToView);
-      }
-    }
-  }, [searchParams, userOrders]);
-  
-  const handleDialogChange = (open: boolean) => {
-    if (!open) {
-      setSelectedOrder(null);
-      // Remove the query param from URL to prevent re-opening
-      router.replace(pathname, { scroll: false });
-    }
-  };
 
   const handleCancelOrder = (orderId: string) => {
     updateOrderStatus(orderId, 'Cancelled', 'customer');
@@ -528,7 +505,7 @@ export default function OrdersPage() {
       <OrderDetailsDialog 
         order={selectedOrder}
         isOpen={!!selectedOrder}
-        onOpenChange={handleDialogChange}
+        onOpenChange={(open) => !open && setSelectedOrder(null)}
         reviews={reviews}
         onRequestUpdateClick={handleRequestUpdateClick}
       />
