@@ -7,7 +7,7 @@ import { Utensils, Instagram, Youtube } from "lucide-react";
 import { useBrand } from "@/store/brand";
 import Image from "next/image";
 import type { Address } from "@/lib/types";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 const formatAddress = (address: Address) => {
     if (!address) return '';
@@ -21,6 +21,11 @@ export function Footer() {
   const { brandInfo } = useBrand();
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   const handleSecretAdminTrigger = useCallback((e: React.MouseEvent) => {
     const newCount = clickCount + 1;
@@ -94,7 +99,9 @@ export function Footer() {
         </div>
         <div className="mt-8 pt-6 border-t text-center">
             <p className="text-xs text-muted-foreground">
-              <span onClick={handleSecretAdminTrigger} className="cursor-pointer">© {new Date().getFullYear()}</span> {brandInfo.name}. All rights reserved.
+              {currentYear && (
+                <span onClick={handleSecretAdminTrigger} className="cursor-pointer">© {currentYear}</span>
+              )} {brandInfo.name}. All rights reserved.
             </p>
         </div>
       </div>
