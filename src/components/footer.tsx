@@ -59,9 +59,6 @@ export function Footer() {
               )}
               <span className="text-lg font-headline font-bold text-foreground">{brandInfo.name}</span>
             </Link>
-            <p className="text-xs text-muted-foreground mt-2">
-              © {new Date().getFullYear()} {brandInfo.name}. All rights reserved.
-            </p>
           </div>
 
           <div className="text-muted-foreground text-sm space-y-2">
@@ -95,7 +92,11 @@ export function Footer() {
               )}
             </div>
           </div>
-
+        </div>
+        <div className="mt-8 pt-6 border-t text-center">
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} {brandInfo.name}. All rights reserved.
+            </p>
         </div>
       </div>
     </footer>
