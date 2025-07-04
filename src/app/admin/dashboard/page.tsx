@@ -65,6 +65,8 @@ import { useRouter } from 'next/navigation';
 import { getBusinessInsights, type BusinessInsightsOutput } from '@/ai/flows/business-insights-flow';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, Tooltip, ResponsiveContainer, Cell, YAxis, Legend } from 'recharts';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -2367,6 +2369,42 @@ function AnalyticsAndReports() {
     
     downloadCsv(dataToExport, filename);
   };
+  
+  const handleDownloadPdf = () => {
+    const input = document.getElementById('analytics-printable-area');
+    if (input) {
+        html2canvas(input, { scale: 2, useCORS: true, backgroundColor: null }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+
+            const ratio = canvasWidth / canvasHeight;
+
+            let imgWidth = pdfWidth - 20; 
+            let imgHeight = imgWidth / ratio;
+
+            if (imgHeight > pdfHeight - 20) {
+                imgHeight = pdfHeight - 20;
+                imgWidth = imgHeight * ratio;
+            }
+            
+            const x = (pdfWidth - imgWidth) / 2;
+            const y = 10;
+
+            pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+            pdf.save('analytics-report.pdf');
+        });
+    }
+  };
 
   useEffect(() => {
     async function fetchInsights() {
@@ -2403,10 +2441,10 @@ function AnalyticsAndReports() {
 
   return (
     <>
-    <div id="analytics-printable-area" className="space-y-6">
-      <div className="flex justify-end print:hidden">
-          <Button onClick={() => window.print()} variant="outline"><Printer className="mr-2 h-4 w-4"/>Print Report</Button>
-      </div>
+    <div className="flex justify-end">
+        <Button onClick={handleDownloadPdf} variant="outline"><Download className="mr-2 h-4 w-4"/>Download PDF</Button>
+    </div>
+    <div id="analytics-printable-area" className="space-y-6 mt-4">
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -2752,7 +2790,7 @@ export default function AdminDashboardPage() {
 
   return (
       <div className="space-y-6 p-4 md:p-6">
-        <header className="flex items-center justify-between gap-4 print:hidden">
+        <header className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" onClick={() => setActiveView('dashboard')}>
                 <ArrowLeft className="h-4 w-4" />
@@ -2775,7 +2813,7 @@ export default function AdminDashboardPage() {
             </div>
         </header>
 
-        <Separator className="print:hidden" />
+        <Separator />
         
         <div className="pt-2">
             {renderContent()}
