@@ -2886,12 +2886,18 @@ export default function AdminDashboardPage() {
   const [newOrderInPopup, setNewOrderInPopup] = useState<Order | null>(null);
   
   const prevOrdersRef = useRef<Order[]>([]);
-  const lastNotifiedMessageIdRef = useRef<string | null>(null);
-  const lastNotifiedOrderIdRef = useRef<string | null>(null);
+  const notifiedMessageIdsRef = useRef(new Set<string>());
+  const notifiedOrderIdsRef = useRef(new Set<string>());
   
   useEffect(() => {
-    // Don't run on initial load
-    if (prevOrdersRef.current.length === 0) {
+    // On first load, populate the refs with existing message/order IDs so we don't notify for them.
+    if (prevOrdersRef.current.length === 0 && orders.length > 0) {
+        orders.forEach(order => {
+            notifiedOrderIdsRef.current.add(order.id);
+            order.updateRequests?.forEach(req => {
+                notifiedMessageIdsRef.current.add(req.id);
+            });
+        });
         prevOrdersRef.current = orders;
         return;
     }
@@ -2908,9 +2914,9 @@ export default function AdminDashboardPage() {
         });
     });
 
-    if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageIdRef.current) {
+    if (latestCustomerMessage && !notifiedMessageIdsRef.current.has(latestCustomerMessage.messageId)) {
         setOrderToShowInInquiryPopup(latestCustomerMessage.order);
-        lastNotifiedMessageIdRef.current = latestCustomerMessage.messageId;
+        notifiedMessageIdsRef.current.add(latestCustomerMessage.messageId);
     }
 
     // New order detection logic
@@ -2919,9 +2925,9 @@ export default function AdminDashboardPage() {
 
     if (newOrders.length > 0) {
         const mostRecentNewOrder = newOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())[0];
-        if (mostRecentNewOrder.id !== lastNotifiedOrderIdRef.current) {
+        if (!notifiedOrderIdsRef.current.has(mostRecentNewOrder.id)) {
             setNewOrderInPopup(mostRecentNewOrder);
-            lastNotifiedOrderIdRef.current = mostRecentNewOrder.id;
+            notifiedOrderIdsRef.current.add(mostRecentNewOrder.id);
         }
     }
 
