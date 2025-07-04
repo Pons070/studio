@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -2109,6 +2109,10 @@ export default function AdminDashboardPage() {
     router.push('/admin/login');
   };
 
+  const handleGoToHome = () => {
+    router.push('/');
+  };
+
   const navItems = [
     { id: 'orders', label: 'Manage Orders', description: "View and process all customer orders.", icon: ClipboardList },
     { id: 'menu', label: 'Manage Menu', description: "Add, edit, or remove menu items.", icon: Utensils },
@@ -2140,10 +2144,16 @@ export default function AdminDashboardPage() {
                 <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
                 <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-            </Button>
+             <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleGoToHome}>
+                    <Home className="mr-2 h-4 w-4" />
+                    Go to Home
+                </Button>
+                <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                </Button>
+            </div>
         </header>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pt-4">
@@ -2177,10 +2187,16 @@ export default function AdminDashboardPage() {
                     <p className="text-muted-foreground">{activeItem?.description}</p>
                 </div>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-            </Button>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleGoToHome}>
+                    <Home className="mr-2 h-4 w-4" />
+                    Go to Home
+                </Button>
+                <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                </Button>
+            </div>
         </header>
 
         <Separator />
@@ -2193,5 +2209,7 @@ export default function AdminDashboardPage() {
 }
 
 
+
+    
 
     
