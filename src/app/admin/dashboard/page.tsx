@@ -431,7 +431,7 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus, onDeleteOrder }: { 
   )
 }
 
-function AdminNotificationDialog({ order, onOpenChange }: { order: Order | null; onOpenChange: (open: boolean) => void; }) {
+function InquiryNotificationDialog({ order, onOpenChange }: { order: Order | null; onOpenChange: (open: boolean) => void; }) {
     if (!order) return null;
 
     const lastMessage = order.updateRequests?.[order.updateRequests.length - 1];
@@ -456,6 +456,43 @@ function AdminNotificationDialog({ order, onOpenChange }: { order: Order | null;
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function NewOrderNotificationDialog({ order, onOpenChange, onGoToOrders }: { order: Order | null; onOpenChange: (open: boolean) => void; onGoToOrders: () => void; }) {
+    if (!order) return null;
+
+    const handleGoToOrdersClick = () => {
+        onGoToOrders();
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={!!order} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><PlusCircle className="h-5 w-5 text-primary" /> New Pre-Order Received!</DialogTitle>
+                    <DialogDescription>
+                        Order ID: #{order.id} from {order.customerName}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="p-3 bg-muted rounded-md border">
+                        <p className="font-semibold">Order Summary</p>
+                        <p className="text-sm text-muted-foreground">
+                            {order.items.length} item(s) totaling Rs.{order.total.toFixed(2)}.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Scheduled for pickup on {new Date(`${order.pickupDate}T00:00:00`).toLocaleDateString()} at {order.pickupTime}.
+                        </p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
+                    <Button onClick={handleGoToOrdersClick}>Go to Orders</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -2724,15 +2761,19 @@ export default function AdminDashboardPage() {
   const { orders } = useOrders();
 
   const [lastNotifiedMessageId, setLastNotifiedMessageId] = useState<string | null>(null);
-  const [orderToShowInPopup, setOrderToShowInPopup] = useState<Order | null>(null);
+  const [orderToShowInInquiryPopup, setOrderToShowInInquiryPopup] = useState<Order | null>(null);
+  
+  const [lastNotifiedOrderId, setLastNotifiedOrderId] = useState<string | null>(null);
+  const [newOrderInPopup, setNewOrderInPopup] = useState<Order | null>(null);
+
   const prevOrdersRef = useRef<Order[]>([]);
 
   useEffect(() => {
     // This effect runs on the client and will re-run when `orders` changes.
     // Don't run on the first render to avoid notifying on initial load.
     if (prevOrdersRef.current.length > 0) {
+      // Inquiry detection logic
       let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
-      
       orders.forEach(order => {
         order.updateRequests?.forEach(req => {
             if (req.from === 'customer') {
@@ -2743,16 +2784,27 @@ export default function AdminDashboardPage() {
         });
       });
 
-      // If we found a new latest message that we haven't notified about yet...
       if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageId) {
-          setOrderToShowInPopup(latestCustomerMessage.order);
+          setOrderToShowInInquiryPopup(latestCustomerMessage.order);
           setLastNotifiedMessageId(latestCustomerMessage.messageId); // Mark as notified
+      }
+
+      // New order detection logic
+      const prevOrderIds = new Set(prevOrdersRef.current.map(o => o.id));
+      const newOrders = orders.filter(o => !prevOrderIds.has(o.id));
+
+      if (newOrders.length > 0) {
+        const mostRecentNewOrder = newOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())[0];
+        if (mostRecentNewOrder.id !== lastNotifiedOrderId) {
+            setNewOrderInPopup(mostRecentNewOrder);
+            setLastNotifiedOrderId(mostRecentNewOrder.id);
+        }
       }
     }
 
     // Store the current orders for the next comparison.
     prevOrdersRef.current = orders;
-  }, [orders, lastNotifiedMessageId]);
+  }, [orders, lastNotifiedMessageId, lastNotifiedOrderId]);
 
 
   const handleLogout = () => {
@@ -2763,6 +2815,10 @@ export default function AdminDashboardPage() {
 
   const handleGoToHome = () => {
     router.push('/');
+  };
+
+  const handleGoToOrders = () => {
+    setActiveView('orders');
   };
 
   const navItems = [
@@ -2824,10 +2880,15 @@ export default function AdminDashboardPage() {
                 </Card>
             ))}
         </div>
-         <AdminNotificationDialog
-            order={orderToShowInPopup}
-            onOpenChange={(open) => !open && setOrderToShowInPopup(null)}
+         <InquiryNotificationDialog
+            order={orderToShowInInquiryPopup}
+            onOpenChange={(open) => !open && setOrderToShowInInquiryPopup(null)}
           />
+        <NewOrderNotificationDialog
+            order={newOrderInPopup}
+            onOpenChange={(open) => !open && setNewOrderInPopup(null)}
+            onGoToOrders={handleGoToOrders}
+        />
       </div>
     );
   }
@@ -2863,9 +2924,14 @@ export default function AdminDashboardPage() {
             {renderContent()}
         </div>
 
-        <AdminNotificationDialog
-            order={orderToShowInPopup}
-            onOpenChange={(open) => !open && setOrderToShowInPopup(null)}
+        <InquiryNotificationDialog
+            order={orderToShowInInquiryPopup}
+            onOpenChange={(open) => !open && setOrderToShowInInquiryPopup(null)}
+        />
+        <NewOrderNotificationDialog
+            order={newOrderInPopup}
+            onOpenChange={(open) => !open && setNewOrderInPopup(null)}
+            onGoToOrders={handleGoToOrders}
         />
       </div>
   );
