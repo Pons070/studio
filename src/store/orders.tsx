@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 
 type OrderContextType = {
   orders: Order[];
-  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string) => Promise<void>;
+  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number) => Promise<void>;
   updateOrderStatus: (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string) => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
   removeReviewIdFromOrder: (orderId: string) => void;
@@ -48,7 +48,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, [orders]);
 
 
-  const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string) => {
+  const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number) => {
     if (!currentUser) {
       toast({
         title: "Authentication Error",
@@ -71,6 +71,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         items: items,
         cookingNotes: cookingNotes || undefined,
         updateRequests: [],
+        appliedCoupon: appliedCoupon,
+        discountAmount: discountAmount,
     };
 
     // Optimistically update UI

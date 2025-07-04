@@ -68,6 +68,8 @@ export type Order = {
   cancelledBy?: 'admin' | 'customer';
   cookingNotes?: string;
   updateRequests?: UpdateRequest[];
+  appliedCoupon?: string;
+  discountAmount?: number;
 };
 
 export type Review = {
@@ -115,6 +117,10 @@ export type Promotion = {
   description: string;
   targetAudience: 'all' | 'new' | 'existing';
   isActive: boolean;
+  couponCode: string;
+  discountType: 'percentage' | 'flat';
+  discountValue: number;
+  minOrderValue?: number;
   startDate?: string;
   endDate?: string;
   activeDays?: number[]; // 0 = Sun, 1 = Mon, ..., 6 = Sat

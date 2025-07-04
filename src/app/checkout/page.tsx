@@ -2,11 +2,11 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, Tag, X } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,16 +33,20 @@ import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/store/auth';
 import Link from 'next/link';
-import type { Address } from '@/lib/types';
+import type { Address, Promotion } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { usePromotions } from '@/store/promotions';
 
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
-  const { addOrder } = useOrders();
+  const { addOrder, orders } = useOrders();
   const { brandInfo } = useBrand();
   const { currentUser, isAuthenticated } = useAuth();
+  const { promotions } = usePromotions();
+  
   const [pickupDate, setPickupDate] = useState<Date | undefined>();
   const [time, setTime] = useState<string | undefined>();
   const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>();
@@ -50,6 +54,10 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClearCartAlertOpen, setClearCartAlertOpen] = useState(false);
   const [isCalendarOpen, setCalendarOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
+  const [discount, setDiscount] = useState(0);
+
   const router = useRouter();
   const { toast } = useToast();
   
@@ -60,20 +68,70 @@ export default function CheckoutPage() {
       const currentAddresses = currentUser.addresses;
       const defaultAddress = currentAddresses.find(a => a.isDefault) || currentAddresses[0];
 
-      // If there's no selection OR the current selection is no longer valid, reset to default.
       if (!selectedAddressId || !currentAddresses.some(a => a.id === selectedAddressId)) {
         setSelectedAddressId(defaultAddress.id);
       }
     } else {
-      // No addresses, so clear selection.
       setSelectedAddressId(undefined);
     }
-  }, [currentUser]);
+  }, [currentUser, selectedAddressId]);
+  
+  const customerType = useMemo(() => {
+    if (!isAuthenticated || !currentUser) return 'new';
+    const hasOrders = orders.some(order => order.customerId === currentUser.id);
+    return hasOrders ? 'existing' : 'new';
+  }, [isAuthenticated, currentUser, orders]);
+
+
+  const handleApplyCoupon = () => {
+    const promotion = promotions.find(p => p.couponCode.toUpperCase() === couponInput.toUpperCase());
+    
+    if (!promotion) {
+      toast({ title: 'Invalid Coupon Code', variant: 'destructive' });
+      return;
+    }
+    
+    if (!promotion.isActive) {
+      toast({ title: 'This coupon is not active.', variant: 'destructive' });
+      return;
+    }
+
+    if (promotion.targetAudience !== 'all' && promotion.targetAudience !== customerType) {
+        toast({ title: 'Coupon Not Applicable', description: 'This coupon is not valid for your account.', variant: 'destructive' });
+        return;
+    }
+
+    if (promotion.minOrderValue && totalPrice < promotion.minOrderValue) {
+        toast({ title: 'Minimum Spend Not Met', description: `You need to spend at least Rs.${promotion.minOrderValue} to use this coupon.`, variant: 'destructive' });
+        return;
+    }
+
+    let calculatedDiscount = 0;
+    if (promotion.discountType === 'percentage') {
+        calculatedDiscount = totalPrice * (promotion.discountValue / 100);
+    } else {
+        calculatedDiscount = promotion.discountValue;
+    }
+
+    setDiscount(calculatedDiscount);
+    setAppliedPromotion(promotion);
+    toast({ title: 'Coupon Applied!', description: promotion.title });
+  }
+
+  const handleRemoveCoupon = () => {
+    setCouponInput('');
+    setAppliedPromotion(null);
+    setDiscount(0);
+    toast({ title: 'Coupon Removed' });
+  }
+
 
   const isProfileIncomplete = isAuthenticated && !currentUser?.phone;
   const hasNoAddress = isAuthenticated && (!currentUser?.addresses || currentUser.addresses.length === 0);
   const selectedAddress = currentUser?.addresses?.find(a => a.id === selectedAddressId);
   const isUserBlocked = isAuthenticated && currentUser ? (brandInfo.blockedCustomerEmails || []).includes(currentUser.email) : false;
+
+  const finalTotal = Math.max(0, totalPrice - discount);
 
   const handlePlaceOrder = async () => {
     if (!isAuthenticated || !currentUser) {
@@ -139,7 +197,7 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
     
-    await addOrder(items, totalPrice, pickupDate, time, deliveryAddress, cookingNotes);
+    await addOrder(items, finalTotal, pickupDate, time, deliveryAddress, cookingNotes, appliedPromotion?.couponCode, discount > 0 ? discount : undefined);
 
     setIsProcessing(false);
     clearCart();
@@ -316,32 +374,8 @@ export default function CheckoutPage() {
 
         <div className="space-y-8 lg:sticky top-24 h-fit">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader>
                 <CardTitle>4. Order Summary</CardTitle>
-                {items.length > 0 && (
-                  <AlertDialog open={isClearCartAlertOpen} onOpenChange={setClearCartAlertOpen}>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive border-destructive/50 hover:bg-destructive/10">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Clear Cart
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will remove all items from your cart. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleClearCart} className={buttonVariants({ variant: "destructive" })}>
-                          Yes, Clear Cart
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 {items.length > 0 ? (
@@ -363,14 +397,77 @@ export default function CheckoutPage() {
                   <p className="text-muted-foreground text-center py-8">Your cart is empty.</p>
                 )}
                 <Separator />
-                <div className="flex justify-between font-bold text-xl">
-                  <p>Total</p>
-                  <p>Rs.{totalPrice.toFixed(2)}</p>
+                <div className="space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2"><TicketPercent className="h-5 w-5"/> Apply Coupon</h4>
+                  {appliedPromotion ? (
+                    <div className="flex items-center justify-between p-2 bg-secondary rounded-md">
+                        <div className="text-sm">
+                            <p className="font-semibold text-secondary-foreground">Applied: "{appliedPromotion.couponCode}"</p>
+                            <p className="text-muted-foreground">{appliedPromotion.title}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleRemoveCoupon}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                        <Input 
+                          placeholder="Enter coupon code" 
+                          value={couponInput}
+                          onChange={e => setCouponInput(e.target.value)}
+                          disabled={items.length === 0}
+                        />
+                        <Button onClick={handleApplyCoupon} disabled={!couponInput || items.length === 0}>Apply</Button>
+                    </div>
+                  )}
+                </div>
+                <Separator />
+                <div className="space-y-1">
+                    <div className="flex justify-between text-muted-foreground">
+                        <p>Subtotal</p>
+                        <p>Rs.{totalPrice.toFixed(2)}</p>
+                    </div>
+                    {discount > 0 && (
+                        <div className="flex justify-between text-success">
+                            <p>Discount</p>
+                            <p>- Rs.{discount.toFixed(2)}</p>
+                        </div>
+                    )}
+                    <div className="flex justify-between font-bold text-xl">
+                        <p>Total</p>
+                        <p>Rs.{finalTotal.toFixed(2)}</p>
+                    </div>
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex-col gap-4">
+                 <div className="flex justify-end w-full">
+                    {items.length > 0 && (
+                      <AlertDialog open={isClearCartAlertOpen} onOpenChange={setClearCartAlertOpen}>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-destructive hover:text-destructive border-destructive/50 hover:bg-destructive/10">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Clear Cart
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will remove all items from your cart. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleClearCart} className={buttonVariants({ variant: "destructive" })}>
+                              Yes, Clear Cart
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                 </div>
                 <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || hasNoAddress || isProfileIncomplete || items.length === 0 || isUserBlocked} size="lg" className="w-full">
-                  {isProcessing ? 'Processing...' : 'Place Pre-Order'}
+                  {isProcessing ? 'Processing...' : `Place Pre-Order (Rs.${finalTotal.toFixed(2)})`}
                 </Button>
               </CardFooter>
             </Card>

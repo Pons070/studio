@@ -136,6 +136,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onRequestUpd
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
     const canRequestUpdate = (brandInfo.allowOrderUpdates ?? true) && (order.status === 'Pending' || order.status === 'Confirmed') && (order.updateRequests?.filter(r => r.from === 'customer').length || 0) < 3;
+    const subtotal = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -184,6 +185,18 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onRequestUpd
                                     </div>
                                 )}
                             </>
+                            )}
+                            {order.appliedCoupon && order.discountAmount && (
+                              <>
+                                <div>
+                                    <p className="font-medium">Subtotal</p>
+                                    <p className="text-muted-foreground">Rs.{subtotal.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <p className="font-medium">Discount ({order.appliedCoupon})</p>
+                                    <p className="text-muted-foreground">- Rs.{order.discountAmount.toFixed(2)}</p>
+                                </div>
+                              </>
                             )}
                             <div>
                                 <p className="font-medium">Order Total</p>

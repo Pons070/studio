@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -132,6 +132,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
     if (!order) return null;
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
+    const subtotal = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     const fullAddress = [
         order.address.doorNumber,
@@ -194,6 +195,18 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                                     </div>
                                 )}
                            </>
+                        )}
+                        {order.appliedCoupon && order.discountAmount && (
+                            <>
+                            <div>
+                                <p className="font-medium">Subtotal</p>
+                                <p className="text-muted-foreground">Rs.{subtotal.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p className="font-medium">Discount ({order.appliedCoupon})</p>
+                                <p className="text-muted-foreground">- Rs.{order.discountAmount.toFixed(2)}</p>
+                            </div>
+                            </>
                         )}
                         <div>
                             <p className="font-medium">Order Total</p>
@@ -1624,7 +1637,7 @@ function BrandManagement() {
   );
 }
 
-type PromotionFormData = Omit<Promotion, 'id'> & { id?: string };
+type PromotionFormData = Promotion;
 
 function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, setOpen: (open: boolean) => void, item: Promotion | null, onSave: (data: PromotionFormData) => void }) {
     const [title, setTitle] = useState('');
@@ -1634,6 +1647,10 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
     const [endDate, setEndDate] = useState<Date | undefined>();
     const [activeDays, setActiveDays] = useState<number[]>([]);
     const [isActive, setIsActive] = useState(true);
+    const [couponCode, setCouponCode] = useState('');
+    const [discountType, setDiscountType] = useState<Promotion['discountType']>('percentage');
+    const [discountValue, setDiscountValue] = useState(0);
+    const [minOrderValue, setMinOrderValue] = useState(0);
 
     const daysOfWeek = [
         { id: 1, label: 'Mon' }, { id: 2, label: 'Tue' }, { id: 3, label: 'Wed' },
@@ -1651,6 +1668,10 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                 setEndDate(item.endDate ? new Date(item.endDate) : undefined);
                 setActiveDays(item.activeDays || []);
                 setIsActive(item.isActive);
+                setCouponCode(item.couponCode);
+                setDiscountType(item.discountType);
+                setDiscountValue(item.discountValue);
+                setMinOrderValue(item.minOrderValue || 0);
             } else {
                 setTitle('');
                 setDescription('');
@@ -1659,6 +1680,10 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                 setEndDate(undefined);
                 setActiveDays([]);
                 setIsActive(true);
+                setCouponCode('');
+                setDiscountType('percentage');
+                setDiscountValue(0);
+                setMinOrderValue(0);
             }
         }
     }, [item, isOpen]);
@@ -1671,11 +1696,15 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
 
     const handleSubmit = () => {
         onSave({ 
-            id: item?.id, 
+            id: item?.id || '',
             title, 
             description, 
             targetAudience, 
             isActive,
+            couponCode,
+            discountType,
+            discountValue,
+            minOrderValue: minOrderValue > 0 ? minOrderValue : undefined,
             startDate: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
             endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
             activeDays: activeDays.length > 0 ? activeDays : undefined,
@@ -1685,10 +1714,11 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
 
     return (
         <Dialog open={isOpen} onOpenChange={setOpen}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{item ? 'Edit Promotion' : 'Add New Promotion'}</DialogTitle>
                 </DialogHeader>
+                <ScrollArea className="max-h-[70vh] pr-4">
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="promo-title" className="text-right">Title</Label>
@@ -1698,6 +1728,36 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                         <Label htmlFor="promo-desc" className="text-right">Description</Label>
                         <Textarea id="promo-desc" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" />
                     </div>
+                    
+                    <Separator />
+
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="promo-coupon" className="text-right">Coupon Code</Label>
+                        <Input id="promo-coupon" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} className="col-span-3" placeholder="e.g., WELCOME15" />
+                    </div>
+                     <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">Discount</Label>
+                        <div className="col-span-3 grid gap-4">
+                            <RadioGroup value={discountType} onValueChange={(v: 'percentage' | 'flat') => setDiscountType(v)} className="flex items-center">
+                                <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="percentage" id="r-percentage" />
+                                <Label htmlFor="r-percentage">Percentage (%)</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="flat" id="r-flat" />
+                                <Label htmlFor="r-flat">Flat Amount (Rs.)</Label>
+                                </div>
+                            </RadioGroup>
+                             <Input type="number" value={discountValue} onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)} placeholder="e.g., 15 or 100" />
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="promo-min-order" className="text-right">Min. Order (Rs.)</Label>
+                        <Input id="promo-min-order" type="number" value={minOrderValue} onChange={(e) => setMinOrderValue(parseFloat(e.target.value) || 0)} className="col-span-3" placeholder="0 for no minimum" />
+                    </div>
+
+                    <Separator />
+
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="promo-target" className="text-right">Target</Label>
                         <Select onValueChange={(value: Promotion['targetAudience']) => setTargetAudience(value)} value={targetAudience}>
@@ -1789,6 +1849,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                         </div>
                     </div>
                 </div>
+                </ScrollArea>
                 <DialogFooter>
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">Cancel</Button>
@@ -1820,7 +1881,7 @@ function PromotionManagement() {
       updatePromotion(promoData as Promotion);
     } else {
       const { id, ...newPromoData } = promoData;
-      addPromotion(newPromoData);
+      addPromotion(newPromoData as Omit<Promotion, 'id' | 'isActive'>);
     }
     setDialogOpen(false);
   };
@@ -1830,30 +1891,13 @@ function PromotionManagement() {
     new: 'New Customers',
     existing: 'Existing Customers'
   };
-
-  const formatDateRange = (startDate?: string, endDate?: string) => {
-    if (!startDate && !endDate) return "Always Active";
-    
-    // Add time to date to avoid timezone issues with new Date()
-    const start = startDate ? format(new Date(`${startDate}T00:00:00`), 'MMM d, yyyy') : '';
-    const end = endDate ? format(new Date(`${endDate}T00:00:00`), 'MMM d, yyyy') : '';
-
-    if (start && end) return `${start} - ${end}`;
-    if (start) return `Starts ${start}`;
-    if (end) return `Ends ${end}`;
-    return "Always Active";
-  };
   
-  const formatActiveDays = (days?: number[]) => {
-    if (!days || days.length === 0 || days.length === 7) return "All Days";
-    
-    const sortedDays = [...days].sort();
-    if (sortedDays.join(',') === '1,2,3,4,5') return "Weekdays";
-    if (sortedDays.join(',') === '0,6') return "Weekends";
-
-    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return sortedDays.map(d => dayLabels[d]).join(', ');
-  };
+  const formatDiscount = (promo: Promotion) => {
+    if (promo.discountType === 'percentage') {
+        return `${promo.discountValue}%`;
+    }
+    return `Rs.${promo.discountValue.toFixed(2)}`;
+  }
 
 
   return (
@@ -1873,9 +1917,8 @@ function PromotionManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Active Days</TableHead>
-                <TableHead>Date Range</TableHead>
+                <TableHead>Coupon Code</TableHead>
+                <TableHead>Discount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -1884,9 +1927,8 @@ function PromotionManagement() {
               {promotions.map((promo) => (
                 <TableRow key={promo.id} onClick={() => handleEdit(promo)} className="cursor-pointer">
                   <TableCell className="font-medium">{promo.title}</TableCell>
-                  <TableCell>{targetAudienceMap[promo.targetAudience]}</TableCell>
-                  <TableCell>{formatActiveDays(promo.activeDays)}</TableCell>
-                  <TableCell>{formatDateRange(promo.startDate, promo.endDate)}</TableCell>
+                  <TableCell><Badge variant="outline">{promo.couponCode}</Badge></TableCell>
+                  <TableCell>{formatDiscount(promo)}</TableCell>
                   <TableCell>
                      <Badge variant={promo.isActive ? 'success' : 'secondary'}>
                         {promo.isActive ? 'Active' : 'Inactive'}
@@ -2848,13 +2890,15 @@ export default function AdminDashboardPage() {
   const lastNotifiedOrderIdRef = useRef<string | null>(null);
   
   useEffect(() => {
-    // Don't run on the first render to avoid notifying on initial load.
-    if (prevOrdersRef.current === orders) return;
+    // Don't run on initial load
+    if (prevOrdersRef.current.length === 0) {
+        prevOrdersRef.current = orders;
+        return;
+    }
 
-    if (prevOrdersRef.current.length > 0) {
-      // Inquiry detection logic
-      let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
-      orders.forEach(order => {
+    // Inquiry detection logic
+    let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
+    orders.forEach(order => {
         order.updateRequests?.forEach(req => {
             if (req.from === 'customer') {
                 if (!latestCustomerMessage || new Date(req.timestamp) > new Date(latestCustomerMessage.timestamp)) {
@@ -2862,34 +2906,30 @@ export default function AdminDashboardPage() {
                 }
             }
         });
-      });
+    });
 
-      if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageIdRef.current) {
-          setOrderToShowInInquiryPopup(latestCustomerMessage.order);
-          lastNotifiedMessageIdRef.current = latestCustomerMessage.messageId; // Mark as notified
-      }
+    if (latestCustomerMessage && latestCustomerMessage.messageId !== lastNotifiedMessageIdRef.current) {
+        setOrderToShowInInquiryPopup(latestCustomerMessage.order);
+        lastNotifiedMessageIdRef.current = latestCustomerMessage.messageId;
+    }
 
-      // New order detection logic
-      const prevOrderIds = new Set(prevOrdersRef.current.map(o => o.id));
-      const newOrders = orders.filter(o => !prevOrderIds.has(o.id));
+    // New order detection logic
+    const prevOrderIds = new Set(prevOrdersRef.current.map(o => o.id));
+    const newOrders = orders.filter(o => !prevOrderIds.has(o.id));
 
-      if (newOrders.length > 0) {
+    if (newOrders.length > 0) {
         const mostRecentNewOrder = newOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())[0];
         if (mostRecentNewOrder.id !== lastNotifiedOrderIdRef.current) {
             setNewOrderInPopup(mostRecentNewOrder);
             lastNotifiedOrderIdRef.current = mostRecentNewOrder.id;
         }
-      }
     }
 
-    // Store the current orders for the next comparison.
     prevOrdersRef.current = orders;
   }, [orders]);
 
 
   const handleLogout = () => {
-    // In a real app, you would have a proper auth context logout method.
-    // For this mock app, we'll just navigate.
     router.push('/admin/login');
   };
 

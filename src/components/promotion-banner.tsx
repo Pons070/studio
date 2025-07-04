@@ -79,6 +79,9 @@ export function PromotionBanner() {
         <AlertTitle className="font-bold">{activePromotion.title}</AlertTitle>
         <AlertDescription>
           {activePromotion.description}
+          {activePromotion.couponCode && (
+            <span className="font-semibold block mt-1">Use code: {activePromotion.couponCode}</span>
+          )}
         </AlertDescription>
          <Button 
             variant="ghost" 

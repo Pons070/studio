@@ -49,6 +49,8 @@ export const OrderSchema = z.object({
   cancelledBy: z.enum(['admin', 'customer']).optional().describe("Who cancelled the order."),
   cookingNotes: z.string().optional(),
   updateRequests: z.array(UpdateRequestSchema).optional(),
+  appliedCoupon: z.string().optional(),
+  discountAmount: z.number().optional(),
 });
 
 const NotificationTypeSchema = z.enum([
