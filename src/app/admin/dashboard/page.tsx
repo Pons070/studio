@@ -2170,6 +2170,75 @@ function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange }: { de
     );
 }
 
+function MetricDetailsDialog({ details, isOpen, onOpenChange }: { details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
+    if (!details) return null;
+
+    const renderOrderRow = (order: Order) => {
+        const dateString = order.status === 'Cancelled' ? order.cancellationDate : order.pickupDate;
+        return (
+            <TableRow key={order.id}>
+                <TableCell>{order.id}</TableCell>
+                <TableCell>{order.customerName}</TableCell>
+                <TableCell>{dateString ? new Date(`${dateString}T00:00:00`).toLocaleDateString() : 'N/A'}</TableCell>
+                <TableCell><Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge></TableCell>
+                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+            </TableRow>
+        );
+    }
+
+    const renderReviewRow = (review: Review) => (
+         <TableRow key={review.id}>
+            <TableCell>{review.customerName}</TableCell>
+            <TableCell><StarDisplay rating={review.rating} /></TableCell>
+            <TableCell className="max-w-xs truncate italic">"{review.comment}"</TableCell>
+            <TableCell>{new Date(review.date).toLocaleDateString()}</TableCell>
+        </TableRow>
+    );
+
+    const description = `Displaying ${details.data.length} record(s).`;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-4xl">
+                <DialogHeader>
+                    <DialogTitle>{details.title}</DialogTitle>
+                    <DialogDescription>
+                        {description}
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] pr-4">
+                    <Table>
+                        <TableHeader>
+                           {details.type === 'orders' ? (
+                               <TableRow>
+                                    <TableHead>Order ID</TableHead>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
+                                </TableRow>
+                           ) : (
+                               <TableRow>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead>Rating</TableHead>
+                                    <TableHead>Comment</TableHead>
+                                    <TableHead>Date</TableHead>
+                                </TableRow>
+                           )}
+                        </TableHeader>
+                        <TableBody>
+                            {details.data.map(item => details.type === 'orders' ? renderOrderRow(item as Order) : renderReviewRow(item as Review))}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
+                 <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 function AnalyticsAndReports() {
   const { orders } = useOrders();
   const { menuItems } = useMenu();
@@ -2179,11 +2248,12 @@ function AnalyticsAndReports() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellationDetails, setCancellationDetails] = useState<{ reason: string; orders: Order[] } | null>(null);
+  const [metricDetails, setMetricDetails] = useState<{ title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null>(null);
 
+  const completedOrders = useMemo(() => orders.filter((o) => o.status === 'Completed'), [orders]);
+  const cancelledOrders = useMemo(() => orders.filter((o) => o.status === 'Cancelled'), [orders]);
 
   const stats = useMemo(() => {
-    const completedOrders = orders.filter((o) => o.status === 'Completed');
-    const cancelledOrders = orders.filter((o) => o.status === 'Cancelled');
     const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
     const totalCompletedOrders = completedOrders.length;
     const totalCancelledOrders = cancelledOrders.length;
@@ -2198,7 +2268,7 @@ function AnalyticsAndReports() {
       totalReviews: reviews.length,
       totalCancelledOrders,
     };
-  }, [orders, reviews]);
+  }, [completedOrders, cancelledOrders, reviews]);
 
   const salesByMonth = useMemo(() => {
     const monthlyData: { [key: string]: number } = {};
@@ -2301,7 +2371,7 @@ function AnalyticsAndReports() {
     <>
     <div className="space-y-6">
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <DollarSign />
@@ -2310,7 +2380,7 @@ function AnalyticsAndReports() {
             <div className="text-2xl font-bold">Rs.{stats.totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
             <Package />
@@ -2319,7 +2389,7 @@ function AnalyticsAndReports() {
             <div className="text-2xl font-bold">{stats.totalCompletedOrders}</div>
           </CardContent>
         </Card>
-         <Card>
+         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'Cancelled Orders', data: cancelledOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Cancelled Orders</CardTitle>
             <Ban />
@@ -2337,7 +2407,7 @@ function AnalyticsAndReports() {
             <div className="text-2xl font-bold">Rs.{stats.averageOrderValue.toFixed(2)}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'All Customer Reviews', data: reviews, type: 'reviews' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Reviews</CardTitle>
             <MessageSquare />
@@ -2517,6 +2587,11 @@ function AnalyticsAndReports() {
         isOpen={!!cancellationDetails}
         onOpenChange={(open) => !open && setCancellationDetails(null)}
     />
+     <MetricDetailsDialog 
+        details={metricDetails}
+        isOpen={!!metricDetails}
+        onOpenChange={(open) => !open && setMetricDetails(null)}
+    />
     </>
   );
 }
@@ -2632,3 +2707,4 @@ export default function AdminDashboardPage() {
 }
 
     
+
