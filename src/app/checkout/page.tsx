@@ -199,10 +199,16 @@ export default function CheckoutPage() {
     
     const newOrder = await addOrder(items, finalTotal, pickupDate, time, deliveryAddress, cookingNotes, appliedPromotion?.couponCode, discount > 0 ? discount : undefined);
 
-    setIsProcessing(false);
     if (newOrder) {
       clearCart();
+      setCookingNotes('');
+      setCouponInput('');
+      setAppliedPromotion(null);
+      setDiscount(0);
       router.push(`/orders/${newOrder.id}`);
+    } else {
+        // Handle case where order creation failed before notifications (e.g., user not logged in)
+        setIsProcessing(false);
     }
   };
 

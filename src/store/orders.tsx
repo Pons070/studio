@@ -78,42 +78,32 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     // Optimistically update UI
     setOrders(prevOrders => [newOrder, ...prevOrders]);
 
-    try {
-        // Send notifications in parallel
-        await Promise.all([
-            sendOrderNotification({
-                order: newOrder,
-                notificationType: 'customerConfirmation',
-                customerEmail: currentUser.email,
-                adminEmail: 'sangkar111@gmail.com'
-            }),
-            sendOrderNotification({
-                order: newOrder,
-                notificationType: 'adminNotification',
-                customerEmail: currentUser.email,
-                adminEmail: 'sangkar111@gmail.com' // In real app, get from config
-            })
-        ]);
-        
-        toast({
-            title: "Pre-Order Placed!",
-            description: "Your order has been successfully submitted. Check your email for confirmation.",
-            variant: "success",
-        });
-        
-        return newOrder;
+    toast({
+        title: "Pre-Order Placed!",
+        description: "Your order has been successfully submitted. You will receive an email confirmation shortly.",
+        variant: "success",
+    });
 
-    } catch (error) {
-        console.error("Failed to send order notifications:", error);
-        toast({
-            title: "Notification Error",
-            description: "Your order was placed, but we couldn't send the confirmation email.",
-            variant: "destructive",
-        });
-        // Here you might want to handle the error, e.g., rollback the optimistic update if placement is transactional
-        // For now, we still return the order so the user is navigated correctly.
-        return newOrder;
-    }
+    // Fire-and-forget notifications without awaiting them
+    Promise.all([
+        sendOrderNotification({
+            order: newOrder,
+            notificationType: 'customerConfirmation',
+            customerEmail: currentUser.email,
+            adminEmail: 'sangkar111@gmail.com'
+        }),
+        sendOrderNotification({
+            order: newOrder,
+            notificationType: 'adminNotification',
+            customerEmail: currentUser.email,
+            adminEmail: 'sangkar111@gmail.com' // In real app, get from config
+        })
+    ]).catch(error => {
+        // Log background error without disturbing the user
+        console.error("Failed to send order notifications in background:", error);
+    });
+        
+    return newOrder;
   }, [toast, currentUser]);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string) => {
