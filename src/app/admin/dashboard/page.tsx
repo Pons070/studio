@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent, Gift } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -2405,6 +2405,7 @@ function AnalyticsAndReports() {
 
   const completedOrders = useMemo(() => orders.filter((o) => o.status === 'Completed'), [orders]);
   const cancelledOrders = useMemo(() => orders.filter((o) => o.status === 'Cancelled'), [orders]);
+  const donatedOrders = useMemo(() => cancelledOrders.filter(o => o.cancellationAction === 'donate'), [cancelledOrders]);
 
   const stats = useMemo(() => {
     const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
@@ -2413,6 +2414,7 @@ function AnalyticsAndReports() {
     const averageOrderValue = totalCompletedOrders > 0 ? totalRevenue / totalCompletedOrders : 0;
     const averageRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
     const totalDiscounts = completedOrders.reduce((sum, o) => sum + (o.discountAmount || 0), 0);
+    const totalDonatedOrders = donatedOrders.length;
 
     return {
       totalRevenue,
@@ -2422,8 +2424,9 @@ function AnalyticsAndReports() {
       totalReviews: reviews.length,
       totalCancelledOrders,
       totalDiscounts,
+      totalDonatedOrders,
     };
-  }, [completedOrders, cancelledOrders, reviews]);
+  }, [completedOrders, cancelledOrders, reviews, donatedOrders]);
 
   const salesByMonth = useMemo(() => {
     const monthlyData: { [key: string]: number } = {};
@@ -2709,6 +2712,15 @@ function AnalyticsAndReports() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.averageRating} / 5</div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => donatedOrders.length > 0 && setMetricDetails({ title: 'Donated Food Orders', data: donatedOrders, type: 'orders' })}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Donated Orders</CardTitle>
+            <Gift />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalDonatedOrders}</div>
           </CardContent>
         </Card>
       </div>
