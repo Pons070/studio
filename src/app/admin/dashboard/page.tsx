@@ -2004,7 +2004,7 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggl
                                 <div className="space-y-3">
                                     {customer.addresses.map((addr, index) => (
                                         <div key={addr.id || index} className="text-sm p-3 border rounded-md bg-muted/50">
-                                            <p className="font-semibold">{addr.label} {addr.isDefault && <Badge variant="secondary">Default</Badge>}</p>
+                                            <p className="font-semibold">{addr.label} {addr.isDefault && <Badge variant="outline">Default</Badge>}</p>
                                             <p className="text-muted-foreground">{formatAddressString(addr)}</p>
                                         </div>
                                     ))}
@@ -2878,7 +2878,7 @@ export default function AdminDashboardPage() {
 
     // Store the current orders for the next comparison.
     prevOrdersRef.current = orders;
-  }, [orders, lastNotifiedMessageId, lastNotifiedOrderId]);
+  }, [orders]);
 
 
   const handleLogout = () => {
