@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -64,7 +64,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useRouter } from 'next/navigation';
 import { getBusinessInsights, type BusinessInsightsOutput } from '@/ai/flows/business-insights-flow';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, Tooltip, ResponsiveContainer, Cell, YAxis, Legend } from 'recharts';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -2129,6 +2129,47 @@ function CustomerManagement() {
   );
 }
 
+function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange }: { details: { reason: string; orders: Order[] } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
+    if (!details) return null;
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Orders Cancelled Due To: "{details.reason}"</DialogTitle>
+                    <DialogDescription>
+                        A total of {details.orders.length} order(s) were cancelled for this reason.
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] pr-4">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Order ID</TableHead>
+                                <TableHead>Customer</TableHead>
+                                <TableHead>Cancelled On</TableHead>
+                                <TableHead className="text-right">Total</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {details.orders.map(order => (
+                                <TableRow key={order.id}>
+                                    <TableCell>{order.id}</TableCell>
+                                    <TableCell>{order.customerName}</TableCell>
+                                    <TableCell>{order.cancellationDate ? new Date(`${order.cancellationDate}T00:00:00`).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function AnalyticsAndReports() {
   const { orders } = useOrders();
   const { menuItems } = useMenu();
@@ -2137,11 +2178,15 @@ function AnalyticsAndReports() {
   const [insights, setInsights] = useState<BusinessInsightsOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancellationDetails, setCancellationDetails] = useState<{ reason: string; orders: Order[] } | null>(null);
+
 
   const stats = useMemo(() => {
     const completedOrders = orders.filter((o) => o.status === 'Completed');
+    const cancelledOrders = orders.filter((o) => o.status === 'Cancelled');
     const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
     const totalCompletedOrders = completedOrders.length;
+    const totalCancelledOrders = cancelledOrders.length;
     const averageOrderValue = totalCompletedOrders > 0 ? totalRevenue / totalCompletedOrders : 0;
     const averageRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
@@ -2151,6 +2196,7 @@ function AnalyticsAndReports() {
       averageOrderValue,
       averageRating: averageRating.toFixed(1),
       totalReviews: reviews.length,
+      totalCancelledOrders,
     };
   }, [orders, reviews]);
 
@@ -2192,6 +2238,31 @@ function AnalyticsAndReports() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }, [orders, menuItems]);
+  
+  const cancellationReasons = useMemo(() => {
+    const reasonCounts: { [key: string]: number } = {};
+    orders
+      .filter((o) => o.status === 'Cancelled' && o.cancellationReason)
+      .forEach((order) => {
+        const reason = order.cancellationReason!;
+        if (!reasonCounts[reason]) {
+          reasonCounts[reason] = 0;
+        }
+        reasonCounts[reason]++;
+      });
+
+    return Object.entries(reasonCounts)
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [orders]);
+  
+  const handleReasonClick = (data: any) => {
+    if (data && data.activePayload && data.activePayload[0]) {
+        const reason = data.activePayload[0].payload.reason;
+        const filteredOrders = orders.filter(o => o.cancellationReason === reason);
+        setCancellationDetails({ reason, orders: filteredOrders });
+    }
+  };
 
   useEffect(() => {
     async function fetchInsights() {
@@ -2210,6 +2281,8 @@ function AnalyticsAndReports() {
           averageRating: parseFloat(stats.averageRating),
           bestSellingItems: itemPopularity.map(i => i.name),
           worstSellingItems: unsoldItems.length > 0 ? unsoldItems : ['None'],
+          totalCancelledOrders: stats.totalCancelledOrders,
+          cancellationReasonCounts: cancellationReasons,
         });
         setInsights(insightsData);
       } catch (e) {
@@ -2220,13 +2293,14 @@ function AnalyticsAndReports() {
       }
     }
     fetchInsights();
-  }, [stats, itemPopularity, menuItems, orders]);
+  }, [stats, itemPopularity, menuItems, orders, cancellationReasons]);
 
   const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
   return (
+    <>
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -2243,6 +2317,15 @@ function AnalyticsAndReports() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCompletedOrders}</div>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Cancelled Orders</CardTitle>
+            <Ban />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCancelledOrders}</div>
           </CardContent>
         </Card>
         <Card>
@@ -2284,6 +2367,7 @@ function AnalyticsAndReports() {
               <BarChart data={salesByMonth}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Rs.${value}`} />
                 <Tooltip
                   content={({ active, payload, label }) =>
                     active && payload && payload.length ? (
@@ -2328,6 +2412,48 @@ function AnalyticsAndReports() {
           </CardContent>
         </Card>
       </div>
+
+       {cancellationReasons.length > 0 && (
+          <Card>
+              <CardHeader>
+              <CardTitle>Cancellation Reasons</CardTitle>
+              <CardDescription>Click on a bar to see the list of orders.</CardDescription>
+              </CardHeader>
+              <CardContent>
+              <ResponsiveContainer width="100%" height={cancellationReasons.length * 50 + 30}>
+                  <BarChart
+                  layout="vertical"
+                  data={cancellationReasons}
+                  margin={{ top: 5, right: 20, left: 120, bottom: 5 }}
+                  onClick={handleReasonClick}
+                  >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis
+                      dataKey="reason"
+                      type="category"
+                      width={120}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                      interval={0}
+                  />
+                  <Tooltip
+                      content={({ active, payload, label }) =>
+                      active && payload && payload.length ? (
+                          <div className="rounded-lg border bg-background p-2 shadow-sm">
+                          <p className="font-bold">{label}</p>
+                          <p className="text-sm text-muted-foreground">Count: {payload[0].value}</p>
+                          </div>
+                      ) : null
+                      }
+                  />
+                  <Bar dataKey="count" fill="currentColor" radius={[0, 4, 4, 0]} className="fill-destructive/80 cursor-pointer" barSize={30} />
+                  </BarChart>
+              </ResponsiveContainer>
+              </CardContent>
+          </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -2386,6 +2512,12 @@ function AnalyticsAndReports() {
         </CardContent>
       </Card>
     </div>
+    <CancellationReasonDetailsDialog 
+        details={cancellationDetails}
+        isOpen={!!cancellationDetails}
+        onOpenChange={(open) => !open && setCancellationDetails(null)}
+    />
+    </>
   );
 }
 
@@ -2498,3 +2630,5 @@ export default function AdminDashboardPage() {
       </div>
   );
 }
+
+    

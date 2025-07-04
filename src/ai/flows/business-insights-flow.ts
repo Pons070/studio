@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to analyze restaurant business data and provide insights.
@@ -22,6 +23,8 @@ const BusinessInsightsInputSchema = z.object({
   worstSellingItems: z
     .array(z.string())
     .describe('A list of the names of the worst-selling menu items.'),
+  totalCancelledOrders: z.number().describe('The total number of cancelled orders.'),
+  cancellationReasonCounts: z.array(z.object({ reason: z.string(), count: z.number() })).describe('A list of cancellation reasons and their counts.'),
 });
 export type BusinessInsightsInput = z.infer<typeof BusinessInsightsInputSchema>;
 
@@ -72,6 +75,8 @@ Business Data:
 - Average Rating: {{{averageRating}}} / 5
 - Best-Selling Items: {{#each bestSellingItems}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
 - Worst-Selling Items: {{#each worstSellingItems}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+- Total Cancelled Orders: {{{totalCancelledOrders}}}
+- Cancellation Reasons: {{#if cancellationReasonCounts}}{{#each cancellationReasonCounts}}{{this.reason}} ({{this.count}}){{#unless @last}}, {{/unless}}{{/each}}{{else}}None{{/if}}
 
 Your task is to generate a report with the following sections:
 1.  **Executive Summary:** A very brief, two-sentence overview of the business's health.
@@ -79,7 +84,7 @@ Your task is to generate a report with the following sections:
 3.  **Opportunities:** What are the most significant areas for potential growth or improvement?
 4.  **Recommendations:** Provide 3-4 specific, actionable recommendations. For each recommendation, provide a clear title and a detailed description of what to do and why. Be creative and focus on marketing, menu engineering, and customer engagement.
 
-Focus on providing high-quality, insightful advice. Do not just repeat the input data. Interpret it. For example, if the average order value is low, suggest upselling strategies or combo meals. If a certain item sells well, suggest promotions around it.
+Focus on providing high-quality, insightful advice. Do not just repeat the input data. Interpret it. For example, if the average order value is low, suggest upselling strategies or combo meals. If a certain item sells well, suggest promotions around it. If there are many cancellations for a specific reason, suggest operational improvements to address the root cause.
 `,
 });
 
@@ -100,3 +105,5 @@ export async function getBusinessInsights(
 ): Promise<BusinessInsightsOutput> {
   return businessInsightsFlow(input);
 }
+
+    
