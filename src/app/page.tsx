@@ -46,7 +46,7 @@ export default function Home() {
         </section>
 
         <section>
-          <h2 className="text-3xl font-headline font-bold text-center mb-10">Featured Dishes</h2>
+          <h2 className="text-3xl font-headline font-bold text-center mb-10 text-white">Featured Dishes</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {featuredItems.map((item) => (
               <Card key={item.id} className="flex flex-col overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 ease-in-out shadow-md hover:shadow-xl">
@@ -107,7 +107,7 @@ export default function Home() {
 
         {featuredReviews.length > 0 && (
             <section>
-              <h2 className="text-3xl font-headline font-bold text-center mb-10">What Our Customers Say</h2>
+              <h2 className="text-3xl font-headline font-bold text-center mb-10 text-white">What Our Customers Say</h2>
               <Carousel
                 opts={{
                   align: "start",
