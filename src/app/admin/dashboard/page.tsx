@@ -116,7 +116,7 @@ function AdminReplyForm({ orderId }: { orderId: string }) {
     );
 }
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[]; }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrder }: { order: Order | null; isOpen: boolean; onOpenChange: (open: boolean) => void; reviews: Review[]; onCancelOrder: (order: Order) => void; }) {
     if (!order) return null;
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
@@ -259,6 +259,14 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews }: { order: O
                 </div>
                 </ScrollArea>
                 <DialogFooter className="border-t pt-4">
+                     {(order.status === 'Pending' || order.status === 'Confirmed') && (
+                        <Button
+                            variant="destructive"
+                            onClick={() => onCancelOrder(order)}
+                        >
+                            Cancel Order
+                        </Button>
+                    )}
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">
                             Close
@@ -318,7 +326,7 @@ function CancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order:
 }
 
 
-function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSelectedOrdersChange, onUpdateStatus, isActionable }: { orders: Order[], onSelectOrder: (order: Order) => void, onCancelOrder: (order: Order) => void, selectedOrders: string[], onSelectedOrdersChange: (ids: string[]) => void, isActionable?: boolean, onUpdateStatus?: (orderId: string, status: Order['status']) => void }) {
+function OrderTable({ orders, onSelectOrder, selectedOrders, onSelectedOrdersChange, onUpdateStatus, isActionable }: { orders: Order[], onSelectOrder: (order: Order) => void, selectedOrders: string[], onSelectedOrdersChange: (ids: string[]) => void, isActionable?: boolean, onUpdateStatus?: (orderId: string, status: Order['status']) => void }) {
   if (orders.length === 0) {
     return <p className="text-sm text-muted-foreground p-4">No orders to display.</p>;
   }
@@ -356,7 +364,6 @@ function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSe
           <TableHead>Pickup Date</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Total</TableHead>
-          <TableHead className="text-center">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -396,17 +403,6 @@ function OrderTable({ orders, onSelectOrder, onCancelOrder, selectedOrders, onSe
                    )}
                 </TableCell>
                 <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
-                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                    {(order.status === 'Pending' || order.status === 'Confirmed') && (
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onCancelOrder(order)}
-                        >
-                            Cancel
-                        </Button>
-                    )}
-                </TableCell>
             </TableRow>
           );
         })}
@@ -487,10 +483,20 @@ function OrderManagement() {
 
   const handleBulkUpdateStatus = (status: Order['status']) => {
     selectedOrderIds.forEach(id => {
-      updateOrderStatus(id, status);
+      // Only bulk update actionable orders
+      const order = orders.find(o => o.id === id);
+      if (order && (order.status === 'Pending' || order.status === 'Confirmed')) {
+        updateOrderStatus(id, status);
+      }
     });
     setSelectedOrderIds([]);
   };
+
+  const handleBulkDelete = () => {
+    // A real app would have a delete function in the store
+    console.log("Bulk deleting orders:", selectedOrderIds);
+    setSelectedOrderIds([]);
+  }
 
   const filteredOrders = orders.filter(o =>
     o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -534,8 +540,7 @@ function OrderManagement() {
           <CardContent>
             <OrderTable 
               orders={activeOrders} 
-              onSelectOrder={setSelectedOrder} 
-              onCancelOrder={setOrderToCancel}
+              onSelectOrder={setSelectedOrder}
               selectedOrders={selectedOrderIds}
               onSelectedOrdersChange={setSelectedOrderIds}
               isActionable={true}
@@ -551,8 +556,7 @@ function OrderManagement() {
           <CardContent>
             <OrderTable 
               orders={historicalOrders} 
-              onSelectOrder={setSelectedOrder} 
-              onCancelOrder={setOrderToCancel}
+              onSelectOrder={setSelectedOrder}
               selectedOrders={selectedOrderIds}
               onSelectedOrdersChange={setSelectedOrderIds}
             />
@@ -564,6 +568,7 @@ function OrderManagement() {
         isOpen={!!selectedOrder}
         onOpenChange={(open) => !open && setSelectedOrder(null)}
         reviews={reviews}
+        onCancelOrder={setOrderToCancel}
       />
       <CancellationDialog
         order={orderToCancel}
@@ -764,7 +769,7 @@ function MenuManagement() {
           </TableHeader>
           <TableBody>
             {filteredItems.map((item) => (
-              <TableRow key={item.id} data-state={selectedItemIds.includes(item.id) ? "selected" : ""} onClick={() => handleEdit(item)} className="cursor-pointer">
+              <TableRow key={item.id} data-state={selectedItemIds.includes(item.id) ? "selected" : ""}>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedItemIds.includes(item.id)}
@@ -772,7 +777,7 @@ function MenuManagement() {
                     aria-label={`Select item ${item.name}`}
                   />
                 </TableCell>
-                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell className="font-medium cursor-pointer" onClick={() => handleEdit(item)}>{item.name}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
@@ -1164,6 +1169,21 @@ function BrandManagement() {
     { name: 'Autumn Glow', primaryColor: '38 92% 50%', backgroundColor: '30 60% 98%', accentColor: '45 80% 75%' },
   ];
 
+  const cardColorsPalette = [
+    '0 0% 100%',     // White
+    '240 5% 96%',    // Off-White (Cool)
+    '30 50% 98%',    // Off-White (Warm)
+    '220 13% 91%',   // Light Gray
+    '215 20% 65%',   // Mid Gray
+    '215 28% 17%',   // Dark Gray
+    '222 84% 5%',    // Near Black
+    '210 20% 96%',   // Subtle Blue
+    '145 30% 95%',   // Subtle Green
+    '45 50% 95%',    // Subtle Yellow
+    '10 40% 96%',    // Subtle Red
+    '260 40% 97%',   // Subtle Purple
+  ];
+
   const handlePaletteSelect = (palette: typeof palettes[0]) => {
     setTheme(prev => ({
         ...prev,
@@ -1420,9 +1440,28 @@ function BrandManagement() {
               <p className="text-sm text-muted-foreground">Customize the background color and transparency of cards and sections.</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cardColor">Card Color (HSL)</Label>
-              <Input id="cardColor" value={theme.cardColor} onChange={(e) => handleThemeChange('cardColor', e.target.value)} placeholder="e.g., 0 0% 100%" />
+            <div className="space-y-2 md:col-span-2">
+                <Label>Card Color</Label>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  {cardColorsPalette.map((colorHsl) => {
+                    const isSelected = (theme.cardColor || '0 0% 100%') === colorHsl;
+                    return (
+                      <button
+                        key={colorHsl}
+                        type="button"
+                        onClick={() => handleThemeChange('cardColor', colorHsl)}
+                        className={cn(
+                          "h-8 w-8 rounded-full border-2 transition-all hover:scale-110 flex items-center justify-center",
+                          isSelected ? 'border-primary ring-2 ring-primary ring-offset-2' : 'border-muted'
+                        )}
+                        style={{ backgroundColor: `hsl(${colorHsl})` }}
+                        aria-label={`Select color ${colorHsl}`}
+                      >
+                        {isSelected && <Check className="h-4 w-4 text-primary-foreground mix-blend-difference" />}
+                      </button>
+                    );
+                  })}
+                </div>
             </div>
 
             <div className="space-y-2">
@@ -1431,12 +1470,13 @@ function BrandManagement() {
             </div>
             
             <div className="space-y-2">
+                <Label htmlFor="borderRadius">Corner Radius: {theme.borderRadius || 0.5}rem</Label>
+                <Slider id="borderRadius" min={0} max={2} step={0.1} value={[theme.borderRadius || 0.5]} onValueChange={([val]) => handleThemeChange('borderRadius', val)} />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
               <Label htmlFor="backgroundImage">Background Image (Optional)</Label>
               <Input id="backgroundImage" type="file" onChange={(e) => handleFileChange(e, 'background')} accept="image/*" />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="borderRadius">Corner Radius: {theme.borderRadius}rem</Label>
-                <Slider id="borderRadius" min={0} max={2} step={0.1} value={[theme.borderRadius || 0.5]} onValueChange={([val]) => handleThemeChange('borderRadius', val)} />
             </div>
           </div>
         </div>
@@ -1507,6 +1547,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
             endDate: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
             activeDays: activeDays.length > 0 ? activeDays : undefined,
         });
+        setOpen(false);
     }
 
     return (
@@ -1871,7 +1912,7 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggl
                         </div>
                     </div>
                 </ScrollArea>
-                <DialogFooter className="justify-between">
+                <DialogFooter className="justify-between pt-4 border-t">
                     <Button variant={isBlocked ? "secondary" : "destructive"} onClick={() => customer && onToggleBlockStatus(customer)}>
                         {isBlocked ? 'Unblock Customer' : 'Block Customer'}
                     </Button>
