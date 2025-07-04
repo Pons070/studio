@@ -2102,7 +2102,7 @@ function CustomerManagement() {
   );
 }
 
-function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange, onExport }: { details: { reason: string; orders: Order[] } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; }) {
+function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange, onExport, onSelectOrder }: { details: { reason: string; orders: Order[] } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; onSelectOrder: (order: Order) => void; }) {
     if (!details) return null;
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -2125,7 +2125,7 @@ function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange, onExpo
                         </TableHeader>
                         <TableBody>
                             {details.orders.map(order => (
-                                <TableRow key={order.id}>
+                                <TableRow key={order.id} onClick={() => onSelectOrder(order)} className="cursor-pointer">
                                     <TableCell>{order.id}</TableCell>
                                     <TableCell>{order.customerName}</TableCell>
                                     <TableCell>{order.cancellationDate ? new Date(`${order.cancellationDate}T00:00:00`).toLocaleDateString() : 'N/A'}</TableCell>
@@ -2144,23 +2144,10 @@ function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange, onExpo
     );
 }
 
-function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport }: { details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; }) {
+function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport, onSelectOrder }: { details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; onSelectOrder: (order: Order) => void; }) {
     if (!details) return null;
 
     const dateColumnHeader = details.title.includes('Cancelled') ? 'Cancelled On' : 'Pickup Date';
-
-    const renderOrderRow = (order: Order) => {
-        const dateString = order.status === 'Cancelled' ? order.cancellationDate : order.pickupDate;
-        return (
-            <TableRow key={order.id}>
-                <TableCell>{order.id}</TableCell>
-                <TableCell>{order.customerName}</TableCell>
-                <TableCell>{dateString ? new Date(`${dateString}T00:00:00`).toLocaleDateString() : 'N/A'}</TableCell>
-                <TableCell><Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge></TableCell>
-                <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
-            </TableRow>
-        );
-    }
 
     const renderReviewRow = (review: Review) => (
          <TableRow key={review.id}>
@@ -2203,7 +2190,22 @@ function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport }: { deta
                            )}
                         </TableHeader>
                         <TableBody>
-                            {details.data.map(item => details.type === 'orders' ? renderOrderRow(item as Order) : renderReviewRow(item as Review))}
+                            {details.data.map(item => {
+                                if (details.type === 'orders') {
+                                    const order = item as Order;
+                                    const dateString = order.status === 'Cancelled' ? order.cancellationDate : order.pickupDate;
+                                    return (
+                                        <TableRow key={order.id} onClick={() => onSelectOrder(order)} className="cursor-pointer">
+                                            <TableCell>{order.id}</TableCell>
+                                            <TableCell>{order.customerName}</TableCell>
+                                            <TableCell>{dateString ? new Date(`${dateString}T00:00:00`).toLocaleDateString() : 'N/A'}</TableCell>
+                                            <TableCell><Badge variant={getBadgeVariant(order.status)}>{order.status}</Badge></TableCell>
+                                            <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    );
+                                }
+                                return renderReviewRow(item as Review);
+                            })}
                         </TableBody>
                     </Table>
                 </ScrollArea>
@@ -2217,15 +2219,18 @@ function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport }: { deta
 }
 
 function AnalyticsAndReports() {
-  const { orders } = useOrders();
+  const { orders, updateOrderStatus } = useOrders();
   const { menuItems } = useMenu();
   const { reviews } = useReviews();
-
+  const { users } = useAuth();
+  
   const [insights, setInsights] = useState<BusinessInsightsOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellationDetails, setCancellationDetails] = useState<{ reason: string; orders: Order[] } | null>(null);
   const [metricDetails, setMetricDetails] = useState<{ title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null>(null);
+  const [fullySelectedOrder, setFullySelectedOrder] = useState<Order | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
 
   const completedOrders = useMemo(() => orders.filter((o) => o.status === 'Completed'), [orders]);
   const cancelledOrders = useMemo(() => orders.filter((o) => o.status === 'Cancelled'), [orders]);
@@ -2302,6 +2307,19 @@ function AnalyticsAndReports() {
       .map(([reason, count]) => ({ reason, count }))
       .sort((a, b) => b.count - a.count);
   }, [orders]);
+
+  const handleConfirmCancellation = (order: Order) => {
+    setFullySelectedOrder(null);
+    setOrderToCancel(order);
+  };
+  
+  const confirmCancelAction = (orderId: string, reason: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const customer = users.find(u => u.id === order.customerId);
+    updateOrderStatus(orderId, 'Cancelled', reason, customer?.email);
+    setOrderToCancel(null);
+  };
   
   const handleReasonClick = (data: any) => {
     if (data && data.activePayload && data.activePayload[0]) {
@@ -2457,7 +2475,7 @@ function AnalyticsAndReports() {
     </div>
     <div id="analytics-printable-area" className="space-y-6 mt-4">
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => completedOrders.length > 0 && setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <DollarSign />
@@ -2466,7 +2484,7 @@ function AnalyticsAndReports() {
             <div className="text-2xl font-bold">Rs.{stats.totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => completedOrders.length > 0 && setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
             <Package />
@@ -2475,7 +2493,7 @@ function AnalyticsAndReports() {
             <div className="text-2xl font-bold">{stats.totalCompletedOrders}</div>
           </CardContent>
         </Card>
-         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setMetricDetails({ title: 'Cancelled Orders', data: cancelledOrders, type: 'orders' })}>
+         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => cancelledOrders.length > 0 && setMetricDetails({ title: 'Cancelled Orders', data: cancelledOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Cancelled Orders</CardTitle>
             <Ban />
@@ -2493,7 +2511,7 @@ function AnalyticsAndReports() {
             <div className="text-2xl font-bold">Rs.{stats.averageOrderValue.toFixed(2)}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => reviews.length > 0 && setMetricDetails({ title: 'All Reviews', data: reviews, type: 'reviews' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Reviews</CardTitle>
             <MessageSquare />
@@ -2673,12 +2691,27 @@ function AnalyticsAndReports() {
         isOpen={!!cancellationDetails}
         onOpenChange={(open) => !open && setCancellationDetails(null)}
         onExport={() => cancellationDetails && handleExport(cancellationDetails)}
+        onSelectOrder={setFullySelectedOrder}
     />
      <MetricDetailsDialog 
         details={metricDetails}
         isOpen={!!metricDetails}
         onOpenChange={(open) => !open && setMetricDetails(null)}
         onExport={() => metricDetails && handleExport(metricDetails)}
+        onSelectOrder={setFullySelectedOrder}
+    />
+    <OrderDetailsDialog
+        order={fullySelectedOrder}
+        isOpen={!!fullySelectedOrder}
+        onOpenChange={(open) => !open && setFullySelectedOrder(null)}
+        reviews={reviews}
+        onCancelOrder={handleConfirmCancellation}
+    />
+    <CancellationDialog
+        order={orderToCancel}
+        isOpen={!!orderToCancel}
+        onOpenChange={(open) => !open && setOrderToCancel(null)}
+        onConfirm={confirmCancelAction}
     />
     </>
   );
