@@ -1670,7 +1670,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                 setIsActive(item.isActive);
                 setCouponCode(item.couponCode);
                 setDiscountType(item.discountType);
-                setDiscountValue(item.discountValue);
+                setDiscountValue(item.discountValue ?? 0);
                 setMinOrderValue(item.minOrderValue || 0);
             } else {
                 setTitle('');
@@ -1893,10 +1893,11 @@ function PromotionManagement() {
   };
   
   const formatDiscount = (promo: Promotion) => {
+    const value = promo.discountValue ?? 0;
     if (promo.discountType === 'percentage') {
-        return `${promo.discountValue}%`;
+        return `${value}%`;
     }
-    return `Rs.${promo.discountValue.toFixed(2)}`;
+    return `Rs.${value.toFixed(2)}`;
   }
 
 
@@ -2885,28 +2886,15 @@ export default function AdminDashboardPage() {
   const [orderToShowInInquiryPopup, setOrderToShowInInquiryPopup] = useState<Order | null>(null);
   const [newOrderInPopup, setNewOrderInPopup] = useState<Order | null>(null);
   
-  const prevOrdersRef = useRef<Order[]>([]);
   const notifiedMessageIdsRef = useRef(new Set<string>());
   const notifiedOrderIdsRef = useRef(new Set<string>());
   
   useEffect(() => {
-    // On first load, populate the refs with existing message/order IDs so we don't notify for them.
-    if (prevOrdersRef.current.length === 0 && orders.length > 0) {
-        orders.forEach(order => {
-            notifiedOrderIdsRef.current.add(order.id);
-            order.updateRequests?.forEach(req => {
-                notifiedMessageIdsRef.current.add(req.id);
-            });
-        });
-        prevOrdersRef.current = orders;
-        return;
-    }
-
     // Inquiry detection logic
     let latestCustomerMessage: { order: Order; messageId: string; timestamp: string; } | null = null;
     orders.forEach(order => {
         order.updateRequests?.forEach(req => {
-            if (req.from === 'customer') {
+            if (req.from === 'customer' && !notifiedMessageIdsRef.current.has(req.id)) {
                 if (!latestCustomerMessage || new Date(req.timestamp) > new Date(latestCustomerMessage.timestamp)) {
                     latestCustomerMessage = { order, messageId: req.id, timestamp: req.timestamp };
                 }
@@ -2914,24 +2902,30 @@ export default function AdminDashboardPage() {
         });
     });
 
-    if (latestCustomerMessage && !notifiedMessageIdsRef.current.has(latestCustomerMessage.messageId)) {
+    if (latestCustomerMessage) {
         setOrderToShowInInquiryPopup(latestCustomerMessage.order);
         notifiedMessageIdsRef.current.add(latestCustomerMessage.messageId);
     }
 
     // New order detection logic
-    const prevOrderIds = new Set(prevOrdersRef.current.map(o => o.id));
-    const newOrders = orders.filter(o => !prevOrderIds.has(o.id));
+    const newOrders = orders.filter(o => !notifiedOrderIdsRef.current.has(o.id));
 
     if (newOrders.length > 0) {
         const mostRecentNewOrder = newOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())[0];
-        if (!notifiedOrderIdsRef.current.has(mostRecentNewOrder.id)) {
-            setNewOrderInPopup(mostRecentNewOrder);
-            notifiedOrderIdsRef.current.add(mostRecentNewOrder.id);
-        }
+        setNewOrderInPopup(mostRecentNewOrder);
+        notifiedOrderIdsRef.current.add(mostRecentNewOrder.id);
+    }
+    
+    // Initial population of notified IDs to prevent old notifications
+    if (notifiedOrderIdsRef.current.size === 0 && notifiedMessageIdsRef.current.size === 0) {
+        orders.forEach(order => {
+            notifiedOrderIdsRef.current.add(order.id);
+            order.updateRequests?.forEach(req => {
+                notifiedMessageIdsRef.current.add(req.id);
+            });
+        });
     }
 
-    prevOrdersRef.current = orders;
   }, [orders]);
 
 
