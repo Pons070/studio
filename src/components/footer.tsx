@@ -22,8 +22,7 @@ export function Footer() {
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleLogoClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleSecretAdminTrigger = useCallback((e: React.MouseEvent) => {
     const newCount = clickCount + 1;
     setClickCount(newCount);
 
@@ -51,7 +50,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
           
           <div className="flex flex-col items-center md:items-start md:col-span-1">
-            <Link href="/" onClick={handleLogoClick} className="flex items-center gap-2 cursor-pointer">
+            <Link href="/" className="flex items-center gap-2">
                {brandInfo.logoUrl ? (
                 <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={32} height={32} className="rounded-md object-contain" />
               ) : (
@@ -95,7 +94,7 @@ export function Footer() {
         </div>
         <div className="mt-8 pt-6 border-t text-center">
             <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} {brandInfo.name}. All rights reserved.
+              <span onClick={handleSecretAdminTrigger} className="cursor-pointer">© {new Date().getFullYear()}</span> {brandInfo.name}. All rights reserved.
             </p>
         </div>
       </div>
