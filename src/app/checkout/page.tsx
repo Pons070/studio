@@ -57,10 +57,16 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (currentUser?.addresses && currentUser.addresses.length > 0) {
-        const defaultAddress = currentUser.addresses.find(a => a.isDefault) || currentUser.addresses[0];
-        if (defaultAddress?.id) {
-            setSelectedAddressId(defaultAddress.id);
-        }
+      const currentAddresses = currentUser.addresses;
+      const defaultAddress = currentAddresses.find(a => a.isDefault) || currentAddresses[0];
+
+      // If there's no selection OR the current selection is no longer valid, reset to default.
+      if (!selectedAddressId || !currentAddresses.some(a => a.id === selectedAddressId)) {
+        setSelectedAddressId(defaultAddress.id);
+      }
+    } else {
+      // No addresses, so clear selection.
+      setSelectedAddressId(undefined);
     }
   }, [currentUser]);
 
