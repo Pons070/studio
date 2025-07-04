@@ -72,19 +72,19 @@ export function PromotionBanner() {
   }
 
   return (
-    <div className="fixed top-6 right-6 z-50 w-full max-w-sm">
-        <div className="bg-card/90 backdrop-blur-sm p-3.5 rounded-lg shadow-lg border flex items-center gap-3 animate-in fade-in-0 slide-in-from-top-4">
-            <Megaphone className="h-5 w-5 text-primary shrink-0" />
-            <p className="flex-1 text-sm text-muted-foreground">
-                <span className="font-medium text-card-foreground">{activePromotion.title}</span>
+    <div className="bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-4 text-center">
+            <Megaphone className="h-5 w-5 shrink-0" />
+            <p className="flex-1 text-sm">
+                <span className="font-semibold">{activePromotion.title}</span>
                 {activePromotion.couponCode && (
-                    <span className="ml-1 font-semibold text-primary">Code: {activePromotion.couponCode}</span>
+                    <span className="ml-2 font-bold">Use Code: {activePromotion.couponCode}</span>
                 )}
             </p>
-            <Button
+             <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 shrink-0"
+                className="h-7 w-7 shrink-0 -mr-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10"
                 onClick={() => setIsVisible(false)}
             >
                 <X className="h-4 w-4" />
