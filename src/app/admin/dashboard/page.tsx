@@ -2401,6 +2401,7 @@ function AnalyticsAndReports() {
     const totalCancelledOrders = cancelledOrders.length;
     const averageOrderValue = totalCompletedOrders > 0 ? totalRevenue / totalCompletedOrders : 0;
     const averageRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
+    const totalDiscounts = completedOrders.reduce((sum, o) => sum + (o.discountAmount || 0), 0);
 
     return {
       totalRevenue,
@@ -2409,6 +2410,7 @@ function AnalyticsAndReports() {
       averageRating: averageRating.toFixed(1),
       totalReviews: reviews.length,
       totalCancelledOrders,
+      totalDiscounts,
     };
   }, [completedOrders, cancelledOrders, reviews]);
 
@@ -2527,25 +2529,20 @@ function AnalyticsAndReports() {
         filename = `cancelled_orders_${details.reason.replace(/\s+/g, '_').toLowerCase()}.csv`;
     } else { // MetricDetails
         if (details.type === 'orders') {
-            const isCancelledReport = details.title.includes('Cancelled');
-            if (isCancelledReport) {
-                dataToExport = (details.data as Order[]).map(o => ({
-                    order_id: o.id,
-                    customer_name: o.customerName,
-                    cancelled_on: o.cancellationDate,
-                    status: o.status,
-                    total: o.total,
-                }));
-            } else {
-                 dataToExport = (details.data as Order[]).map(o => ({
-                    order_id: o.id,
-                    customer_name: o.customerName,
-                    pickup_date: o.pickupDate,
-                    status: o.status,
-                    total: o.total,
-                }));
-            }
-        } else {
+            dataToExport = (details.data as Order[]).map(o => ({
+                order_id: o.id,
+                customer_name: o.customerName,
+                pickup_date: o.pickupDate,
+                status: o.status,
+                subtotal: o.items.reduce((acc, item) => acc + (item.price * item.quantity), 0).toFixed(2),
+                discount_coupon: o.appliedCoupon || 'N/A',
+                discount_amount: o.discountAmount?.toFixed(2) || '0.00',
+                total: o.total.toFixed(2),
+                cancelled_on: o.cancellationDate || 'N/A',
+                cancelled_by: o.cancelledBy || 'N/A',
+                cancellation_reason: o.cancellationReason || 'N/A'
+            }));
+        } else { // Reviews
              dataToExport = (details.data as Review[]).map(r => ({
                 customer_name: r.customerName,
                 rating: r.rating,
@@ -2634,7 +2631,7 @@ function AnalyticsAndReports() {
         <Button onClick={handleDownloadPdf} variant="outline"><Download className="mr-2 h-4 w-4"/>Download PDF</Button>
     </div>
     <div id="analytics-printable-area" className="space-y-6 mt-4">
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => completedOrders.length > 0 && setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -2660,6 +2657,20 @@ function AnalyticsAndReports() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCancelledOrders}</div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => {
+            const discountedOrders = completedOrders.filter(o => o.discountAmount && o.discountAmount > 0);
+            if (discountedOrders.length > 0) {
+                setMetricDetails({ title: 'Orders with Discounts', data: discountedOrders, type: 'orders' });
+            }
+        }}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Discounts</CardTitle>
+            <TicketPercent />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Rs.{stats.totalDiscounts.toFixed(2)}</div>
           </CardContent>
         </Card>
         <Card>
