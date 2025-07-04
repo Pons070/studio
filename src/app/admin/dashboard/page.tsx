@@ -447,6 +447,11 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus, onDeleteOrder }: { 
                             </AlertDialogContent>
                         </AlertDialog>
                     )}
+                    {order.status === 'Cancelled' && order.cancellationAction && (
+                        <Badge variant="outline" className="capitalize font-normal pointer-events-none">
+                            {order.cancellationAction === 'refund' ? 'Refund Req.' : 'Donated'}
+                        </Badge>
+                    )}
                 </TableCell>
             </TableRow>
           );
