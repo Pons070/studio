@@ -49,22 +49,11 @@ export default function CheckoutPage() {
   const [cookingNotes, setCookingNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isClearCartAlertOpen, setClearCartAlertOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const [isCalendarOpen, setCalendarOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   
   const isClosed = brandInfo.businessHours.status === 'closed';
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient) {
-      setPickupDate(new Date());
-    }
-  }, [isClient]);
 
   useEffect(() => {
     if (currentUser?.addresses && currentUser.addresses.length > 0) {
@@ -205,43 +194,32 @@ export default function CheckoutPage() {
               <CardContent className="grid gap-4 md:grid-cols-2 md:gap-8">
                 <div className="space-y-2">
                   <Label>Pre-Order Date</Label>
-                  {isClient && pickupDate ? (
-                     <Popover open={isCalendarOpen} onOpenChange={setCalendarOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !pickupDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {pickupDate ? format(pickupDate, "PPP") : <span>Pick a date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={pickupDate}
-                          onSelect={(newDate) => {
-                            setPickupDate(newDate);
-                            setCalendarOpen(false);
-                          }}
-                          disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  ) : (
-                     <Button
+                  <Popover open={isCalendarOpen} onOpenChange={setCalendarOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
                         variant={"outline"}
-                        className="w-full justify-start text-left font-normal text-muted-foreground"
-                        disabled
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !pickupDate && "text-muted-foreground"
+                        )}
                       >
-                       <CalendarIcon className="mr-2 h-4 w-4" />
-                       <span>Pick a date</span>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {pickupDate ? format(pickupDate, "PPP") : <span>Pick a date</span>}
                       </Button>
-                  )}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={pickupDate}
+                        onSelect={(newDate) => {
+                          setPickupDate(newDate || undefined);
+                          setCalendarOpen(false);
+                        }}
+                        disabled={(d) => d < new Date(new Date().setDate(new Date().getDate() - 1))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label>Available Times</Label>

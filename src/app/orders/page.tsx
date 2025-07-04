@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -350,6 +351,11 @@ export default function OrdersPage() {
   const { toggleFavoriteOrder, isOrderFavorite } = useFavorites();
   const { reorder } = useCart();
   const { brandInfo } = useBrand();
+  const [shareUrl, setShareUrl] = useState('');
+
+  useEffect(() => {
+    setShareUrl(window.location.origin);
+  }, []);
 
   const handleCancelOrder = (orderId: string) => {
     updateOrderStatus(orderId, 'Cancelled');
@@ -364,9 +370,6 @@ export default function OrdersPage() {
     setUpdateRequestOrder(selectedOrder);
     setSelectedOrder(null); // Close the details dialog
   }
-
-  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
-
 
   if (!isAuthenticated) {
     return (

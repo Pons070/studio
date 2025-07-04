@@ -1,6 +1,8 @@
 
+
 "use client";
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star, Quote, AlertTriangle } from 'lucide-react';
@@ -22,7 +24,11 @@ export default function Home() {
   const featuredReviews = reviews.filter(r => r.isPublished).slice(0, 6);
   const isClosed = brandInfo.businessHours.status === 'closed';
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const [shareUrl, setShareUrl] = useState('');
+
+  useEffect(() => {
+    setShareUrl(window.location.origin);
+  }, []);
 
   return (
     <>
