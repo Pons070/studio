@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
 import {
   Dialog,
@@ -61,6 +61,7 @@ import ReactCrop, {
 } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useRouter } from 'next/navigation';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -268,12 +269,25 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                 </ScrollArea>
                 <DialogFooter className="border-t pt-4">
                      {(order.status === 'Pending' || order.status === 'Confirmed') && (
-                        <Button
-                            variant="destructive"
-                            onClick={() => onCancelOrder(order)}
-                        >
-                            Cancel Order
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive">Cancel Order</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    This will cancel the order. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Go Back</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onCancelOrder(order)}>
+                                        Yes, Cancel Order
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     )}
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">
@@ -334,39 +348,15 @@ function CancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order:
 }
 
 
-function OrderTable({ orders, onSelectOrder, selectedOrders, onSelectedOrdersChange, onUpdateStatus, isActionable }: { orders: Order[], onSelectOrder: (order: Order) => void, selectedOrders: string[], onSelectedOrdersChange: (ids: string[]) => void, isActionable?: boolean, onUpdateStatus?: (orderId: string, status: Order['status']) => void }) {
+function OrderTable({ orders, onSelectOrder, onUpdateStatus }: { orders: Order[], onSelectOrder: (order: Order) => void, onUpdateStatus?: (orderId: string, status: Order['status']) => void, isActionable?: boolean }) {
   if (orders.length === 0) {
     return <p className="text-sm text-muted-foreground p-4">No orders to display.</p>;
   }
-
-  const handleSelectAll = (checked: boolean) => {
-    const allIds = orders.map(o => o.id);
-    if (checked) {
-        onSelectedOrdersChange([...new Set([...selectedOrders, ...allIds])]);
-    } else {
-        onSelectedOrdersChange(selectedOrders.filter(id => !allIds.includes(id)));
-    }
-  };
-
-  const handleSelectRow = (id: string, checked: boolean) => {
-    onSelectedOrdersChange(
-      checked
-        ? [...selectedOrders, id]
-        : selectedOrders.filter(orderId => orderId !== id)
-    );
-  };
   
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[50px]">
-            <Checkbox
-              checked={orders.length > 0 && orders.every(o => selectedOrders.includes(o.id))}
-              onCheckedChange={handleSelectAll}
-              aria-label="Select all orders in this table"
-            />
-          </TableHead>
           <TableHead>Order ID</TableHead>
           <TableHead>Customer</TableHead>
           <TableHead>Pickup Date</TableHead>
@@ -380,22 +370,15 @@ function OrderTable({ orders, onSelectOrder, selectedOrders, onSelectedOrdersCha
           const hasInquiry = lastMessage?.from === 'customer';
 
           return (
-            <TableRow key={order.id} data-state={selectedOrders.includes(order.id) ? "selected" : ""} className="cursor-pointer" onClick={() => onSelectOrder(order)}>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                        checked={selectedOrders.includes(order.id)}
-                        onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                        aria-label={`Select order ${order.id}`}
-                    />
-                </TableCell>
+            <TableRow key={order.id} className="cursor-pointer" onClick={() => onSelectOrder(order)}>
                 <TableCell className="font-medium">{order.id}</TableCell>
                 <TableCell className="flex items-center gap-2">
                    {order.customerName}
                    {hasInquiry && <MessageSquare className="h-4 w-4 text-primary animate-pulse" />}
                 </TableCell>
                 <TableCell>{new Date(order.pickupDate).toLocaleDateString()}</TableCell>
-                <TableCell onClick={(e) => { if (isActionable) e.stopPropagation(); }}>
-                   {isActionable && onUpdateStatus ? (
+                <TableCell onClick={(e) => { if (onUpdateStatus) e.stopPropagation(); }}>
+                   {onUpdateStatus ? (
                      <Select onValueChange={(value) => onUpdateStatus(order.id, value as Order['status'])} defaultValue={order.status}>
                        <SelectTrigger className="w-[140px]">
                          <SelectValue />
@@ -451,12 +434,11 @@ function AdminNotificationDialog({ order, onOpenChange }: { order: Order | null;
 }
 
 function OrderManagement() {
-  const { orders, updateOrderStatus, addUpdateRequest } = useOrders();
+  const { orders, updateOrderStatus } = useOrders();
   const { reviews } = useReviews();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   
   const [lastNotifiedMessageId, setLastNotifiedMessageId] = useState<string | null>(null);
   const [orderToShowInPopup, setOrderToShowInPopup] = useState<Order | null>(null);
@@ -485,25 +467,14 @@ function OrderManagement() {
   }, [orders, lastNotifiedMessageId]);
 
 
-  const handleConfirmCancellation = (orderId: string, reason: string) => {
+  const handleConfirmCancellation = (order: Order) => {
+    setOrderToCancel(order);
+    setSelectedOrder(null);
+  };
+  
+  const confirmCancelAction = (orderId: string, reason: string) => {
     updateOrderStatus(orderId, 'Cancelled', reason);
-  };
-
-  const handleBulkUpdateStatus = (status: Order['status']) => {
-    selectedOrderIds.forEach(id => {
-      // Only bulk update actionable orders
-      const order = orders.find(o => o.id === id);
-      if (order && (order.status === 'Pending' || order.status === 'Confirmed')) {
-        updateOrderStatus(id, status);
-      }
-    });
-    setSelectedOrderIds([]);
-  };
-
-  const handleBulkDelete = () => {
-    // A real app would have a delete function in the store
-    console.log("Bulk deleting orders:", selectedOrderIds);
-    setSelectedOrderIds([]);
+    setOrderToCancel(null);
   }
 
   const filteredOrders = orders.filter(o =>
@@ -526,18 +497,6 @@ function OrderManagement() {
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" disabled={selectedOrderIds.length === 0}>
-              Bulk Actions ({selectedOrderIds.length})
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleBulkUpdateStatus('Pending')}>Set as Pending</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkUpdateStatus('Confirmed')}>Set as Confirmed</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkUpdateStatus('Completed')}>Set as Completed</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
       <div className="space-y-6">
         <Card>
@@ -549,10 +508,8 @@ function OrderManagement() {
             <OrderTable 
               orders={activeOrders} 
               onSelectOrder={setSelectedOrder}
-              selectedOrders={selectedOrderIds}
-              onSelectedOrdersChange={setSelectedOrderIds}
-              isActionable={true}
               onUpdateStatus={updateOrderStatus}
+              isActionable
             />
           </CardContent>
         </Card>
@@ -565,8 +522,6 @@ function OrderManagement() {
             <OrderTable 
               orders={historicalOrders} 
               onSelectOrder={setSelectedOrder}
-              selectedOrders={selectedOrderIds}
-              onSelectedOrdersChange={setSelectedOrderIds}
             />
           </CardContent>
         </Card>
@@ -576,13 +531,13 @@ function OrderManagement() {
         isOpen={!!selectedOrder}
         onOpenChange={(open) => !open && setSelectedOrder(null)}
         reviews={reviews}
-        onCancelOrder={setOrderToCancel}
+        onCancelOrder={handleConfirmCancellation}
       />
       <CancellationDialog
         order={orderToCancel}
         isOpen={!!orderToCancel}
         onOpenChange={(open) => !open && setOrderToCancel(null)}
-        onConfirm={handleConfirmCancellation}
+        onConfirm={confirmCancelAction}
       />
       <AdminNotificationDialog
         order={orderToShowInPopup}
@@ -599,7 +554,6 @@ function MenuManagement() {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const { toast } = useToast();
 
   const handleEdit = (item: MenuItem) => {
@@ -667,57 +621,7 @@ function MenuManagement() {
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     item.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleSelectAllMenu = (checked: boolean) => {
-    setSelectedItemIds(checked ? filteredItems.map(i => i.id) : []);
-  };
-
-  const handleSelectMenuRow = (id: string, checked: boolean) => {
-    setSelectedItemIds(
-      checked
-        ? [...selectedItemIds, id]
-        : selectedItemIds.filter(itemId => itemId !== id)
-    );
-  };
   
-  const handleBulkDelete = () => {
-    selectedItemIds.forEach(id => deleteMenuItem(id));
-    setSelectedItemIds([]);
-  }
-
-  const handleBulkAvailability = (isAvailable: boolean) => {
-    const itemsToUpdate = menuItems.filter(item => selectedItemIds.includes(item.id));
-    itemsToUpdate.forEach(item => {
-        updateMenuItem({ ...item, isAvailable });
-    });
-    setSelectedItemIds([]);
-  };
-
-  const handleBulkFeature = (isFeatured: boolean) => {
-    if (isFeatured) {
-        const currentlyFeaturedCount = menuItems.filter(item => item.isFeatured).length;
-        const newlySelectedToFeatureCount = selectedItemIds.filter(id => {
-            const item = menuItems.find(item => item.id === id);
-            return item && !item.isFeatured;
-        }).length;
-
-        if (currentlyFeaturedCount + newlySelectedToFeatureCount > 3) {
-            toast({
-                title: "Featured Item Limit Reached",
-                description: `You can only feature a maximum of 3 items. You currently have ${currentlyFeaturedCount} and tried to add ${newlySelectedToFeatureCount}.`,
-                variant: "destructive",
-            });
-            return;
-        }
-    }
-    
-    const itemsToUpdate = menuItems.filter(item => selectedItemIds.includes(item.id));
-    itemsToUpdate.forEach(item => {
-        updateMenuItem({ ...item, isFeatured });
-    });
-    setSelectedItemIds([]);
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -735,22 +639,6 @@ function MenuManagement() {
                   className="pl-10"
               />
             </div>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" disabled={selectedItemIds.length === 0}>
-                        Bulk Actions ({selectedItemIds.length})
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleBulkAvailability(true)}>Set as Available</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkAvailability(false)}>Set as Unavailable</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleBulkFeature(true)}>Set as Featured</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkFeature(false)}>Set as Not Featured</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleBulkDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">Delete Selected</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
             <div className="ml-auto">
               <Button onClick={handleAddNew}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
@@ -760,13 +648,6 @@ function MenuManagement() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">
-                <Checkbox
-                  checked={selectedItemIds.length === filteredItems.length && filteredItems.length > 0}
-                  onCheckedChange={handleSelectAllMenu}
-                  aria-label="Select all menu items"
-                />
-              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Price</TableHead>
@@ -777,14 +658,7 @@ function MenuManagement() {
           </TableHeader>
           <TableBody>
             {filteredItems.map((item) => (
-              <TableRow key={item.id} data-state={selectedItemIds.includes(item.id) ? "selected" : ""}>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={selectedItemIds.includes(item.id)}
-                    onCheckedChange={(checked) => handleSelectMenuRow(item.id, !!checked)}
-                    aria-label={`Select item ${item.name}`}
-                  />
-                </TableCell>
+              <TableRow key={item.id} data-state={selectedItem?.id === item.id ? "selected" : ""}>
                 <TableCell className="font-medium cursor-pointer" onClick={() => handleEdit(item)}>{item.name}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
@@ -2119,9 +1993,27 @@ function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { cust
                             {customer.isBlocked ? <Badge variant="destructive">Blocked</Badge> : <Badge variant="success">Active</Badge>}
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDeleteCustomer(customer)}>
-                               <Trash2 className="h-4 w-4" />
-                           </Button>
+                           <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                   <Trash2 className="h-4 w-4" />
+                               </Button>
+                            </AlertDialogTrigger>
+                             <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Customer?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete the account for "{customer.name}"? This will permanently remove their profile and cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => onDeleteCustomer(customer)} className={buttonVariants({ variant: "destructive" })}>
+                                        Yes, Delete Customer
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                           </AlertDialog>
                         </TableCell>
                     </TableRow>
                 ))}
@@ -2137,8 +2029,6 @@ function CustomerManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<User | null>(null);
-  const [customerToBlock, setCustomerToBlock] = useState<User | null>(null);
-  const [isBlocking, setIsBlocking] = useState(false);
   const { toast } = useToast();
 
   const blockedEmails = brandInfo.blockedCustomerEmails || [];
@@ -2154,11 +2044,8 @@ function CustomerManagement() {
     c.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleConfirmDelete = () => {
-    if (customerToDelete) {
-        deleteUserById(customerToDelete.id);
-        setCustomerToDelete(null);
-    }
+  const handleConfirmDelete = (customer: User) => {
+    deleteUserById(customer.id);
   };
 
   const handleToggleBlockStatus = (customer: User) => {
@@ -2172,6 +2059,7 @@ function CustomerManagement() {
     } else {
         blockCustomer(customer.email);
     }
+    setSelectedCustomer(null); // Close dialog after action
   };
 
   return (
@@ -2196,7 +2084,7 @@ function CustomerManagement() {
           <CustomerTable
              customers={filteredCustomers}
              onSelectCustomer={setSelectedCustomer}
-             onDeleteCustomer={setCustomerToDelete}
+             onDeleteCustomer={handleConfirmDelete}
            />
         </CardContent>
       </Card>
@@ -2208,12 +2096,6 @@ function CustomerManagement() {
         onToggleBlockStatus={handleToggleBlockStatus}
         isBlocked={!!selectedCustomer && blockedEmails.includes(selectedCustomer.email)}
       />
-      <DeleteCustomerDialog
-         customer={customerToDelete}
-         isOpen={!!customerToDelete}
-         onOpenChange={(open) => !open && setCustomerToDelete(null)}
-         onConfirm={handleConfirmDelete}
-      />
     </>
   );
 }
@@ -2221,6 +2103,11 @@ function CustomerManagement() {
 
 export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState('dashboard');
+  const router = useRouter();
+
+  const handleLogout = () => {
+    router.push('/admin/login');
+  };
 
   const navItems = [
     { id: 'orders', label: 'Manage Orders', description: "View and process all customer orders.", icon: ClipboardList },
@@ -2248,9 +2135,15 @@ export default function AdminDashboardPage() {
   if (activeView === 'dashboard') {
     return (
       <div className="space-y-6 p-4 md:p-6">
-        <header className="space-y-2">
-            <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
-            <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
+        <header className="flex justify-between items-start">
+            <div className="space-y-2">
+                <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
+                <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
+            </div>
+            <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+            </Button>
         </header>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pt-4">
@@ -2273,15 +2166,21 @@ export default function AdminDashboardPage() {
 
   return (
       <div className="space-y-6 p-4 md:p-6">
-        <header className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => setActiveView('dashboard')}>
-              <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Back to Dashboard</span>
-            </Button>
-            <div>
-                <h1 className="text-3xl font-headline font-bold text-white">{activeItem?.label}</h1>
-                <p className="text-muted-foreground">{activeItem?.description}</p>
+        <header className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+                <Button variant="outline" size="icon" onClick={() => setActiveView('dashboard')}>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Back to Dashboard</span>
+                </Button>
+                <div>
+                    <h1 className="text-3xl font-headline font-bold text-white">{activeItem?.label}</h1>
+                    <p className="text-muted-foreground">{activeItem?.description}</p>
+                </div>
             </div>
+            <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+            </Button>
         </header>
 
         <Separator />
