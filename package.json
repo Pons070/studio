@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "GCLOUD_CORE_DISABLE_PROMPTS=1 concurrently \"npm:genkit:watch\" \"next dev -p 9002 --hostname 0.0.0.0\"",
+    "dev": "GCLOUD_CORE_DISABLE_PROMPTS=1 concurrently \"npm:genkit:watch\" \"next dev\"",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts --ignore \"./.next/**\" --ignore \"./node_modules/**\"",
     "build": "next build",
