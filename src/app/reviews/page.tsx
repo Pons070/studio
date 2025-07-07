@@ -32,7 +32,7 @@ export default function ReviewsPage() {
     <div className="space-y-12">
       <div className="text-center">
         <h1 className="text-4xl md:text-5xl font-headline font-bold">Customer Reviews</h1>
-        <p className="text-lg text-muted-foreground mt-2">
+        <p className="text-lg text-white font-bold mt-2">
           Hear what our valued customers have to say about {brandInfo.name}.
         </p>
       </div>

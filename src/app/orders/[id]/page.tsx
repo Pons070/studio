@@ -93,7 +93,7 @@ export default function OrderConfirmationPage() {
             <div className="text-center p-6 bg-success/10 border border-success/20 rounded-lg">
                 <CheckCircle className="h-12 w-12 text-success mx-auto mb-4" />
                 <h1 className="text-2xl md:text-3xl font-headline font-bold text-success">Thank You for Your Order!</h1>
-                <p className="text-muted-foreground mt-2">
+                <p className="text-white font-bold mt-2">
                     Your pre-order has been placed successfully. You can track its status below.
                 </p>
             </div>

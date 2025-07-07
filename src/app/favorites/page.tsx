@@ -45,7 +45,7 @@ export default function FavoritesPage() {
         <div className="space-y-12">
             <div className="text-center">
                 <h1 className="text-4xl md:text-5xl font-headline font-bold">My Favorites</h1>
-                <p className="text-lg text-muted-foreground mt-2">Your favorite dishes and past orders, all in one place.</p>
+                <p className="text-lg text-white font-bold mt-2">Your favorite dishes and past orders, all in one place.</p>
             </div>
 
             <Card>
