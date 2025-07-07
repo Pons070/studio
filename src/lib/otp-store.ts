@@ -7,4 +7,4 @@ declare global {
   var otpStore: Record<string, string> | undefined;
 }
 
-export const otpStore = global.otpStore || (global.otpStore = {});
+export const otpStore = globalThis.otpStore || (globalThis.otpStore = {});

@@ -3,6 +3,10 @@ import type { Order } from '@/lib/types';
 import { users } from './user-store';
 import { menuItems } from './menu-store';
 
+declare global {
+  var ordersStore: Order[] | undefined;
+}
+
 const findUser = (name: string) => users.find(u => u.name === name);
 const findMenuItem = (name: string) => menuItems.find(m => m.name === name);
 
@@ -22,7 +26,7 @@ const caprese = findMenuItem('Caprese Salad');
 // This is an in-memory "database" for demonstration.
 // In a real app, this would be a proper database connection.
 // The state will reset when the server restarts.
-export let orders: Order[] = (alice && bob && charlie && diana && eve && bruschetta && carbonara && pizza && tiramisu && salmon && caprese) ? [
+const initialOrders: Order[] = (alice && bob && charlie && diana && eve && bruschetta && carbonara && pizza && tiramisu && salmon && caprese) ? [
   {
     id: 'ORD-001',
     customerId: alice.id,
@@ -121,3 +125,9 @@ export let orders: Order[] = (alice && bob && charlie && diana && eve && brusche
     total: carbonara.price,
   }
 ] : [];
+
+if(!globalThis.ordersStore) {
+    globalThis.ordersStore = initialOrders;
+}
+
+export let orders: Order[] = globalThis.ordersStore;

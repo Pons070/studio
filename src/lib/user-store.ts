@@ -119,8 +119,8 @@ const initialUsers: User[] = [
   }
 ];
 
-if (!global.userStore) {
-  global.userStore = initialUsers;
+if (!globalThis.userStore) {
+  globalThis.userStore = initialUsers;
 }
 
-export const users: User[] = global.userStore;
+export const users: User[] = globalThis.userStore;

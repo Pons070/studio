@@ -1,7 +1,11 @@
 
 import type { MenuItem } from './types';
 
-export let menuItems: MenuItem[] = [
+declare global {
+  var menuItemsStore: MenuItem[] | undefined;
+}
+
+const initialMenuItems: MenuItem[] = [
   {
     id: '1',
     name: 'Bruschetta',
@@ -102,3 +106,9 @@ export let menuItems: MenuItem[] = [
     isFeatured: false,
   },
 ];
+
+if (!globalThis.menuItemsStore) {
+    globalThis.menuItemsStore = initialMenuItems;
+}
+
+export let menuItems: MenuItem[] = globalThis.menuItemsStore;

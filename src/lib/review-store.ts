@@ -1,7 +1,11 @@
 
 import type { Review } from './types';
 
-export let reviews: Review[] = [
+declare global {
+  var reviewsStore: Review[] | undefined;
+}
+
+const initialReviews: Review[] = [
   {
     id: 'REV-001',
     orderId: 'ORD-001',
@@ -50,3 +54,9 @@ export let reviews: Review[] = [
     isPublished: false,
   }
 ];
+
+if (!globalThis.reviewsStore) {
+  globalThis.reviewsStore = initialReviews;
+}
+
+export let reviews: Review[] = globalThis.reviewsStore;

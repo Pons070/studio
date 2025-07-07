@@ -1,7 +1,11 @@
 
 import type { Promotion } from './types';
 
-export let promotions: Promotion[] = [
+declare global {
+  var promotionsStore: Promotion[] | undefined;
+}
+
+const initialPromotions: Promotion[] = [
   {
     id: 'PROMO-1',
     title: '🎉 Welcome Offer for New Customers!',
@@ -38,3 +42,9 @@ export let promotions: Promotion[] = [
     endDate: '2023-07-31',
   },
 ];
+
+if (!globalThis.promotionsStore) {
+    globalThis.promotionsStore = initialPromotions;
+}
+
+export let promotions: Promotion[] = globalThis.promotionsStore;
