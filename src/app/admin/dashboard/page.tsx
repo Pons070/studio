@@ -437,9 +437,7 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus, onDeleteOrder }: { 
                     {(order.status === 'Pending' || order.status === 'Confirmed') && (
                        <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <Button variant="destructive" size="sm">Cancel</Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
