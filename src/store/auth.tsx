@@ -54,20 +54,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback((options?: { idle: boolean }) => {
-    persistCurrentUser(null);
-    if (options?.idle) {
-        toast({
-            title: "Session Expired",
-            description: "You have been logged out due to inactivity.",
-        });
-    } else {
-        toast({
-            title: "Logged Out",
-            description: "You have been successfully logged out.",
-        });
+  const logout = useCallback(async (options?: { idle: boolean }) => {
+    try {
+      // Inform the server about the logout. In a real app, this invalidates the session.
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (error) {
+      console.error("Logout API call failed, proceeding with client-side logout:", error);
+      // We still want to log the user out on the client even if the API call fails
+    } finally {
+        persistCurrentUser(null);
+        if (options?.idle) {
+            toast({
+                title: "Session Expired",
+                description: "You have been logged out due to inactivity.",
+            });
+        } else {
+            toast({
+                title: "Logged Out",
+                description: "You have been successfully logged out.",
+            });
+        }
+        router.push('/login');
     }
-    router.push('/login');
   }, [router, toast, persistCurrentUser]);
 
   // Idle timer logic
