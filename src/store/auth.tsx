@@ -7,13 +7,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import type { Address, User } from '@/lib/types';
 import { users as mockUsers } from '@/lib/mock-data';
+import { useBrand } from './brand';
 
 type AuthContextType = {
   isAuthenticated: boolean;
   currentUser: User | null;
   users: User[];
-  signup: (name: string, email: string, password: string) => boolean;
-  login: (email: string, password: string) => boolean;
+  signup: (name: string, email: string, phone: string, password: string) => boolean;
+  login: (phone: string, password: string) => boolean;
   logout: () => void;
   updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => void;
   addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => void;
@@ -22,7 +23,7 @@ type AuthContextType = {
   setDefaultAddress: (addressId: string) => void;
   deleteUser: () => void;
   deleteUserById: (userId: string) => void;
-  resetPassword: (email: string, newPassword: string) => boolean;
+  resetPassword: (phone: string, newPassword: string) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const { brandInfo } = useBrand();
 
   useEffect(() => {
     try {
@@ -91,12 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signup = useCallback((name: string, email: string, password: string): boolean => {
-    const existingUser = users.find(u => u.email === email);
-    if (existingUser) {
+  const signup = useCallback((name: string, email: string, phone: string, password: string): boolean => {
+    const existingUserByEmail = users.find(u => u.email === email);
+    if (existingUserByEmail) {
       toast({
         title: "Signup Failed",
         description: "An account with this email already exists.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const existingUserByPhone = users.find(u => u.phone === phone);
+    if (existingUserByPhone) {
+      toast({
+        title: "Signup Failed",
+        description: "An account with this phone number already exists.",
         variant: "destructive",
       });
       return false;
@@ -107,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name,
       email,
       password,
-      phone: '',
+      phone,
       addresses: [],
     };
     
@@ -121,11 +133,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   }, [users, toast]);
 
-  const login = useCallback((email: string, password: string): boolean => {
-    // This is mock logic. In a real app, passwords would be hashed.
-    const user = users.find(u => u.email === email && u.password === password);
+  const login = useCallback((phone: string, password: string): boolean => {
+    const user = users.find(u => u.phone === phone && u.password === password);
     
     if (user) {
+      const blockedEmails = brandInfo.blockedCustomerEmails || [];
+      if (user.email && blockedEmails.includes(user.email)) {
+          toast({
+              title: "Account Blocked",
+              description: "This account has been blocked. Please contact support.",
+              variant: "destructive",
+          });
+          return false;
+      }
+      
       persistCurrentUser(user);
       toast({
         title: `Welcome back, ${user.name}!`,
@@ -135,12 +156,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       toast({
         title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        description: "Invalid phone number or password. Please try again.",
         variant: "destructive",
       });
       return false;
     }
-  }, [users, toast]);
+  }, [users, toast, brandInfo.blockedCustomerEmails]);
 
   const logout = useCallback(() => {
     persistCurrentUser(null);
@@ -156,10 +177,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const userToUpdate = users.find(u => u.id === currentUser.id);
     if (!userToUpdate) return;
+    
+    const { password, ...restOfUser } = userToUpdate;
 
     const updatedUser: User = { 
-      ...userToUpdate,
+      ...restOfUser,
       ...data,
+      password: password,
     };
     
     persistCurrentUser(updatedUser);
@@ -242,10 +266,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({ title: "Default Address Updated", description: "Your default address has been set." });
   }, [currentUser, users, toast]);
   
-  const resetPassword = useCallback((email: string, newPassword: string): boolean => {
+  const resetPassword = useCallback((phone: string, newPassword: string): boolean => {
     let userFound = false;
     const updatedUsers = users.map(user => {
-        if (user.email === email) {
+        if (user.phone === phone) {
             userFound = true;
             return { ...user, password: newPassword };
         }
@@ -263,7 +287,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
         toast({
             title: "User Not Found",
-            description: "No account was found with that email address.",
+            description: "No account was found with that phone number.",
             variant: "destructive",
         });
         return false;

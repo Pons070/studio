@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -9,11 +10,11 @@ import { Label } from "@/components/ui/label";
 import { KeyRound, CheckCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-type Step = 'email' | 'reset' | 'success';
+type Step = 'phone' | 'reset' | 'success';
 
 export default function ForgotPasswordPage() {
-    const [step, setStep] = useState<Step>('email');
-    const [email, setEmail] = useState('');
+    const [step, setStep] = useState<Step>('phone');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
@@ -21,14 +22,14 @@ export default function ForgotPasswordPage() {
 
     const { users, resetPassword } = useAuth();
 
-    const handleEmailSubmit = (e: React.FormEvent) => {
+    const handlePhoneSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        const userExists = users.some(user => user.email === email);
+        const userExists = users.some(user => user.phone === phone);
         if (userExists) {
             setStep('reset');
         } else {
-            setError("No account found with that email address.");
+            setError("No account found with that phone number.");
         }
     };
 
@@ -41,7 +42,7 @@ export default function ForgotPasswordPage() {
         }
         
         setIsSubmitting(true);
-        const success = resetPassword(email, password);
+        const success = resetPassword(phone, password);
         if (success) {
             setStep('success');
         } else {
@@ -53,20 +54,20 @@ export default function ForgotPasswordPage() {
     return (
         <div className="flex items-center justify-center min-h-[70vh]">
             <Card className="w-full max-w-md mx-auto shadow-lg">
-                {step === 'email' && (
+                {step === 'phone' && (
                     <>
                         <CardHeader className="text-center">
                             <div className="flex justify-center items-center mb-4">
                                 <KeyRound className="h-10 w-10 text-primary" />
                             </div>
                             <CardTitle className="font-headline text-3xl">Forgot Password?</CardTitle>
-                            <CardDescription>Enter your email and we'll help you reset your password.</CardDescription>
+                            <CardDescription>Enter your phone number and we'll help you reset your password.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleEmailSubmit} className="space-y-6">
+                            <form onSubmit={handlePhoneSubmit} className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email Address</Label>
-                                    <Input id="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                                    <Label htmlFor="phone">Phone Number</Label>
+                                    <Input id="phone" type="tel" placeholder="Your phone number" required value={phone} onChange={(e) => setPhone(e.target.value)} />
                                 </div>
                                 {error && <p className="text-sm text-destructive text-center">{error}</p>}
                                 <Button type="submit" className="w-full text-lg">
@@ -88,7 +89,7 @@ export default function ForgotPasswordPage() {
                                 <KeyRound className="h-10 w-10 text-primary" />
                             </div>
                             <CardTitle className="font-headline text-3xl">Create a New Password</CardTitle>
-                            <CardDescription>Enter a new password for {email}.</CardDescription>
+                            <CardDescription>Enter a new password for {phone}.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handlePasswordSubmit} className="space-y-6">

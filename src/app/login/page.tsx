@@ -10,35 +10,20 @@ import Link from "next/link";
 import { Utensils } from 'lucide-react';
 import { useAuth } from "@/store/auth";
 import { useRouter } from 'next/navigation';
-import { useBrand } from "@/store/brand";
-import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
-  const { brandInfo } = useBrand();
-  const { toast } = useToast();
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!phone || !password) return;
     setIsSubmitting(true);
 
-    const blockedEmails = brandInfo.blockedCustomerEmails || [];
-    if (blockedEmails.includes(email)) {
-        toast({
-            title: "Account Blocked",
-            description: "This account has been blocked. Please contact support.",
-            variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-    }
-    
-    const success = login(email, password);
+    const success = login(phone, password);
     
     if (success) {
       router.push('/');
@@ -60,8 +45,8 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input id="phone" type="tel" placeholder="Enter your phone number" required value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">

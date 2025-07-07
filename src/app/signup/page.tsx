@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signup } = useAuth();
@@ -25,7 +26,7 @@ export default function SignupPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password) return;
+    if (!name || !email || !phone || !password) return;
     setIsSubmitting(true);
 
     const blockedEmails = brandInfo.blockedCustomerEmails || [];
@@ -39,7 +40,7 @@ export default function SignupPage() {
         return;
     }
     
-    const success = signup(name, email, password);
+    const success = signup(name, email, phone, password);
     
     if (success) {
       router.push('/login');
@@ -67,6 +68,10 @@ export default function SignupPage() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input id="phone" type="tel" placeholder="Your phone number" required value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
