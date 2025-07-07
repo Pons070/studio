@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { CartSheet } from './cart-sheet';
 import { useCart } from '@/store/cart';
 import { Badge } from './ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function Header() {
   const pathname = usePathname();
@@ -30,6 +31,30 @@ export function Header() {
 
   if (pathname.startsWith('/admin')) {
     return null;
+  }
+
+  if (!brandInfo) {
+    return (
+      <header className="bg-card shadow-md sticky top-0 z-40">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <Skeleton className="h-6 w-32 rounded-md" />
+            </div>
+            <div className="hidden md:flex items-center gap-6">
+              <Skeleton className="h-5 w-16 rounded-md" />
+              <Skeleton className="h-5 w-20 rounded-md" />
+              <Skeleton className="h-5 w-20 rounded-md" />
+            </div>
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-10 w-10" />
+              <Skeleton className="h-10 w-10 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </header>
+    );
   }
 
   return (
