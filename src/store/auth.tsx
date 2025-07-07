@@ -22,6 +22,7 @@ type AuthContextType = {
   setDefaultAddress: (addressId: string) => void;
   deleteUser: () => void;
   deleteUserById: (userId: string) => void;
+  resetPassword: (email: string, newPassword: string) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -153,20 +154,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => {
     if (!currentUser) return;
 
-    // Find the full user object from the main `users` array to preserve the password
     const userToUpdate = users.find(u => u.id === currentUser.id);
     if (!userToUpdate) return;
 
-    // Create the updated user object, preserving the existing password
     const updatedUser: User = { 
-      ...userToUpdate, // This has the password
-      ...data,         // This has the new name/phone
+      ...userToUpdate,
+      ...data,
     };
-
-    // Update the currentUser state (this will also persist it to localStorage)
+    
     persistCurrentUser(updatedUser);
 
-    // Update the main users list with the full user object (including password)
     const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
     persistUsers(updatedUsers);
 
@@ -216,7 +213,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const updatedAddresses = (currentUser.addresses || []).filter(addr => addr.id !== addressId);
       
-      // If the deleted address was the default, make the first one in the list the new default.
       const wasDefault = currentUser.addresses?.find(a => a.id === addressId)?.isDefault;
       if(wasDefault && updatedAddresses.length > 0) {
         updatedAddresses[0].isDefault = true;
@@ -245,6 +241,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       toast({ title: "Default Address Updated", description: "Your default address has been set." });
   }, [currentUser, users, toast]);
+  
+  const resetPassword = useCallback((email: string, newPassword: string): boolean => {
+    let userFound = false;
+    const updatedUsers = users.map(user => {
+        if (user.email === email) {
+            userFound = true;
+            return { ...user, password: newPassword };
+        }
+        return user;
+    });
+
+    if (userFound) {
+        persistUsers(updatedUsers);
+        toast({
+            title: "Password Reset Successful",
+            description: "Your password has been updated. Please log in with your new password.",
+            variant: "success",
+        });
+        return true;
+    } else {
+        toast({
+            title: "User Not Found",
+            description: "No account was found with that email address.",
+            variant: "destructive",
+        });
+        return false;
+    }
+  }, [users, toast]);
 
   const deleteUser = useCallback(() => {
     if (!currentUser) return;
@@ -286,7 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !!currentUser;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, users, signup, login, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentUser, users, signup, login, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
