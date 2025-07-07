@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -287,7 +286,7 @@ export default function CheckoutPage() {
   return (
     <>
       <div>
-        <h1 className="text-4xl font-headline font-bold text-center mb-10">Checkout</h1>
+        <h1 className="text-4xl font-headline font-bold text-center mb-10 text-white">Checkout</h1>
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
               {isUserBlocked && (
