@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,19 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [isNewUser, setIsNewUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
 
   const { requestOtp, verifyOtpAndLogin } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0 && step === 'otp') {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown, step]);
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +43,19 @@ export default function LoginPage() {
     if (result.success) {
       setIsNewUser(result.isNewUser);
       setStep('otp');
+      setResendCooldown(30);
     }
     setIsSubmitting(false);
+  };
+
+  const handleResendOtp = async () => {
+    if (!phone) return;
+    setIsResending(true);
+    const result = await requestOtp(phone);
+    if (result.success) {
+      setResendCooldown(30);
+    }
+    setIsResending(false);
   };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
@@ -111,9 +132,20 @@ export default function LoginPage() {
                 <Button type="submit" className="w-full text-lg" disabled={isSubmitting || otp.length !== 6 || (isNewUser && !name)}>
                   {isSubmitting ? 'Verifying...' : 'Verify & Continue'}
                 </Button>
-                <Button variant="link" onClick={() => { setStep('phone'); setOtp(''); }} className="text-sm">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
-                </Button>
+                <div className="flex justify-between items-center text-sm">
+                    <Button variant="link" type="button" onClick={() => { setStep('phone'); setOtp(''); }} className="p-0 h-auto">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+                    </Button>
+                    <Button 
+                        variant="link" 
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={resendCooldown > 0 || isResending}
+                        className="p-0 h-auto text-primary"
+                    >
+                        {isResending ? 'Sending...' : (resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP')}
+                    </Button>
+                </div>
               </div>
             </form>
           )}
