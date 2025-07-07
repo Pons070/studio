@@ -1,5 +1,5 @@
 
-import type { User, Address } from './types';
+import type { User } from './types';
 
 // This ensures the store persists across hot reloads in development,
 // making our in-memory "database" more consistent.
@@ -7,7 +7,7 @@ declare global {
   var userStore: User[] | undefined;
 }
 
-const aliceAddress: Address = {
+const aliceAddress: User['addresses'] extends (infer U)[] ? U : never = {
     doorNumber: '4A',
     apartmentName: 'Wonderland Apts',
     area: 'Rabbit Hole District',
@@ -18,7 +18,7 @@ const aliceAddress: Address = {
     longitude: -118.2437,
 };
 
-const dianaAddress: Address = {
+const dianaAddress: User['addresses'] extends (infer U)[] ? U : never = {
     doorNumber: '100',
     apartmentName: 'Olympus Towers',
     area: 'Themyscira Plaza',
@@ -27,7 +27,7 @@ const dianaAddress: Address = {
     pincode: '23456'
 };
 
-const charlieAddress: Address = {
+const charlieAddress: User['addresses'] extends (infer U)[] ? U : never = {
     doorNumber: '22B',
     apartmentName: 'Chocolate Factory',
     area: 'Sweet Street',
@@ -38,7 +38,7 @@ const charlieAddress: Address = {
     longitude: -74.0060,
 };
 
-const eveAddress: Address = {
+const eveAddress: User['addresses'] extends (infer U)[] ? U : never = {
     doorNumber: '1',
     apartmentName: 'Garden House',
     area: 'Eden Estates',
@@ -47,7 +47,7 @@ const eveAddress: Address = {
     pincode: '45678'
 };
 
-const bobAddress: Address = {
+const bobAddress: User['addresses'] extends (infer U)[] ? U : never = {
     doorNumber: 'B2',
     apartmentName: 'Builder Complex',
     area: 'Construct Lane',
@@ -56,7 +56,7 @@ const bobAddress: Address = {
     pincode: '56789'
 };
 
-const frankAddress: Address = {
+const frankAddress: User['addresses'] extends (infer U)[] ? U : never = {
     doorNumber: 'C-3',
     apartmentName: 'Castle Apartments',
     area: 'Kingdom Valley',
@@ -123,4 +123,31 @@ if (!globalThis.userStore) {
   globalThis.userStore = initialUsers;
 }
 
-export const users: User[] = globalThis.userStore;
+// Centralized data access to ensure consistency
+const userDB = globalThis.userStore;
+
+export function getUsers(): User[] {
+    return userDB;
+}
+
+export function addUser(user: User): void {
+    userDB.push(user);
+}
+
+export function updateUserInStore(updatedUser: User): boolean {
+    const index = userDB.findIndex(u => u.id === updatedUser.id);
+    if (index !== -1) {
+        userDB[index] = updatedUser;
+        return true;
+    }
+    return false;
+}
+
+export function removeUserFromStore(userId: string): boolean {
+    const index = userDB.findIndex(u => u.id === userId);
+    if (index !== -1) {
+        userDB.splice(index, 1);
+        return true;
+    }
+    return false;
+}
