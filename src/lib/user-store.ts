@@ -1,6 +1,12 @@
 
 import type { User, Address } from './types';
 
+// This ensures the store persists across hot reloads in development,
+// making our in-memory "database" more consistent.
+declare global {
+  var userStore: User[] | undefined;
+}
+
 const aliceAddress: Address = {
     doorNumber: '4A',
     apartmentName: 'Wonderland Apts',
@@ -61,7 +67,7 @@ const frankAddress: Address = {
     longitude: -0.1278,
 };
 
-export let users: User[] = [
+const initialUsers: User[] = [
   {
     id: 'user-admin',
     name: 'Admin',
@@ -112,3 +118,9 @@ export let users: User[] = [
     addresses: [{ ...frankAddress, id: 'addr-frank-1', label: 'Home', isDefault: true }],
   }
 ];
+
+if (!global.userStore) {
+  global.userStore = initialUsers;
+}
+
+export const users: User[] = global.userStore;
