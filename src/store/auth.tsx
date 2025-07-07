@@ -33,11 +33,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const USERS_STORAGE_KEY = 'culina-preorder-users';
 const CURRENT_USER_STORAGE_KEY = 'culina-preorder-current-user';
 
-// NOTE: This is a MOCK authentication system.
-// The OTP is hardcoded for simulation purposes.
-const MOCK_OTP = '123456';
-let otpStore: { [phone: string]: string } = {};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -135,70 +130,100 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requestOtp = useCallback(async (phone: string): Promise<OtpRequestResult> => {
+    // Determine if user is new based on client-side storage
     const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
     const userExists = currentUsers.some(u => u.phone === phone);
 
-    // Simulate sending OTP
-    otpStore[phone] = MOCK_OTP;
-    
-    console.log(`SIMULATING OTP for ${phone}: ${MOCK_OTP}`);
+    try {
+      const response = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone }),
+      });
+      const result = await response.json();
 
-    toast({
-      title: 'OTP Sent',
-      description: `A verification code has been sent to +91 ${phone}. (Hint: It's ${MOCK_OTP})`,
-    });
-    
-    return { success: true, isNewUser: !userExists };
+      if (!response.ok || !result.success) {
+        toast({
+          title: 'Error',
+          description: result.message || 'Failed to send OTP.',
+          variant: 'destructive',
+        });
+        return { success: false, isNewUser: !userExists };
+      }
+      
+      toast({
+        title: 'OTP Sent',
+        description: `A verification code has been sent to +91 ${phone}. (Hint: It's ${result.otp})`,
+      });
+      
+      return { success: true, isNewUser: !userExists };
 
+    } catch (error) {
+      toast({
+          title: 'Network Error',
+          description: 'Could not connect to the server to send OTP.',
+          variant: 'destructive',
+      });
+      return { success: false, isNewUser: !userExists };
+    }
   }, [toast]);
 
   const verifyOtpAndLogin = useCallback(async (phone: string, otp: string, name?: string): Promise<boolean> => {
-    if (otpStore[phone] !== otp) {
+    try {
+      const response = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone, otp }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        toast({
+          title: "Login Failed",
+          description: result.message || "The OTP you entered is incorrect.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // OTP is correct. Proceed with client-side user management.
+      let userToLogin: User | undefined;
+      const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+      const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+      
+      userToLogin = currentUsers.find(u => u.phone === phone);
+
+      if (!userToLogin) {
+        if (!name) {
+           toast({ title: "Signup Failed", description: "Please provide your name to create an account.", variant: "destructive" });
+           return false;
+        }
+        const newUser: User = {
+          id: `USER-${Date.now()}`,
+          name,
+          email: `${phone}@culinapreorder.com`,
+          phone,
+          addresses: [],
+        };
+        const updatedUsers = [...currentUsers, newUser];
+        persistUsers(updatedUsers);
+        userToLogin = newUser;
+        toast({ title: "Account Created!", description: "Welcome! You have been logged in.", variant: "success" });
+      } else {
+        toast({ title: `Welcome back, ${userToLogin.name}!`, description: "You have been logged in.", variant: "success" });
+      }
+      
+      persistCurrentUser(userToLogin);
+      return true;
+    } catch (error) {
       toast({
-        title: "Login Failed",
-        description: "The OTP you entered is incorrect. Please try again.",
-        variant: "destructive",
+          title: 'Network Error',
+          description: 'Could not connect to the server to verify OTP.',
+          variant: 'destructive',
       });
       return false;
     }
-    
-    // OTP is correct, clear it
-    delete otpStore[phone];
-
-    let userToLogin: User | undefined;
-    
-    // Always read the latest user list from storage
-    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
-    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
-    
-    userToLogin = currentUsers.find(u => u.phone === phone);
-
-    // If user doesn't exist, it's a signup
-    if (!userToLogin) {
-      if (!name) {
-         toast({ title: "Signup Failed", description: "Please provide your name to create an account.", variant: "destructive" });
-         return false;
-      }
-      const newUser: User = {
-        id: `USER-${Date.now()}`,
-        name,
-        email: `${phone}@culinapreorder.com`, // Placeholder email
-        phone,
-        addresses: [],
-      };
-      
-      const updatedUsers = [...currentUsers, newUser];
-      persistUsers(updatedUsers);
-      userToLogin = newUser;
-
-      toast({ title: "Account Created!", description: "Welcome! You have been logged in.", variant: "success" });
-    } else {
-        toast({ title: `Welcome back, ${userToLogin.name}!`, description: "You have been logged in.", variant: "success" });
-    }
-    
-    persistCurrentUser(userToLogin);
-    return true;
-
   }, [toast, persistUsers, persistCurrentUser]);
 
 
