@@ -28,6 +28,11 @@ export async function POST(request: Request) {
       user.addresses = [];
     }
     
+    // Set as default if it's the first address
+    if (user.addresses.length === 0) {
+        newAddress.isDefault = true;
+    }
+
     user.addresses.push(newAddress);
     
     // Explicitly update the user in the global store array
@@ -95,6 +100,9 @@ export async function DELETE(request: Request) {
              return NextResponse.json({ success: false, message: 'Address to delete not found.' }, { status: 404 });
         }
         
+        const addressToDelete = user.addresses.find(a => a.id === addressId);
+        const wasDefault = addressToDelete?.isDefault;
+
         const initialLength = user.addresses.length;
         user.addresses = user.addresses.filter(a => a.id !== addressId);
         
@@ -102,6 +110,11 @@ export async function DELETE(request: Request) {
              return NextResponse.json({ success: false, message: 'Address to delete not found.' }, { status: 404 });
         }
         
+        // If the deleted address was the default, make the first one the new default
+        if (wasDefault && user.addresses.length > 0) {
+            user.addresses[0].isDefault = true;
+        }
+
         // Explicitly update the user in the global store array
         users[userIndex] = user;
 

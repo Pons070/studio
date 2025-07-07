@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { otpStore } from '@/lib/otp-store';
-import { getUsers, addUser } from '@/lib/user-store';
+import { users } from '@/lib/user-store';
 import type { User } from '@/lib/types';
 
 export async function POST(request: Request) {
@@ -15,7 +15,6 @@ export async function POST(request: Request) {
     if (otpStore[phoneNumber] && otpStore[phoneNumber] === otp) {
       delete otpStore[phoneNumber];
 
-      const users = getUsers();
       let user = users.find(u => u.phone === phoneNumber);
 
       if (!user) {
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
           phone: phoneNumber,
           addresses: [],
         };
-        addUser(newUser);
+        users.push(newUser);
         user = newUser;
       }
       
