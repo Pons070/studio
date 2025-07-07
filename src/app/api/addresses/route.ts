@@ -12,10 +12,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
 
-    const user = users.find(u => u.id === userId);
-    if (!user) {
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
+    
+    const user = users[userIndex];
     
     const newAddress: Address = {
       ...addressData,
@@ -27,9 +29,13 @@ export async function POST(request: Request) {
     }
     
     user.addresses.push(newAddress);
+    
+    // Explicitly update the user in the global store array
+    users[userIndex] = user;
 
     return NextResponse.json({ success: true, user: user });
   } catch (error) {
+    console.error("Error in POST /api/addresses:", error);
     return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
   }
 }
@@ -43,20 +49,30 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required for an update.' }, { status: 400 });
         }
         
-        const user = users.find(u => u.id === userId);
-        if (!user || !user.addresses) {
-            return NextResponse.json({ success: false, message: 'User or addresses not found.' }, { status: 404 });
+        const userIndex = users.findIndex(u => u.id === userId);
+        if (userIndex === -1) {
+            return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
+        }
+
+        const user = users[userIndex];
+        
+        if (!user.addresses) {
+            user.addresses = [];
         }
         
         const addressIndex = user.addresses.findIndex(a => a.id === addressData.id);
         if (addressIndex === -1) {
-            return NextResponse.json({ success: false, message: 'Address not found.' }, { status: 404 });
+            return NextResponse.json({ success: false, message: 'Address to update not found.' }, { status: 404 });
         }
 
-        user.addresses[addressIndex] = addressData;
+        user.addresses[addressIndex] = { ...user.addresses[addressIndex], ...addressData };
+
+        // Explicitly update the user in the global store array
+        users[userIndex] = user;
 
         return NextResponse.json({ success: true, user: user });
     } catch (error) {
+        console.error("Error in PUT /api/addresses:", error);
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
     }
 }
@@ -68,20 +84,30 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required for deletion.' }, { status: 400 });
         }
 
-        const user = users.find(u => u.id === userId);
-        if (!user || !user.addresses) {
-            return NextResponse.json({ success: false, message: 'User or addresses not found.' }, { status: 404 });
+        const userIndex = users.findIndex(u => u.id === userId);
+        if (userIndex === -1) {
+            return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
+        }
+        
+        const user = users[userIndex];
+
+        if (!user.addresses) {
+             return NextResponse.json({ success: false, message: 'Address to delete not found.' }, { status: 404 });
         }
         
         const initialLength = user.addresses.length;
         user.addresses = user.addresses.filter(a => a.id !== addressId);
         
         if (user.addresses.length === initialLength) {
-             return NextResponse.json({ success: false, message: 'Address not found.' }, { status: 404 });
+             return NextResponse.json({ success: false, message: 'Address to delete not found.' }, { status: 404 });
         }
+        
+        // Explicitly update the user in the global store array
+        users[userIndex] = user;
 
         return NextResponse.json({ success: true, user: user });
     } catch (error) {
+        console.error("Error in DELETE /api/addresses:", error);
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
     }
 }
