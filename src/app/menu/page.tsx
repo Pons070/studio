@@ -15,6 +15,7 @@ import { useAuth } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { FloatingCheckoutButton } from '@/components/floating-checkout-button';
+import { Skeleton } from "@/components/ui/skeleton";
 
 const categoryIcons = {
   'Appetizers': <Soup className="h-6 w-6 mr-2" />,
@@ -25,7 +26,7 @@ const categoryIcons = {
 
 export default function MenuPage() {
   const { addItem } = useCart();
-  const { menuItems } = useMenu();
+  const { menuItems, isLoading } = useMenu();
   const { brandInfo } = useBrand();
   const { toggleFavoriteItem, isItemFavorite } = useFavorites();
   const { isAuthenticated } = useAuth();
@@ -38,6 +39,45 @@ export default function MenuPage() {
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-12">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-5xl font-headline font-bold text-white">Our Menu</h1>
+          <p className="text-lg text-white font-bold mt-2">Handcrafted with love, just for you.</p>
+        </div>
+
+        <div className="max-w-lg mx-auto">
+          <Skeleton className="h-12 w-full" />
+        </div>
+
+        {categories.map((category) => (
+          <section key={category}>
+            <Skeleton className="h-12 w-64 mb-6" />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="flex flex-col">
+                  <CardHeader className="p-0">
+                    <Skeleton className="aspect-video w-full" />
+                  </CardHeader>
+                  <CardContent className="flex-grow pt-4 space-y-2">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </CardContent>
+                  <CardFooter className="flex justify-between items-center mt-auto pt-4">
+                    <Skeleton className="h-7 w-1/4" />
+                    <Skeleton className="h-10 w-24" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12">

@@ -15,9 +15,10 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useReviews } from '@/store/reviews';
 import { FloatingRecommendButton } from '@/components/floating-recommend-button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
-  const { menuItems } = useMenu();
+  const { menuItems, isLoading } = useMenu();
   const { brandInfo } = useBrand();
   const { reviews } = useReviews();
   const featuredItems = menuItems.filter(item => item.isFeatured).slice(0, 3);
@@ -54,33 +55,51 @@ export default function Home() {
         <section>
           <h2 className="text-3xl font-headline font-bold text-center mb-10 text-white">Featured Dishes</h2>
           <div className="grid md:grid-cols-3 gap-8">
-            {featuredItems.map((item) => (
-              <Card key={item.id} className="flex flex-col overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 ease-in-out shadow-md hover:shadow-xl">
-                <CardHeader className="p-0">
-                  <div className="aspect-video relative">
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                      data-ai-hint={item.aiHint}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-grow pt-6">
-                  <CardTitle className="font-headline text-xl">{item.name}</CardTitle>
-                  <CardDescription className="mt-2 text-muted-foreground">{item.description}</CardDescription>
-                </CardContent>
-                <CardFooter className="flex justify-between items-center">
-                  <p className="text-lg font-bold text-primary">Rs.{item.price.toFixed(2)}</p>
-                  <Button asChild variant="ghost" className="text-accent hover:bg-accent/10 hover:text-accent">
-                     <Link href="/menu">
-                      View Menu <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+            {isLoading ? (
+              [...Array(3)].map((_, i) => (
+                <Card key={i} className="flex flex-col">
+                  <CardHeader className="p-0">
+                    <Skeleton className="aspect-video w-full" />
+                  </CardHeader>
+                  <CardContent className="flex-grow pt-6 space-y-2">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                  </CardContent>
+                  <CardFooter className="flex justify-between items-center">
+                    <Skeleton className="h-7 w-1/4" />
+                    <Skeleton className="h-10 w-1/3" />
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              featuredItems.map((item) => (
+                <Card key={item.id} className="flex flex-col overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 ease-in-out shadow-md hover:shadow-xl">
+                  <CardHeader className="p-0">
+                    <div className="aspect-video relative">
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={item.aiHint}
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow pt-6">
+                    <CardTitle className="font-headline text-xl">{item.name}</CardTitle>
+                    <CardDescription className="mt-2 text-muted-foreground">{item.description}</CardDescription>
+                  </CardContent>
+                  <CardFooter className="flex justify-between items-center">
+                    <p className="text-lg font-bold text-primary">Rs.{item.price.toFixed(2)}</p>
+                    <Button asChild variant="ghost" className="text-accent hover:bg-accent/10 hover:text-accent">
+                       <Link href="/menu">
+                        View Menu <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))
+            )}
           </div>
         </section>
 
