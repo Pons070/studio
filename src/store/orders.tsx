@@ -6,9 +6,9 @@ import { createContext, useContext, useState, ReactNode, useCallback, useEffect 
 import type { Order, CartItem, Address, UpdateRequest } from '@/lib/types';
 import { orders as mockOrders } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
-import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 import { useAuth } from './auth';
 import { format } from 'date-fns';
+import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 
 type OrderContextType = {
   orders: Order[];
@@ -58,15 +58,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       return undefined;
     }
     
-    const newOrder: Order = {
-        id: `ORD-${Date.now()}`,
+    const orderInput = {
         customerId: currentUser.id,
         customerName: currentUser.name,
+        customerEmail: currentUser.email,
         address: deliveryAddress,
-        orderDate: format(new Date(), 'yyyy-MM-dd'),
         pickupDate: format(pickupDate, 'yyyy-MM-dd'),
         pickupTime: pickupTime,
-        status: 'Pending',
         total: total,
         items: items,
         cookingNotes: cookingNotes || undefined,
@@ -76,35 +74,45 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         deliveryFee: deliveryFee,
     };
 
-    // Optimistically update UI
-    setOrders(prevOrders => [newOrder, ...prevOrders]);
+    try {
+        const response = await fetch('/api/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderInput),
+        });
 
-    toast({
-        title: "Pre-Order Placed!",
-        description: "Your order has been successfully submitted. You will receive an email confirmation shortly.",
-        variant: "success",
-    });
+        const result = await response.json();
 
-    // Fire-and-forget notifications without awaiting them
-    Promise.all([
-        sendOrderNotification({
-            order: newOrder,
-            notificationType: 'customerConfirmation',
-            customerEmail: currentUser.email,
-            adminEmail: 'sangkar111@gmail.com'
-        }),
-        sendOrderNotification({
-            order: newOrder,
-            notificationType: 'adminNotification',
-            customerEmail: currentUser.email,
-            adminEmail: 'sangkar111@gmail.com' // In real app, get from config
-        })
-    ]).catch(error => {
-        // Log background error without disturbing the user
-        console.error("Failed to send order notifications in background:", error);
-    });
+        if (!response.ok || !result.success) {
+            toast({
+                title: 'Order Failed',
+                description: result.message || 'There was an error placing your order.',
+                variant: 'destructive',
+            });
+            return undefined;
+        }
+
+        const newOrder: Order = result.order;
+
+        setOrders(prevOrders => [newOrder, ...prevOrders]);
+
+        toast({
+            title: "Pre-Order Placed!",
+            description: "Your order has been successfully submitted. You will receive an email confirmation shortly.",
+            variant: "success",
+        });
         
-    return newOrder;
+        return newOrder;
+
+    } catch (error) {
+        console.error("Failed to call create-order API:", error);
+        toast({
+            title: 'Network Error',
+            description: 'Could not connect to the server to place your order.',
+            variant: 'destructive',
+        });
+        return undefined;
+    }
   }, [toast, currentUser]);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string, cancellationAction?: 'refund' | 'donate') => {
