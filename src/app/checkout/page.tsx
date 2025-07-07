@@ -379,40 +379,50 @@ export default function CheckoutPage() {
                               </AlertDescription>
                           </Alert>
                       ) : (
-                           <Select onValueChange={setSelectedAddressId} value={selectedAddressId}>
-                              <SelectTrigger className="w-full text-left h-auto items-start py-2">
-                                  <SelectValue asChild>
-                                      {selectedAddress ? (
-                                          <div className="flex items-center gap-3">
-                                              <div className="shrink-0">
-                                                  {selectedAddress.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
-                                              </div>
-                                              <div className="flex-1">
-                                                  <p className="font-semibold">{selectedAddress.label} {selectedAddress.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
-                                                  <p className="text-sm text-muted-foreground truncate">{formatAddress(selectedAddress)}</p>
-                                              </div>
-                                          </div>
-                                      ) : (
-                                          <span className="text-muted-foreground">Select a delivery address...</span>
-                                      )}
-                                  </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                  {(currentUser?.addresses || []).map(address => (
-                                      <SelectItem key={address.id} value={address.id!} className="py-2">
-                                          <div className="flex items-center gap-3">
-                                              <div className="shrink-0">
-                                                  {address.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
-                                              </div>
-                                              <div className="flex-1">
-                                                  <p className="font-semibold">{address.label} {address.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
-                                                  <p className="text-sm text-muted-foreground">{formatAddress(address)}</p>
-                                              </div>
-                                          </div>
-                                      </SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
+                           <div className="space-y-4">
+                                <Select onValueChange={setSelectedAddressId} value={selectedAddressId}>
+                                    <SelectTrigger className="w-full text-left h-auto items-start py-2">
+                                        <SelectValue asChild>
+                                            {selectedAddress ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="shrink-0">
+                                                        {selectedAddress.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold">{selectedAddress.label} {selectedAddress.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
+                                                        <p className="text-sm text-muted-foreground truncate">{formatAddress(selectedAddress)}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground">Select a delivery address...</span>
+                                            )}
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {(currentUser?.addresses || []).map(address => (
+                                            <SelectItem key={address.id} value={address.id!} className="py-2">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="shrink-0">
+                                                        {address.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold">{address.label} {address.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
+                                                        <p className="text-sm text-muted-foreground">{formatAddress(address)}</p>
+                                                    </div>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => setAddressDialogOpen(true)}
+                                >
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add a New Address
+                                </Button>
+                            </div>
                       )}
                       {selectedAddress && !isDeliverySupported && (
                           <Alert variant="destructive">
