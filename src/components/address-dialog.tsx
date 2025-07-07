@@ -28,7 +28,7 @@ export function AddressDialog({
 }: {
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
-    onSave: (data: Address) => void,
+    onSave: (data: Address) => Promise<void>,
     address: Address | null
 }) {
     const { toast } = useToast();
@@ -57,8 +57,8 @@ export function AddressDialog({
         }
     }
 
-    const processSubmit = (data: Address) => {
-        onSave(data);
+    const processSubmit = async (data: Address) => {
+        await onSave(data);
         onOpenChange(false);
     }
     
@@ -120,7 +120,7 @@ export function AddressDialog({
                 </form>
                 <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
-                    <Button type="submit" onClick={handleSubmit(processSubmit)} disabled={isSubmitting}>Save Address</Button>
+                    <Button type="button" onClick={handleSubmit(processSubmit)} disabled={isSubmitting}>Save Address</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

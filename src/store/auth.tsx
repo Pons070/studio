@@ -20,9 +20,9 @@ type AuthContextType = {
   verifyOtpAndLogin: (phone: string, otp: string, name?: string) => Promise<boolean>;
   logout: (options?: { idle: boolean }) => void;
   updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => void;
-  addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => void;
-  updateAddress: (address: Address) => void;
-  deleteAddress: (addressId: string) => void;
+  addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => Promise<void>;
+  updateAddress: (address: Address) => Promise<void>;
+  deleteAddress: (addressId: string) => Promise<void>;
   setDefaultAddress: (addressId: string) => void;
   deleteUser: () => void;
   deleteUserById: (userId: string) => void;
@@ -264,91 +264,124 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [toast, persistUsers, persistCurrentUser]);
 
-  const addAddress = useCallback((addressData: Omit<Address, 'id' | 'isDefault'>) => {
-    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
-    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+  const addAddress = useCallback(async (addressData: Omit<Address, 'id' | 'isDefault'>) => {
+    if (!currentUser) return;
     
-    const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-    const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
-    
-    if (!currentUserData) return;
+    try {
+        const response = await fetch('/api/addresses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(addressData),
+        });
+        const result = await response.json();
 
-    let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
-    if (!userToUpdate) return;
+        if (!response.ok || !result.success) {
+            toast({ title: "Error", description: result.message || "Failed to add address.", variant: "destructive" });
+            return;
+        }
+        
+        const newAddress: Address = result.address;
 
-    const currentAddresses = userToUpdate.addresses || [];
-    if (currentAddresses.length >= 6) {
-        toast({ title: "Address Limit Reached", description: "You can only have up to 6 addresses.", variant: "destructive" });
-        return;
+        const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+        const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+        let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
+        if (!userToUpdate) return;
+        
+        const currentAddresses = userToUpdate.addresses || [];
+        if (currentAddresses.length >= 6) {
+            toast({ title: "Address Limit Reached", description: "You can only have up to 6 addresses.", variant: "destructive" });
+            return;
+        }
+        
+        // Set as default if it's the first address
+        newAddress.isDefault = currentAddresses.length === 0;
+
+        const updatedAddresses = [...currentAddresses, newAddress];
+        const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
+        const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+        
+        persistUsers(newUsers);
+        persistCurrentUser(updatedUser);
+
+        toast({ title: "Address Added", description: "Your new address has been saved." });
+
+    } catch (error) {
+        toast({ title: 'Network Error', description: 'Could not connect to the server to add address.', variant: 'destructive' });
     }
+  }, [currentUser, toast, persistUsers, persistCurrentUser]);
 
-    const newAddress: Address = {
-      ...addressData,
-      id: crypto.randomUUID(),
-      isDefault: currentAddresses.length === 0,
-    };
-
-    const updatedAddresses = [...currentAddresses, newAddress];
-    const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
-    
-    const newUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
-    persistUsers(newUsers);
-    persistCurrentUser(updatedUser);
-
-    toast({ title: "Address Added", description: "Your new address has been saved." });
-  }, [toast, persistUsers, persistCurrentUser]);
-
-  const updateAddress = useCallback((addressData: Address) => {
+  const updateAddress = useCallback(async (addressData: Address) => {
       if (!currentUser || !addressData.id) return;
       
-      const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
-      const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
-    
-      const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-      const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
-    
-      if (!currentUserData || !addressData.id) return;
-      
-      let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
-      if (!userToUpdate) return;
-      
-      const updatedAddresses = (userToUpdate.addresses || []).map(addr => addr.id === addressData.id ? addressData : addr);
-      const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
-      
-      const newUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
-      persistUsers(newUsers);
-      persistCurrentUser(updatedUser);
+      try {
+          const response = await fetch('/api/addresses', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(addressData),
+          });
+          const result = await response.json();
 
-      toast({ title: "Address Updated", description: "Your address has been successfully updated." });
+          if (!response.ok || !result.success) {
+              toast({ title: "Error", description: result.message || "Failed to update address.", variant: "destructive" });
+              return;
+          }
+
+          const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+          const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+          let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
+          if (!userToUpdate) return;
+
+          const updatedAddresses = (userToUpdate.addresses || []).map(addr => addr.id === addressData.id ? result.address : addr);
+          const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
+          const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+          persistUsers(newUsers);
+          persistCurrentUser(updatedUser);
+
+          toast({ title: "Address Updated", description: "Your address has been successfully updated." });
+
+      } catch (error) {
+          toast({ title: 'Network Error', description: 'Could not connect to the server to update address.', variant: 'destructive' });
+      }
   }, [currentUser, toast, persistUsers, persistCurrentUser]);
   
-  const deleteAddress = useCallback((addressId: string) => {
-      const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
-      const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
-    
-      const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-      const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
-    
-      if (!currentUserData) return;
-      
-      let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
-      if (!userToUpdate) return;
+  const deleteAddress = useCallback(async (addressId: string) => {
+      if (!currentUser) return;
 
-      let updatedAddresses = (userToUpdate.addresses || []).filter(addr => addr.id !== addressId);
-      
-      const wasDefault = userToUpdate.addresses?.find(a => a.id === addressId)?.isDefault;
-      if(wasDefault && updatedAddresses.length > 0 && !updatedAddresses.some(a => a.isDefault)) {
-        updatedAddresses[0].isDefault = true;
+      try {
+          const response = await fetch('/api/addresses', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: addressId }),
+          });
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+              toast({ title: "Error", description: result.message || "Failed to delete address.", variant: "destructive" });
+              return;
+          }
+
+          const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+          const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+          let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
+          if (!userToUpdate) return;
+
+          let updatedAddresses = (userToUpdate.addresses || []).filter(addr => addr.id !== addressId);
+          const wasDefault = userToUpdate.addresses?.find(a => a.id === addressId)?.isDefault;
+          if (wasDefault && updatedAddresses.length > 0 && !updatedAddresses.some(a => a.isDefault)) {
+              updatedAddresses[0].isDefault = true;
+          }
+
+          const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
+          const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+          persistUsers(newUsers);
+          persistCurrentUser(updatedUser);
+
+          toast({ title: "Address Deleted", description: "The address has been removed." });
+
+      } catch (error) {
+          toast({ title: 'Network Error', description: 'Could not connect to the server to delete address.', variant: 'destructive' });
       }
-
-      const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
-      
-      const newUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
-      persistUsers(newUsers);
-      persistCurrentUser(updatedUser);
-      
-      toast({ title: "Address Deleted", description: "The address has been removed." });
-  }, [toast, persistUsers, persistCurrentUser]);
+  }, [currentUser, toast, persistUsers, persistCurrentUser]);
 
   const setDefaultAddress = useCallback((addressId: string) => {
       const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);

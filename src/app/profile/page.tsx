@@ -110,12 +110,12 @@ export default function ProfilePage() {
     setAddressDialogOpen(true);
   }
 
-  const handleSaveAddress = (data: Address) => {
+  const handleSaveAddress = async (data: Address) => {
     if(data.id) { // Editing existing address
-        updateAddress(data);
+        await updateAddress(data);
     } else { // Adding new address
         const { id, isDefault, ...newAddressData } = data;
-        addAddress(newAddressData);
+        await addAddress(newAddressData);
     }
   }
 
