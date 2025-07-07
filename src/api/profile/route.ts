@@ -6,18 +6,18 @@ import { users } from '@/lib/user-store';
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { userId, name, phone } = body;
+    const { userId, name, phone, email } = body;
 
-    if (!userId || !name || !phone) {
+    if (!userId || !name || !phone || !email) {
       return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
     }
 
-    const userIndex = users.findIndex(u => u.id === userId);
+    const userIndex = users.findIndex(u => u.id === userId && !u.deletedAt);
     if (userIndex === -1) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
     
-    users[userIndex] = { ...users[userIndex], name, phone };
+    users[userIndex] = { ...users[userIndex], name, phone, email, updatedAt: new Date().toISOString() };
 
     return NextResponse.json({ success: true, user: users[userIndex] });
   } catch (error) {
@@ -33,12 +33,13 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID is required for deletion.' }, { status: 400 });
         }
         
-        const index = users.findIndex(u => u.id === userId);
-        if (index === -1) {
+        const userIndex = users.findIndex(u => u.id === userId && !u.deletedAt);
+        if (userIndex === -1) {
              return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
         
-        users.splice(index, 1);
+        users[userIndex].deletedAt = new Date().toISOString();
+        users[userIndex].updatedAt = new Date().toISOString();
         
         return NextResponse.json({ success: true, userId });
     } catch (error) {

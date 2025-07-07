@@ -36,6 +36,9 @@ export type User = {
   password?: string; // Keep for admin, remove for customers
   phone?: string;
   addresses?: Address[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
 };
 
 export type MenuItem = {

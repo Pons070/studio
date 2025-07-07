@@ -74,6 +74,8 @@ const initialUsers: User[] = [
     email: 'admin@example.com',
     phone: '5550100',
     addresses: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'user-alice',
@@ -81,6 +83,8 @@ const initialUsers: User[] = [
     email: 'alice@example.com',
     phone: '5550101',
     addresses: [{ ...aliceAddress, id: 'addr-alice-1', label: 'Home', isDefault: true }],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'user-diana',
@@ -88,6 +92,8 @@ const initialUsers: User[] = [
     email: 'diana@example.com',
     phone: '5550102',
     addresses: [{ ...dianaAddress, id: 'addr-diana-1', label: 'Home', isDefault: true }],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'user-charlie',
@@ -95,6 +101,8 @@ const initialUsers: User[] = [
     email: 'charlie@example.com',
     phone: '5550103',
     addresses: [{ ...charlieAddress, id: 'addr-charlie-1', label: 'Work', isDefault: true }],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'user-eve',
@@ -102,6 +110,8 @@ const initialUsers: User[] = [
     email: 'eve@example.com',
     phone: '5550104',
     addresses: [{ ...eveAddress, id: 'addr-eve-1', label: 'Home', isDefault: true }],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'user-bob',
@@ -109,6 +119,8 @@ const initialUsers: User[] = [
     email: 'bob@example.com',
     phone: '5550105',
     addresses: [{ ...bobAddress, id: 'addr-bob-1', label: 'Home', isDefault: true }],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: 'user-frank',
@@ -116,6 +128,8 @@ const initialUsers: User[] = [
     email: 'frank@example.com',
     phone: '5550106',
     addresses: [{ ...frankAddress, id: 'addr-frank-1', label: 'Home', isDefault: true }],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 ];
 

@@ -10,7 +10,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID is required for deletion.' }, { status: 400 });
         }
         
-        const userIndex = users.findIndex(u => u.id === userId);
+        const userIndex = users.findIndex(u => u.id === userId && !u.deletedAt);
         if (userIndex === -1) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
@@ -20,7 +20,8 @@ export async function DELETE(request: Request) {
              return NextResponse.json({ success: false, message: 'Cannot delete the primary admin account.' }, { status: 403 });
         }
         
-        users.splice(userIndex, 1);
+        users[userIndex].deletedAt = new Date().toISOString();
+        users[userIndex].updatedAt = new Date().toISOString();
         
         return NextResponse.json({ success: true, userId });
     } catch (error) {

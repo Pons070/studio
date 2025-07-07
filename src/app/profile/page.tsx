@@ -86,6 +86,7 @@ export default function ProfilePage() {
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isAddressDialogOpen, setAddressDialogOpen] = useState(false);
@@ -97,6 +98,7 @@ export default function ProfilePage() {
     } else if (currentUser) {
       setName(currentUser.name || '');
       setPhone(currentUser.phone || '');
+      setEmail(currentUser.email || '');
     }
   }, [currentUser, isAuthenticated, router]);
   
@@ -122,7 +124,7 @@ export default function ProfilePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    updateUser({ name, phone });
+    updateUser({ name, phone, email });
     setTimeout(() => setIsSubmitting(false), 500);
   };
   
@@ -135,7 +137,8 @@ export default function ProfilePage() {
   }
   
   const isDirty = name !== (currentUser.name || '') ||
-                  phone !== (currentUser.phone || '');
+                  phone !== (currentUser.phone || '') ||
+                  email !== (currentUser.email || '');
 
   const userAddresses = currentUser.addresses || [];
 
@@ -161,8 +164,7 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={currentUser.email} disabled />
-                <p className="text-xs text-muted-foreground">Email address cannot be changed.</p>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
 
               <Button type="submit" className="w-full text-lg" disabled={isSubmitting || !isDirty}>

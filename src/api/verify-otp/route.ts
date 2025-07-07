@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     if (otpStore[phoneNumber] && otpStore[phoneNumber] === otp) {
       delete otpStore[phoneNumber];
 
-      let user = users.find(u => u.phone === phoneNumber);
+      let user = users.find(u => u.phone === phoneNumber && !u.deletedAt);
 
       if (!user) {
         // This is a new user
@@ -29,6 +29,8 @@ export async function POST(request: Request) {
           email: `${phoneNumber}@example.com`,
           phone: phoneNumber,
           addresses: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
         users.push(newUser);
         user = newUser;

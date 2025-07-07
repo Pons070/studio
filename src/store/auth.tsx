@@ -18,7 +18,7 @@ type AuthContextType = {
   requestOtp: (phone: string) => Promise<OtpRequestResult>;
   verifyOtpAndLogin: (phone: string, otp: string, name?: string) => Promise<boolean>;
   logout: (options?: { idle: boolean }) => void;
-  updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => Promise<void>;
+  updateUser: (data: Partial<Omit<User, 'id' | 'password' | 'addresses'>>) => Promise<void>;
   addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => Promise<void>;
   updateAddress: (address: Address) => Promise<void>;
   deleteAddress: (addressId: string) => Promise<void>;
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [toast, persistCurrentUser]);
 
-  const updateUser = useCallback(async (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => {
+  const updateUser = useCallback(async (data: Partial<Omit<User, 'id' | 'password' | 'addresses'>>) => {
     if (!currentUser) return;
     try {
         const response = await fetch('/api/profile', {
