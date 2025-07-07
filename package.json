@@ -4,9 +4,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"GCLOUD_CORE_DISABLE_PROMPTS=1 npm:genkit:watch\" \"next dev\"",
+    "dev": "concurrently \"GCLOUD_CORE_DISABLE_PROMPTS=1 genkit start -- tsx --watch src/ai/dev.ts --ignore \\\"./.next/**\\\" --ignore \\\"./node_modules/**\\\"\" \"next dev\"",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts --ignore \"./.next/**\" --ignore \"./node_modules/**\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
