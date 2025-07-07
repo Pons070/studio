@@ -102,7 +102,7 @@ export function Footer() {
             <p className="text-xs text-muted-foreground">
               {currentYear && (
                 <span onClick={handleSecretAdminTrigger} className="cursor-pointer">© {currentYear}</span>
-              )} {brandInfo.name}. All rights reserved.
+              )} Poiesis Technologies. All rights reserved.
             </p>
         </div>
       </div>
