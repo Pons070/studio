@@ -3,7 +3,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import type { BrandInfo } from '@/lib/types';
+import type { BrandInfo, DeliveryArea } from '@/lib/types';
 import { brandInfo as mockBrandInfo } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,6 +12,9 @@ type BrandContextType = {
   updateBrandInfo: (newInfo: Partial<BrandInfo>) => void;
   blockCustomer: (email: string) => void;
   unblockCustomer: (email: string) => void;
+  addDeliveryArea: (area: Omit<DeliveryArea, 'id'>) => void;
+  updateDeliveryArea: (area: DeliveryArea) => void;
+  deleteDeliveryArea: (areaId: string) => void;
 };
 
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
@@ -105,8 +108,34 @@ export function BrandProvider({ children }: { children: ReactNode }) {
       });
   }, [toast]);
 
+  const addDeliveryArea = useCallback((areaData: Omit<DeliveryArea, 'id'>) => {
+    setBrandInfo(prevInfo => {
+      const newArea: DeliveryArea = { ...areaData, id: `DA-${Date.now()}` };
+      const updatedAreas = [...(prevInfo.deliveryAreas || []), newArea];
+      return { ...prevInfo, deliveryAreas: updatedAreas };
+    });
+    toast({ title: 'Delivery Area Added', description: `Added new delivery area for pincode ${areaData.pincode}.` });
+  }, [toast]);
+
+  const updateDeliveryArea = useCallback((areaData: DeliveryArea) => {
+    setBrandInfo(prevInfo => {
+      const updatedAreas = (prevInfo.deliveryAreas || []).map(area => area.id === areaData.id ? areaData : area);
+      return { ...prevInfo, deliveryAreas: updatedAreas };
+    });
+    toast({ title: 'Delivery Area Updated', description: `Details for pincode ${areaData.pincode} updated.` });
+  }, [toast]);
+
+  const deleteDeliveryArea = useCallback((areaId: string) => {
+    setBrandInfo(prevInfo => {
+      const updatedAreas = (prevInfo.deliveryAreas || []).filter(area => area.id !== areaId);
+      return { ...prevInfo, deliveryAreas: updatedAreas };
+    });
+    toast({ title: 'Delivery Area Removed', description: 'The delivery area has been deleted.' });
+  }, [toast]);
+
+
   return (
-    <BrandContext.Provider value={{ brandInfo, updateBrandInfo, blockCustomer, unblockCustomer }}>
+    <BrandContext.Provider value={{ brandInfo, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
       {children}
     </BrandContext.Provider>
   );

@@ -150,6 +150,12 @@ export default function OrderConfirmationPage() {
                             <span className="text-muted-foreground">Subtotal</span>
                             <span>Rs.{subtotal.toFixed(2)}</span>
                         </div>
+                         {order.deliveryFee && order.deliveryFee > 0 && (
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Delivery Fee</span>
+                                <span>Rs.{order.deliveryFee.toFixed(2)}</span>
+                            </div>
+                        )}
                          {order.discountAmount && (
                             <div className="flex justify-between text-success">
                                 <span className="text-muted-foreground">Discount ({order.appliedCoupon})</span>

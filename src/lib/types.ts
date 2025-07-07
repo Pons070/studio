@@ -7,6 +7,13 @@ export type UpdateRequest = {
   from: 'customer' | 'admin';
 };
 
+export type DeliveryArea = {
+  id: string;
+  pincode: string;
+  areaName: string;
+  cost: number;
+};
+
 export type Address = {
   id?: string;
   label?: string;
@@ -71,6 +78,7 @@ export type Order = {
   updateRequests?: UpdateRequest[];
   appliedCoupon?: string;
   discountAmount?: number;
+  deliveryFee?: number;
 };
 
 export type Review = {
@@ -110,6 +118,7 @@ export type BrandInfo = {
   allowOrderUpdates?: boolean;
   theme?: ThemeSettings;
   blockedCustomerEmails?: string[];
+  deliveryAreas?: DeliveryArea[];
 };
 
 export type Promotion = {

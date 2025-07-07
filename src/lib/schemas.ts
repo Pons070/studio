@@ -52,6 +52,7 @@ export const OrderSchema = z.object({
   updateRequests: z.array(UpdateRequestSchema).optional(),
   appliedCoupon: z.string().optional(),
   discountAmount: z.number().optional(),
+  deliveryFee: z.number().optional(),
 });
 
 const NotificationTypeSchema = z.enum([

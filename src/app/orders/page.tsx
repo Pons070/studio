@@ -182,21 +182,30 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onRequestUpd
                                 )}
                             </>
                             )}
-                            {order.appliedCoupon && order.discountAmount && (
-                              <>
-                                <div>
-                                    <p className="font-medium">Subtotal</p>
-                                    <p className="text-muted-foreground">Rs.{subtotal.toFixed(2)}</p>
+                            <div className="col-span-2">
+                                <Separator />
+                            </div>
+                             <div className="col-span-2 space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Subtotal</span>
+                                    <span>Rs.{subtotal.toFixed(2)}</span>
                                 </div>
-                                <div>
-                                    <p className="font-medium">Discount ({order.appliedCoupon})</p>
-                                    <p className="text-muted-foreground">- Rs.{order.discountAmount.toFixed(2)}</p>
+                                {order.deliveryFee && order.deliveryFee > 0 && (
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Delivery Fee</span>
+                                        <span>Rs.{order.deliveryFee.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                {order.discountAmount && (
+                                    <div className="flex justify-between text-success">
+                                        <span className="text-muted-foreground">Discount ({order.appliedCoupon})</span>
+                                        <span>- Rs.{order.discountAmount.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between font-bold text-base">
+                                    <span>Total</span>
+                                    <span>Rs.{order.total.toFixed(2)}</span>
                                 </div>
-                              </>
-                            )}
-                            <div>
-                                <p className="font-medium">Order Total</p>
-                                <p className="font-bold">Rs.{order.total.toFixed(2)}</p>
                             </div>
                         </div>
 

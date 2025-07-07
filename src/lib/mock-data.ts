@@ -1,5 +1,5 @@
 
-import type { MenuItem, Order, Review, BrandInfo, Promotion, Address } from './types';
+import type { MenuItem, Order, Review, BrandInfo, Promotion, Address, DeliveryArea } from './types';
 
 export const brandInfo: BrandInfo = {
   name: 'CulinaPreOrder',
@@ -32,6 +32,11 @@ export const brandInfo: BrandInfo = {
     backgroundImageUrl: '',
   },
   blockedCustomerEmails: [],
+  deliveryAreas: [
+    { id: 'da-1', pincode: '12345', areaName: 'Flavor Town', cost: 50 },
+    { id: 'da-2', pincode: '23456', areaName: 'Paradise Island', cost: 75 },
+    { id: 'da-3', pincode: '34567', areaName: 'Confectionville', cost: 60 },
+  ],
 };
 
 const aliceAddress: Address = {
@@ -206,7 +211,7 @@ export const orders: Order[] = [
     pickupDate: '2023-10-26',
     pickupTime: '18:30',
     status: 'Completed',
-    total: 19.97,
+    total: 69.97,
     items: [
       { id: '3', name: 'Spaghetti Carbonara', price: 15.99, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
       { id: '6', name: 'Tiramisu', price: 7.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
@@ -215,6 +220,7 @@ export const orders: Order[] = [
     updateRequests: [],
     appliedCoupon: 'WELCOME15',
     discountAmount: 3.52,
+    deliveryFee: 50.00
   },
   {
     id: 'ORD-002',
@@ -225,12 +231,13 @@ export const orders: Order[] = [
     pickupDate: '2023-11-15',
     pickupTime: '19:00',
     status: 'Confirmed',
-    total: 25.00,
+    total: 100.00,
     items: [
       { id: '4', name: 'Margherita Pizza', price: 14.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
       { id: '2', name: 'Caprese Salad', price: 10.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
     updateRequests: [],
+    deliveryFee: 75.00
   },
   {
     id: 'ORD-003',
@@ -241,12 +248,13 @@ export const orders: Order[] = [
     pickupDate: '2023-12-01',
     pickupTime: '12:00',
     status: 'Pending',
-    total: 27.50,
+    total: 87.50,
     items: [
       { id: '5', name: 'Grilled Salmon', price: 22.00, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
       { id: '9', name: 'Fresh Orange Juice', price: 5.50, quantity: 1, imageUrl: 'https://placehold.co/600x400.png' },
     ],
     updateRequests: [],
+    deliveryFee: 60.00
   },
    {
     id: 'ORD-004',

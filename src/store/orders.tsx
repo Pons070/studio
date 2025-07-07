@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 
 type OrderContextType = {
   orders: Order[];
-  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number) => Promise<Order | undefined>;
+  addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number, deliveryFee?: number) => Promise<Order | undefined>;
   updateOrderStatus: (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string, cancellationAction?: 'refund' | 'donate') => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
   removeReviewIdFromOrder: (orderId: string) => void;
@@ -48,7 +48,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, [orders]);
 
 
-  const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number) => {
+  const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number, deliveryFee?: number) => {
     if (!currentUser) {
       toast({
         title: "Authentication Error",
@@ -73,6 +73,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         updateRequests: [],
         appliedCoupon: appliedCoupon,
         discountAmount: discountAmount,
+        deliveryFee: deliveryFee,
     };
 
     // Optimistically update UI

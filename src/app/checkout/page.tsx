@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, Tag, X } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, Tag, X, Truck } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -57,6 +57,8 @@ export default function CheckoutPage() {
   const [couponInput, setCouponInput] = useState('');
   const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
   const [discount, setDiscount] = useState(0);
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [isDeliverySupported, setIsDeliverySupported] = useState(true);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -81,6 +83,25 @@ export default function CheckoutPage() {
     const hasOrders = orders.some(order => order.customerId === currentUser.id);
     return hasOrders ? 'existing' : 'new';
   }, [isAuthenticated, currentUser, orders]);
+
+  const selectedAddress = currentUser?.addresses?.find(a => a.id === selectedAddressId);
+  
+  useEffect(() => {
+    if (selectedAddress && brandInfo.deliveryAreas) {
+        const area = brandInfo.deliveryAreas.find(da => da.pincode === selectedAddress.pincode);
+        if (area) {
+            setDeliveryFee(area.cost);
+            setIsDeliverySupported(true);
+        } else {
+            setDeliveryFee(0);
+            setIsDeliverySupported(false);
+        }
+    } else {
+        // Default case if no address is selected or no delivery areas are defined
+        setDeliveryFee(0);
+        setIsDeliverySupported(true); // Assume support until an address proves otherwise
+    }
+  }, [selectedAddress, brandInfo.deliveryAreas]);
 
 
   const handleApplyCoupon = () => {
@@ -128,10 +149,9 @@ export default function CheckoutPage() {
 
   const isProfileIncomplete = isAuthenticated && !currentUser?.phone;
   const hasNoAddress = isAuthenticated && (!currentUser?.addresses || currentUser.addresses.length === 0);
-  const selectedAddress = currentUser?.addresses?.find(a => a.id === selectedAddressId);
   const isUserBlocked = isAuthenticated && currentUser ? (brandInfo.blockedCustomerEmails || []).includes(currentUser.email) : false;
 
-  const finalTotal = Math.max(0, totalPrice - discount);
+  const finalTotal = Math.max(0, totalPrice - discount) + deliveryFee;
 
   const handlePlaceOrder = async () => {
     if (!isAuthenticated || !currentUser) {
@@ -179,6 +199,11 @@ export default function CheckoutPage() {
         });
         return;
     }
+    
+    if (!isDeliverySupported) {
+        toast({ title: "Delivery Not Available", description: "Sorry, we do not deliver to your selected pincode.", variant: "destructive" });
+        return;
+    }
 
     if (items.length === 0) {
         toast({
@@ -197,7 +222,7 @@ export default function CheckoutPage() {
 
     setIsProcessing(true);
     
-    const newOrder = await addOrder(items, finalTotal, pickupDate, time, deliveryAddress, cookingNotes, appliedPromotion?.couponCode, discount > 0 ? discount : undefined);
+    const newOrder = await addOrder(items, finalTotal, pickupDate, time, deliveryAddress, cookingNotes, appliedPromotion?.couponCode, discount > 0 ? discount : undefined, deliveryFee > 0 ? deliveryFee : undefined);
 
     if (newOrder) {
       clearCart();
@@ -313,7 +338,7 @@ export default function CheckoutPage() {
                 <CardHeader>
                     <CardTitle>2. Select Delivery Address</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                     {hasNoAddress || isProfileIncomplete ? (
                         <Alert variant="destructive">
                             <User className="h-4 w-4" />
@@ -360,6 +385,14 @@ export default function CheckoutPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                    )}
+                    {selectedAddress && !isDeliverySupported && (
+                        <Alert variant="destructive">
+                            <AlertTitle>Delivery Not Available</AlertTitle>
+                            <AlertDescription>
+                                Sorry, we do not deliver to your selected pincode ({selectedAddress.pincode}). Please choose another address.
+                            </AlertDescription>
+                        </Alert>
                     )}
                 </CardContent>
             </Card>
@@ -435,6 +468,12 @@ export default function CheckoutPage() {
                         <p>Subtotal</p>
                         <p>Rs.{totalPrice.toFixed(2)}</p>
                     </div>
+                    {deliveryFee > 0 && (
+                        <div className="flex justify-between text-muted-foreground">
+                            <p className="flex items-center gap-2"><Truck className="h-4 w-4" /> Delivery Fee</p>
+                            <p>Rs.{deliveryFee.toFixed(2)}</p>
+                        </div>
+                    )}
                     {discount > 0 && (
                         <div className="flex justify-between text-success">
                             <p>Discount</p>
@@ -474,7 +513,7 @@ export default function CheckoutPage() {
                       </AlertDialog>
                     )}
                  </div>
-                <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || hasNoAddress || isProfileIncomplete || items.length === 0 || isUserBlocked} size="lg" className="w-full">
+                <Button onClick={handlePlaceOrder} disabled={isProcessing || isClosed || hasNoAddress || isProfileIncomplete || items.length === 0 || isUserBlocked || !isDeliverySupported} size="lg" className="w-full">
                   {isProcessing ? 'Processing...' : `Place Pre-Order (Rs.${finalTotal.toFixed(2)})`}
                 </Button>
               </CardFooter>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -9,8 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent, Gift } from 'lucide-react';
-import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User } from '@/lib/types';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent, Gift, Truck } from 'lucide-react';
+import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User, DeliveryArea } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -202,21 +203,30 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                                 )}
                            </>
                         )}
-                        {order.appliedCoupon && order.discountAmount && (
-                            <>
-                            <div>
-                                <p className="font-medium">Subtotal</p>
-                                <p className="text-muted-foreground">Rs.{subtotal.toFixed(2)}</p>
+                        <div className="col-span-2">
+                            <Separator />
+                        </div>
+                        <div className="col-span-2 space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Subtotal</span>
+                                <span>Rs.{subtotal.toFixed(2)}</span>
                             </div>
-                            <div>
-                                <p className="font-medium">Discount ({order.appliedCoupon})</p>
-                                <p className="text-muted-foreground">- Rs.{order.discountAmount.toFixed(2)}</p>
+                            {order.deliveryFee && order.deliveryFee > 0 && (
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Delivery Fee</span>
+                                    <span>Rs.{order.deliveryFee.toFixed(2)}</span>
+                                </div>
+                            )}
+                            {order.discountAmount && (
+                                <div className="flex justify-between text-success">
+                                    <span className="text-muted-foreground">Discount ({order.appliedCoupon})</span>
+                                    <span>- Rs.{order.discountAmount.toFixed(2)}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between font-bold text-base">
+                                <span>Total</span>
+                                <span>Rs.{order.total.toFixed(2)}</span>
                             </div>
-                            </>
-                        )}
-                        <div>
-                            <p className="font-medium">Order Total</p>
-                            <p className="font-bold">Rs.{order.total.toFixed(2)}</p>
                         </div>
                     </div>
                      {order.cookingNotes && (
@@ -1249,9 +1259,67 @@ function LogoCropDialog({
   );
 }
 
+function DeliveryAreaDialog({ isOpen, onOpenChange, onSave, area }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onSave: (data: DeliveryArea | Omit<DeliveryArea, 'id'>) => void, area: DeliveryArea | null }) {
+    const [pincode, setPincode] = useState('');
+    const [areaName, setAreaName] = useState('');
+    const [cost, setCost] = useState(0);
+
+    useEffect(() => {
+        if (isOpen) {
+            if (area) {
+                setPincode(area.pincode);
+                setAreaName(area.areaName);
+                setCost(area.cost);
+            } else {
+                setPincode('');
+                setAreaName('');
+                setCost(0);
+            }
+        }
+    }, [area, isOpen]);
+    
+    const handleSubmit = () => {
+        const data = { pincode, areaName, cost };
+        if (area) {
+            onSave({ ...data, id: area.id });
+        } else {
+            onSave(data);
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>{area ? 'Edit Delivery Area' : 'Add New Delivery Area'}</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="pincode" className="text-right">Pincode</Label>
+                        <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} className="col-span-3" />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="areaName" className="text-right">Area Name</Label>
+                        <Input id="areaName" value={areaName} onChange={(e) => setAreaName(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="cost" className="text-right">Cost (Rs.)</Label>
+                        <Input id="cost" type="number" value={cost} onChange={(e) => setCost(parseFloat(e.target.value) || 0)} className="col-span-3" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button type="submit" onClick={handleSubmit}>Save Area</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 function BrandManagement() {
-  const { brandInfo, updateBrandInfo } = useBrand();
+  const { brandInfo, updateBrandInfo, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea } = useBrand();
   const [name, setName] = useState(brandInfo.name);
   const [logoUrl, setLogoUrl] = useState(brandInfo.logoUrl);
   const [phone, setPhone] = useState(brandInfo.phone);
@@ -1267,6 +1335,8 @@ function BrandManagement() {
   const [logoShape, setLogoShape] = useState(brandInfo.logoShape || 'square');
   const [isCropDialogOpen, setCropDialogOpen] = useState(false);
   const [imgSrcToCrop, setImgSrcToCrop] = useState('');
+  const [isAreaDialogOpen, setAreaDialogOpen] = useState(false);
+  const [editingArea, setEditingArea] = useState<DeliveryArea | null>(null);
 
   const palettes = [
     { name: 'Oceanic Blue', primaryColor: '217 91% 60%', backgroundColor: '210 40% 98%', accentColor: '198 93% 60%' },
@@ -1365,9 +1435,28 @@ function BrandManagement() {
       },
       allowOrderUpdates,
       theme,
+      deliveryAreas: brandInfo.deliveryAreas, // Make sure to pass existing areas
     });
-    // A little delay to simulate saving and show the disabled state
     setTimeout(() => setIsSaving(false), 500);
+  }
+
+  const handleEditArea = (area: DeliveryArea) => {
+    setEditingArea(area);
+    setAreaDialogOpen(true);
+  }
+  
+  const handleAddNewArea = () => {
+    setEditingArea(null);
+    setAreaDialogOpen(true);
+  }
+
+  const handleSaveArea = (areaData: DeliveryArea | Omit<DeliveryArea, 'id'>) => {
+    if ('id' in areaData && areaData.id) {
+        updateDeliveryArea(areaData as DeliveryArea);
+    } else {
+        addDeliveryArea(areaData as Omit<DeliveryArea, 'id'>);
+    }
+    setAreaDialogOpen(false);
   }
 
   const isDirty = name !== brandInfo.name ||
@@ -1490,6 +1579,65 @@ function BrandManagement() {
                 </div>
             </div>
         </div>
+        
+        <Separator />
+
+        <div className="space-y-4">
+            <h3 className="text-lg font-medium flex items-center gap-2"><Truck /> Delivery Management</h3>
+            <Card>
+                <CardContent className="p-4">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Pincode</TableHead>
+                                <TableHead>Area Name</TableHead>
+                                <TableHead>Cost</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {(brandInfo.deliveryAreas || []).map(area => (
+                                <TableRow key={area.id}>
+                                    <TableCell>{area.pincode}</TableCell>
+                                    <TableCell>{area.areaName}</TableCell>
+                                    <TableCell>Rs.{area.cost.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="icon" onClick={() => handleEditArea(area)}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                         <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will remove the delivery area for "{area.areaName} - {area.pincode}".
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => deleteDeliveryArea(area.id)} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleAddNewArea} variant="secondary">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Delivery Area
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
+
 
         <Separator className="my-6" />
 
@@ -1643,6 +1791,12 @@ function BrandManagement() {
           setLogoUrl(dataUrl);
           setCropDialogOpen(false);
         }}
+      />
+      <DeliveryAreaDialog
+        isOpen={isAreaDialogOpen}
+        onOpenChange={setAreaDialogOpen}
+        onSave={handleSaveArea}
+        area={editingArea}
       />
     </>
   );
@@ -2549,6 +2703,7 @@ function AnalyticsAndReports() {
                 pickup_date: o.pickupDate,
                 status: o.status,
                 subtotal: o.items.reduce((acc, item) => acc + (item.price * item.quantity), 0).toFixed(2),
+                delivery_fee: o.deliveryFee?.toFixed(2) || '0.00',
                 discount_coupon: o.appliedCoupon || 'N/A',
                 discount_amount: o.discountAmount?.toFixed(2) || '0.00',
                 total: o.total.toFixed(2),
