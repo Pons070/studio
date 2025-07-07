@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { otpStore } from '@/lib/otp-store';
-import { users } from '@/lib/user-store';
+import { getUsers } from '@/lib/user-store';
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Invalid phone number provided.' }, { status: 400 });
     }
 
+    const users = getUsers();
     // Check if user exists to tell the UI if it should ask for a name
     const existingUser = users.find(u => u.phone === phoneNumber);
     const isNewUser = !existingUser;
