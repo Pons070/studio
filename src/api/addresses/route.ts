@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import type { Address, User } from '@/lib/types';
-import { getUsers, updateUserInStore } from '@/lib/user-store';
+import type { Address } from '@/lib/types';
+import { users } from '@/lib/user-store';
 
 export async function POST(request: Request) {
   try {
@@ -12,32 +12,28 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
 
-    const users = getUsers();
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex === -1) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
     
-    // Create a clone of the user to avoid direct mutation of the store's object reference
-    const userToUpdate: User = { ...users[userIndex] };
+    const user = users[userIndex];
     
     const newAddress: Address = {
       ...addressData,
       id: `ADDR-${Date.now()}`,
     };
     
-    if (!userToUpdate.addresses) {
-      userToUpdate.addresses = [];
+    if (!user.addresses) {
+      user.addresses = [];
     }
     
-    userToUpdate.addresses.push(newAddress);
+    user.addresses.push(newAddress);
+    
+    // Explicitly update the user in the global store array
+    users[userIndex] = user;
 
-    const success = updateUserInStore(userToUpdate);
-    if (!success) {
-      throw new Error('Failed to update user in store.');
-    }
-
-    return NextResponse.json({ success: true, user: userToUpdate });
+    return NextResponse.json({ success: true, user: user });
   } catch (error) {
     console.error("Error in POST /api/addresses:", error);
     return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
@@ -53,31 +49,28 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required for an update.' }, { status: 400 });
         }
         
-        const users = getUsers();
         const userIndex = users.findIndex(u => u.id === userId);
         if (userIndex === -1) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
 
-        const userToUpdate: User = { ...users[userIndex] };
+        const user = users[userIndex];
         
-        if (!userToUpdate.addresses) {
-            userToUpdate.addresses = [];
+        if (!user.addresses) {
+            user.addresses = [];
         }
         
-        const addressIndex = userToUpdate.addresses.findIndex(a => a.id === addressData.id);
+        const addressIndex = user.addresses.findIndex(a => a.id === addressData.id);
         if (addressIndex === -1) {
             return NextResponse.json({ success: false, message: 'Address to update not found.' }, { status: 404 });
         }
 
-        userToUpdate.addresses[addressIndex] = { ...userToUpdate.addresses[addressIndex], ...addressData };
+        user.addresses[addressIndex] = { ...user.addresses[addressIndex], ...addressData };
 
-        const success = updateUserInStore(userToUpdate);
-        if (!success) {
-          throw new Error('Failed to update user in store.');
-        }
+        // Explicitly update the user in the global store array
+        users[userIndex] = user;
 
-        return NextResponse.json({ success: true, user: userToUpdate });
+        return NextResponse.json({ success: true, user: user });
     } catch (error) {
         console.error("Error in PUT /api/addresses:", error);
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
@@ -91,31 +84,28 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required for deletion.' }, { status: 400 });
         }
 
-        const users = getUsers();
         const userIndex = users.findIndex(u => u.id === userId);
         if (userIndex === -1) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
         
-        const userToUpdate: User = { ...users[userIndex] };
+        const user = users[userIndex];
 
-        if (!userToUpdate.addresses) {
+        if (!user.addresses) {
              return NextResponse.json({ success: false, message: 'Address to delete not found.' }, { status: 404 });
         }
         
-        const initialLength = userToUpdate.addresses.length;
-        userToUpdate.addresses = userToUpdate.addresses.filter(a => a.id !== addressId);
+        const initialLength = user.addresses.length;
+        user.addresses = user.addresses.filter(a => a.id !== addressId);
         
-        if (userToUpdate.addresses.length === initialLength) {
+        if (user.addresses.length === initialLength) {
              return NextResponse.json({ success: false, message: 'Address to delete not found.' }, { status: 404 });
         }
         
-        const success = updateUserInStore(userToUpdate);
-        if (!success) {
-          throw new Error('Failed to update user in store.');
-        }
+        // Explicitly update the user in the global store array
+        users[userIndex] = user;
 
-        return NextResponse.json({ success: true, user: userToUpdate });
+        return NextResponse.json({ success: true, user: user });
     } catch (error) {
         console.error("Error in DELETE /api/addresses:", error);
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });

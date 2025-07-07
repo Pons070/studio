@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getUsers, updateUserInStore, removeUserFromStore } from '@/lib/user-store';
+import { users } from '@/lib/user-store';
 
 // PUT - Updates a user's profile info
 export async function PUT(request: Request) {
@@ -12,19 +12,14 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
     }
 
-    const users = getUsers();
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex === -1) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
     
-    const updatedUser = { ...users[userIndex], name, phone };
-    const success = updateUserInStore(updatedUser);
-    if (!success) {
-        throw new Error('Failed to update user in store.');
-    }
+    users[userIndex] = { ...users[userIndex], name, phone };
 
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({ success: true, user: users[userIndex] });
   } catch (error) {
     return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
   }
@@ -38,10 +33,12 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID is required for deletion.' }, { status: 400 });
         }
         
-        const success = removeUserFromStore(userId);
-        if (!success) {
+        const index = users.findIndex(u => u.id === userId);
+        if (index === -1) {
              return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
+        
+        users.splice(index, 1);
         
         return NextResponse.json({ success: true, userId });
     } catch (error) {

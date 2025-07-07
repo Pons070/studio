@@ -4,7 +4,7 @@ import type { User } from './types';
 // This ensures the store persists across hot reloads in development,
 // making our in-memory "database" more consistent.
 declare global {
-  var userStore: User[] | undefined;
+  var users: User[] | undefined;
 }
 
 const aliceAddress: User['addresses'] extends (infer U)[] ? U : never = {
@@ -119,35 +119,9 @@ const initialUsers: User[] = [
   }
 ];
 
-if (!globalThis.userStore) {
-  globalThis.userStore = initialUsers;
+if (!globalThis.users) {
+  globalThis.users = initialUsers;
 }
 
-// Centralized data access to ensure consistency
-const userDB = globalThis.userStore;
-
-export function getUsers(): User[] {
-    return userDB;
-}
-
-export function addUser(user: User): void {
-    userDB.push(user);
-}
-
-export function updateUserInStore(updatedUser: User): boolean {
-    const index = userDB.findIndex(u => u.id === updatedUser.id);
-    if (index !== -1) {
-        userDB[index] = updatedUser;
-        return true;
-    }
-    return false;
-}
-
-export function removeUserFromStore(userId: string): boolean {
-    const index = userDB.findIndex(u => u.id === userId);
-    if (index !== -1) {
-        userDB.splice(index, 1);
-        return true;
-    }
-    return false;
-}
+// Export the singleton instance directly
+export const users: User[] = globalThis.users;
