@@ -59,7 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Make sure the current user from storage still exists in our user list
         const userExists = finalUsers.some(u => u.id === currentUserData.id);
         if (userExists) {
-            setCurrentUser(currentUserData);
+            const fullUser = finalUsers.find(u => u.id === currentUserData.id);
+            setCurrentUser(fullUser || null);
         } else {
             // Current user was deleted or data is out of sync, log them out.
             window.localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
@@ -152,9 +153,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => {
     if (!currentUser) return;
 
-    const updatedUser = { ...currentUser, ...data };
+    // Find the full user object from the main `users` array to preserve the password
+    const userToUpdate = users.find(u => u.id === currentUser.id);
+    if (!userToUpdate) return;
+
+    // Create the updated user object, preserving the existing password
+    const updatedUser: User = { 
+      ...userToUpdate, // This has the password
+      ...data,         // This has the new name/phone
+    };
+
+    // Update the currentUser state (this will also persist it to localStorage)
     persistCurrentUser(updatedUser);
 
+    // Update the main users list with the full user object (including password)
     const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
     persistUsers(updatedUsers);
 
