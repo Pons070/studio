@@ -4,7 +4,6 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { Order, CartItem, Address, UpdateRequest } from '@/lib/types';
-import { orders as mockOrders } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './auth';
 import { format } from 'date-fns';
@@ -12,6 +11,7 @@ import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 
 type OrderContextType = {
   orders: Order[];
+  isLoading: boolean;
   addOrder: (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number, deliveryFee?: number) => Promise<Order | undefined>;
   updateOrderStatus: (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string, cancellationAction?: 'refund' | 'donate') => void;
   addReviewToOrder: (orderId: string, reviewId: string) => void;
@@ -21,32 +21,37 @@ type OrderContextType = {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'culina-preorder-orders';
-
 export function OrderProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    try {
-      const item = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (item) {
-        setOrders(JSON.parse(item));
+    async function fetchOrders() {
+      if (!currentUser) {
+        setOrders([]);
+        setIsLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error("Failed to load orders from localStorage", error);
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/orders?userId=${currentUser.id}`);
+        const data = await response.json();
+        if (data.success) {
+          setOrders(data.orders);
+        } else {
+          toast({ title: "Error", description: "Could not fetch your orders.", variant: "destructive" });
+        }
+      } catch (error) {
+        console.error("Failed to fetch orders:", error);
+        toast({ title: "Network Error", description: "Failed to connect to the server for your orders.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(orders));
-    } catch (error) {
-      console.error("Failed to save orders to localStorage", error);
-    }
-  }, [orders]);
-
+    fetchOrders();
+  }, [currentUser, toast]);
 
   const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number, deliveryFee?: number) => {
     if (!currentUser) {
@@ -116,77 +121,116 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, [toast, currentUser]);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string, cancellationAction?: 'refund' | 'donate') => {
-    let notificationOrder: Order | null = null;
+    const orderToUpdate = orders.find(o => o.id === orderId);
+    if (!orderToUpdate) return;
     
-    setOrders(prevOrders => {
-        const newOrders = prevOrders.map(order => {
-            if (order.id === orderId) {
-                const updatedOrder: Order = { 
-                    ...order, 
-                    status: status,
-                    ...(status === 'Cancelled' && { 
-                        cancellationDate: format(new Date(), 'yyyy-MM-dd'),
-                        cancellationReason: reason,
-                        cancelledBy: cancelledBy,
-                        cancellationAction: cancellationAction,
-                    })
-                };
-                if (status === 'Cancelled') {
-                    notificationOrder = updatedOrder;
-                }
-                return updatedOrder;
-            }
-            return order;
+    const updates: Partial<Order> = { status };
+    if (status === 'Cancelled') {
+        updates.cancellationDate = format(new Date(), 'yyyy-MM-dd');
+        updates.cancellationReason = reason;
+        updates.cancelledBy = cancelledBy;
+        updates.cancellationAction = cancellationAction;
+    }
+    
+    try {
+        const response = await fetch('/api/orders', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, ...updates }),
         });
-        return newOrders;
-    });
+        const result = await response.json();
 
-    if (notificationOrder && customerEmail) {
-        try {
-            await sendOrderNotification({
-                order: notificationOrder,
-                notificationType: 'customerCancellation',
-                customerEmail: customerEmail,
-                adminEmail: 'sangkar111@gmail.com'
-            });
+        if (!response.ok || !result.success) {
+            toast({ title: "Error", description: result.message || "Failed to update order.", variant: "destructive" });
+            return;
+        }
+
+        const updatedOrder: Order = result.order;
+        setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+        
+        if (status === 'Cancelled' && customerEmail) {
+            try {
+                await sendOrderNotification({
+                    order: updatedOrder,
+                    notificationType: 'customerCancellation',
+                    customerEmail: customerEmail,
+                    adminEmail: 'sangkar111@gmail.com'
+                });
+                toast({
+                    title: "Order Cancelled",
+                    description: `Order #${orderId} has been cancelled and a confirmation email has been sent.`,
+                });
+            } catch (error) {
+                console.error("Failed to send cancellation email:", error);
+                toast({
+                    title: "Order Cancelled",
+                    description: `Order #${orderId} has been cancelled, but we failed to send a confirmation email.`,
+                    variant: 'destructive',
+                });
+            }
+        } else {
             toast({
-                title: "Order Cancelled",
-                description: `Order #${orderId} has been cancelled and a confirmation email has been sent.`,
-            });
-        } catch (error) {
-            console.error("Failed to send cancellation email:", error);
-            toast({
-                title: "Order Cancelled",
-                description: `Order #${orderId} has been cancelled, but we failed to send a confirmation email.`,
-                variant: 'destructive',
+                title: "Order Status Updated",
+                description: `Order #${orderId} has been updated to "${status}".`,
             });
         }
-    } else {
-         toast({
-            title: "Order Status Updated",
-            description: `Order #${orderId} has been updated to "${status}".`,
-        });
+    } catch (error) {
+        toast({ title: 'Network Error', description: 'Could not connect to the server to update order.', variant: 'destructive' });
     }
-}, [toast]);
+}, [orders, toast]);
 
-  const addReviewToOrder = useCallback((orderId: string, reviewId: string) => {
-      setOrders(prevOrders =>
+  const addReviewToOrder = useCallback(async (orderId: string, reviewId: string) => {
+    try {
+        const response = await fetch('/api/orders', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, reviewId }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            toast({ title: "Error", description: result.message || "Failed to link review to order.", variant: "destructive" });
+            return;
+        }
+        
+        setOrders(prevOrders =>
+            prevOrders.map(order =>
+                order.id === orderId ? { ...order, reviewId } : order
+            )
+        );
+    } catch (error) {
+        toast({ title: 'Network Error', description: 'Could not connect to the server.', variant: 'destructive' });
+    }
+  }, [toast]);
+
+  const removeReviewIdFromOrder = useCallback(async (orderId: string) => {
+     try {
+        const response = await fetch('/api/orders', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, reviewId: undefined }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            // Silently fail is okay here, as it's a cleanup operation
+            console.error("Failed to unlink review from order:", result.message);
+            return;
+        }
+
+        setOrders(prevOrders =>
           prevOrders.map(order =>
-              order.id === orderId ? { ...order, reviewId } : order
+            order.id === orderId ? { ...order, reviewId: undefined } : order
           )
-      );
+        );
+    } catch (error) {
+        console.error("Network error while unlinking review:", error);
+    }
   }, []);
 
-  const removeReviewIdFromOrder = useCallback((orderId: string) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId ? { ...order, reviewId: undefined } : order
-      )
-    );
-  }, []);
-
-  const addUpdateRequest = useCallback((orderId: string, message: string, from: 'customer' | 'admin') => {
-    if (!message.trim()) return;
+  const addUpdateRequest = useCallback(async (orderId: string, message: string, from: 'customer' | 'admin') => {
+    const orderToUpdate = orders.find(o => o.id === orderId);
+    if (!orderToUpdate || !message.trim()) return;
 
     const newRequest: UpdateRequest = {
         id: `MSG-${Date.now()}`,
@@ -195,31 +239,41 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         timestamp: new Date().toISOString(),
     };
 
-    setOrders(prevOrders =>
-        prevOrders.map(order => {
-            if (order.id === orderId) {
-                const updatedRequests = [...(order.updateRequests || []), newRequest];
-                return { ...order, updateRequests: updatedRequests };
-            }
-            return order;
-        })
-    );
+    const updatedRequests = [...(orderToUpdate.updateRequests || []), newRequest];
 
-    if (from === 'admin') {
-      toast({
-        title: "Reply Sent!",
-        description: "Your reply has been sent to the customer.",
-      });
-    } else {
-      toast({
-        title: "Message Sent!",
-        description: "Your inquiry has been sent to the restaurant.",
-      });
+    try {
+        const response = await fetch('/api/orders', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, updateRequests: updatedRequests }),
+        });
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+            toast({ title: "Error", description: result.message || "Failed to send message.", variant: "destructive" });
+            return;
+        }
+
+        setOrders(prev => prev.map(o => (o.id === orderId ? result.order : o)));
+
+        if (from === 'admin') {
+          toast({
+            title: "Reply Sent!",
+            description: "Your reply has been sent to the customer.",
+          });
+        } else {
+          toast({
+            title: "Message Sent!",
+            description: "Your inquiry has been sent to the restaurant.",
+          });
+        }
+    } catch (error) {
+        toast({ title: 'Network Error', description: 'Could not connect to the server to send message.', variant: 'destructive' });
     }
-  }, [toast]);
+  }, [orders, toast]);
 
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, addReviewToOrder, removeReviewIdFromOrder, addUpdateRequest }}>
+    <OrderContext.Provider value={{ orders, isLoading, addOrder, updateOrderStatus, addReviewToOrder, removeReviewIdFromOrder, addUpdateRequest }}>
       {children}
     </OrderContext.Provider>
   );

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { Order } from '@/lib/types';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 import { format } from 'date-fns';
+import { orders } from '@/lib/order-store';
 
 export async function POST(request: Request) {
   try {
@@ -22,6 +23,9 @@ export async function POST(request: Request) {
       orderDate: format(new Date(), 'yyyy-MM-dd'),
       status: 'Pending',
     };
+
+    // Add to our in-memory store
+    orders.unshift(newOrder);
 
     // Fire-and-forget notifications
     Promise.all([

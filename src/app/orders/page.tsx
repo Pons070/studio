@@ -42,6 +42,7 @@ import { RecommendButton } from '@/components/recommend-dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { VariantProps } from 'class-variance-authority';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
   switch (status) {
@@ -459,7 +460,7 @@ function CustomerCancellationDialog({ order, isOpen, onOpenChange, onConfirm }: 
 
 
 export default function OrdersPage() {
-  const { orders, updateOrderStatus } = useOrders();
+  const { orders, updateOrderStatus, isLoading } = useOrders();
   const { reviews, addReview } = useReviews();
   const { currentUser, isAuthenticated } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -490,6 +491,47 @@ export default function OrdersPage() {
     setUpdateRequestOrder(selectedOrder);
     setSelectedOrder(null); // Close the details dialog
   }
+  
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline text-3xl">My Orders</CardTitle>
+          <CardDescription>View your order history and manage upcoming pre-orders.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="hidden sm:table-cell">Order ID</TableHead>
+                <TableHead>Pickup Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(3)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-2">
+                      <Skeleton className="h-9 w-20" />
+                      <Skeleton className="h-9 w-24" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   if (!isAuthenticated) {
     return (
