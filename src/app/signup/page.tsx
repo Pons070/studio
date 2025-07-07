@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { Utensils } from 'lucide-react';
+import { Utensils, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from "@/store/auth";
 import { useRouter } from 'next/navigation';
 import { useBrand } from "@/store/brand";
@@ -18,6 +18,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signup } = useAuth();
   const { brandInfo } = useBrand();
@@ -75,7 +76,26 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="text-muted-foreground" /> : <Eye className="text-muted-foreground" />}
+                </Button>
+              </div>
             </div>
             <Button type="submit" className="w-full text-lg" disabled={isSubmitting}>
               {isSubmitting ? 'Signing Up...' : 'Sign Up'}
