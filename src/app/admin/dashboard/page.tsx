@@ -3315,6 +3315,10 @@ export default function AdminDashboardPage() {
                 <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
             </div>
              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleGoToOrders}>
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Manage Orders
+                </Button>
                 <Button variant="outline" onClick={handleGoToHome}>
                     <Home className="mr-2 h-4 w-4" />
                     Go to Home
@@ -3367,6 +3371,12 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
             <div className="flex items-center gap-2">
+                 {activeView !== 'orders' && (
+                    <Button variant="outline" onClick={handleGoToOrders}>
+                        <ClipboardList className="mr-2 h-4 w-4" />
+                        Manage Orders
+                    </Button>
+                )}
                 <Button variant="outline" onClick={handleGoToHome}>
                     <Home className="mr-2 h-4 w-4" />
                     Go to Home
@@ -3396,4 +3406,5 @@ export default function AdminDashboardPage() {
       </div>
   );
 }
+
 
