@@ -8,12 +8,17 @@ import type { Address, User } from '@/lib/types';
 import { users as mockUsers } from '@/lib/mock-data';
 import { useBrand } from './brand';
 
+type OtpRequestResult = {
+  success: boolean;
+  isNewUser: boolean;
+};
+
 type AuthContextType = {
   isAuthenticated: boolean;
   currentUser: User | null;
   users: User[];
-  signup: (name: string, email: string, phone: string, password: string) => boolean;
-  login: (phone: string, password: string) => boolean;
+  requestOtp: (phone: string) => Promise<OtpRequestResult>;
+  verifyOtpAndLogin: (phone: string, otp: string, name?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => void;
   addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => void;
@@ -22,7 +27,6 @@ type AuthContextType = {
   setDefaultAddress: (addressId: string) => void;
   deleteUser: () => void;
   deleteUserById: (userId: string) => void;
-  resetPassword: (phone: string, newPassword: string) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,8 +35,9 @@ const USERS_STORAGE_KEY = 'culina-preorder-users';
 const CURRENT_USER_STORAGE_KEY = 'culina-preorder-current-user';
 
 // NOTE: This is a MOCK authentication system.
-// In a real application, NEVER store passwords in plaintext or in localStorage.
-// Use a secure authentication provider like Firebase Auth, NextAuth.js, or Clerk.
+// The OTP is hardcoded for simulation purposes.
+const MOCK_OTP = '123456';
+let otpStore: { [phone: string]: string } = {};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
@@ -41,116 +46,100 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { brandInfo } = useBrand();
 
-  useEffect(() => {
-    let finalUsers: User[];
-    const storedUsers = window.localStorage.getItem(USERS_STORAGE_KEY);
-    
-    if (storedUsers && storedUsers !== '[]') {
-      finalUsers = JSON.parse(storedUsers);
-    } else {
-      finalUsers = mockUsers;
-      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mockUsers));
-    }
-    setUsers(finalUsers);
-
-    const storedCurrentUser = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-    if (storedCurrentUser) {
-      const currentUserData = JSON.parse(storedCurrentUser);
-      const userExists = finalUsers.some(u => u.id === currentUserData.id);
-      if (userExists) {
-          const fullUser = finalUsers.find(u => u.id === currentUserData.id);
-          setCurrentUser(fullUser || null);
-      } else {
-          window.localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
-          setCurrentUser(null);
-      }
-    }
+  const persistUsers = useCallback((updatedUsers: User[]) => {
+    window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    setUsers(updatedUsers);
   }, []);
 
-  const persistUsers = (newUsers: User[]) => {
-    setUsers(newUsers);
-    window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(newUsers));
-  }
-  
-  const persistCurrentUser = (user: User | null) => {
-    setCurrentUser(user);
+  const persistCurrentUser = useCallback((user: User | null) => {
     if (user) {
         const { password, ...userToStore } = user;
         window.localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(userToStore));
     } else {
         window.localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
     }
-  }
+    setCurrentUser(user);
+  }, []);
 
-  const signup = useCallback((name: string, email: string, phone: string, password: string): boolean => {
-    const existingUserByEmail = users.find(u => u.email === email);
-    if (existingUserByEmail) {
-      toast({
-        title: "Signup Failed",
-        description: "An account with this email already exists.",
-        variant: "destructive",
-      });
-      return false;
+  useEffect(() => {
+    const storedUsers = window.localStorage.getItem(USERS_STORAGE_KEY);
+    const loadedUsers = storedUsers ? JSON.parse(storedUsers) : mockUsers;
+    setUsers(loadedUsers);
+
+    if (!storedUsers) {
+      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mockUsers));
     }
 
-    const existingUserByPhone = users.find(u => u.phone === phone);
-    if (existingUserByPhone) {
-      toast({
-        title: "Signup Failed",
-        description: "An account with this phone number already exists.",
-        variant: "destructive",
-      });
-      return false;
+    const storedCurrentUser = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    if (storedCurrentUser) {
+        const currentUserData = JSON.parse(storedCurrentUser);
+        const fullUser = loadedUsers.find((u: User) => u.id === currentUserData.id);
+        setCurrentUser(fullUser || null);
     }
+  }, []);
 
-    const newUser: User = {
-      id: `USER-${Date.now()}`,
-      name,
-      email,
-      password,
-      phone,
-      addresses: [],
-    };
+  const requestOtp = useCallback(async (phone: string): Promise<OtpRequestResult> => {
+    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+    const userExists = currentUsers.some(u => u.phone === phone);
+
+    // Simulate sending OTP
+    otpStore[phone] = MOCK_OTP;
     
-    persistUsers([...users, newUser]);
-    
+    console.log(`SIMULATING OTP for ${phone}: ${MOCK_OTP}`);
+
     toast({
-      title: "Signup Successful!",
-      description: "You can now log in with your new account.",
-      variant: "success",
+      title: 'OTP Sent',
+      description: `A verification code has been sent to +91 ${phone}. (Hint: It's ${MOCK_OTP})`,
     });
-    return true;
-  }, [users, toast]);
-
-  const login = useCallback((phone: string, password: string): boolean => {
-    const user = users.find(u => u.phone === phone && u.password === password);
     
-    if (user) {
-      const blockedEmails = brandInfo.blockedCustomerEmails || [];
-      if (user.email && blockedEmails.includes(user.email)) {
-          toast({
-              title: "Account Blocked",
-              description: "This account has been blocked. Please contact support.",
-              variant: "destructive",
-          });
-          return false;
-      }
-      
-      persistCurrentUser(user);
-      toast({
-        title: `Welcome back, ${user.name}!`,
-        description: "You have been successfully logged in.",
-      });
-      return true;
-    } else {
+    return { success: true, isNewUser: !userExists };
+
+  }, [toast]);
+
+  const verifyOtpAndLogin = useCallback(async (phone: string, otp: string, name?: string): Promise<boolean> => {
+    if (otpStore[phone] !== otp) {
       toast({
         title: "Login Failed",
-        description: "Invalid phone number or password. Please try again.",
+        description: "The OTP you entered is incorrect. Please try again.",
         variant: "destructive",
       });
       return false;
     }
-  }, [users, toast, brandInfo.blockedCustomerEmails]);
+    
+    // OTP is correct, clear it
+    delete otpStore[phone];
+
+    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+    let userToLogin = currentUsers.find(u => u.phone === phone);
+
+    // If user doesn't exist, it's a signup
+    if (!userToLogin) {
+      if (!name) {
+         toast({ title: "Signup Failed", description: "Please provide your name to create an account.", variant: "destructive" });
+         return false;
+      }
+      const newUser: User = {
+        id: `USER-${Date.now()}`,
+        name,
+        email: `${phone}@culinapreorder.com`, // Placeholder email
+        phone,
+        addresses: [],
+      };
+      
+      const updatedUsers = [...currentUsers, newUser];
+      persistUsers(updatedUsers);
+      userToLogin = newUser;
+
+      toast({ title: "Account Created!", description: "Welcome! You have been logged in.", variant: "success" });
+    } else {
+        toast({ title: `Welcome back, ${userToLogin.name}!`, description: "You have been logged in.", variant: "success" });
+    }
+    
+    persistCurrentUser(userToLogin);
+    return true;
+
+  }, [toast, persistUsers, persistCurrentUser]);
+
 
   const logout = useCallback(() => {
     persistCurrentUser(null);
@@ -159,21 +148,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       description: "You have been successfully logged out.",
     });
     router.push('/');
-  }, [router, toast]);
+  }, [router, toast, persistCurrentUser]);
 
   const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => {
     if (!currentUser) return;
     
-    const userToUpdate = users.find(u => u.id === currentUser.id);
+    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+    let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
     if (!userToUpdate) return;
     
     const updatedUser: User = { 
       ...userToUpdate,
       ...data,
-      password: userToUpdate.password, // Ensure password is preserved
+      password: userToUpdate.password,
     };
     
-    const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+    const updatedUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
     persistUsers(updatedUsers);
     persistCurrentUser(updatedUser);
 
@@ -181,12 +171,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Profile Updated",
         description: "Your details have been successfully saved.",
     });
-  }, [currentUser, users, toast]);
+  }, [currentUser, toast, persistUsers, persistCurrentUser]);
 
   const addAddress = useCallback((addressData: Omit<Address, 'id' | 'isDefault'>) => {
     if (!currentUser) return;
     
-    const userToUpdate = users.find(u => u.id === currentUser.id);
+    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+    let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
     if (!userToUpdate) return;
 
     const currentAddresses = userToUpdate.addresses || [];
@@ -198,39 +189,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const newAddress: Address = {
       ...addressData,
       id: crypto.randomUUID(),
-      isDefault: currentAddresses.length === 0, // Make first address default
+      isDefault: currentAddresses.length === 0,
     };
 
     const updatedAddresses = [...currentAddresses, newAddress];
     const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
     
-    const newUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+    const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
     persistUsers(newUsers);
     persistCurrentUser(updatedUser);
 
     toast({ title: "Address Added", description: "Your new address has been saved." });
-  }, [currentUser, users, toast]);
+  }, [currentUser, toast, persistUsers, persistCurrentUser]);
 
   const updateAddress = useCallback((addressData: Address) => {
       if (!currentUser || !addressData.id) return;
       
-      const userToUpdate = users.find(u => u.id === currentUser.id);
+      const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+      let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
       if (!userToUpdate) return;
       
       const updatedAddresses = (userToUpdate.addresses || []).map(addr => addr.id === addressData.id ? addressData : addr);
       const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
       
-      const newUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+      const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
       persistUsers(newUsers);
       persistCurrentUser(updatedUser);
 
       toast({ title: "Address Updated", description: "Your address has been successfully updated." });
-  }, [currentUser, users, toast]);
+  }, [currentUser, toast, persistUsers, persistCurrentUser]);
   
   const deleteAddress = useCallback((addressId: string) => {
       if (!currentUser) return;
-
-      const userToUpdate = users.find(u => u.id === currentUser.id);
+      
+      const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+      let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
       if (!userToUpdate) return;
 
       let updatedAddresses = (userToUpdate.addresses || []).filter(addr => addr.id !== addressId);
@@ -242,17 +235,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
       
-      const newUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+      const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
       persistUsers(newUsers);
       persistCurrentUser(updatedUser);
       
       toast({ title: "Address Deleted", description: "The address has been removed." });
-  }, [currentUser, users, toast]);
+  }, [currentUser, toast, persistUsers, persistCurrentUser]);
 
   const setDefaultAddress = useCallback((addressId: string) => {
       if (!currentUser) return;
       
-      const userToUpdate = users.find(u => u.id === currentUser.id);
+      const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+      let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
       if (!userToUpdate) return;
       
       const updatedAddresses = (userToUpdate.addresses || []).map(addr => ({
@@ -262,45 +256,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
       
-      const newUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+      const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
       persistUsers(newUsers);
       persistCurrentUser(updatedUser);
 
       toast({ title: "Default Address Updated", description: "Your default address has been set." });
-  }, [currentUser, users, toast]);
+  }, [currentUser, toast, persistUsers, persistCurrentUser]);
   
-  const resetPassword = useCallback((phone: string, newPassword: string): boolean => {
-    let userFound = false;
-    const updatedUsers = users.map(user => {
-        if (user.phone === phone) {
-            userFound = true;
-            return { ...user, password: newPassword };
-        }
-        return user;
-    });
-
-    if (userFound) {
-        persistUsers(updatedUsers);
-        toast({
-            title: "Password Reset Successful",
-            description: "Your password has been updated. Please log in with your new password.",
-            variant: "success",
-        });
-        return true;
-    } else {
-        toast({
-            title: "User Not Found",
-            description: "No account was found with that phone number.",
-            variant: "destructive",
-        });
-        return false;
-    }
-  }, [users, toast]);
-
   const deleteUser = useCallback(() => {
     if (!currentUser) return;
 
-    const updatedUsers = users.filter(u => u.id !== currentUser.id);
+    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+    const updatedUsers = currentUsers.filter(u => u.id !== currentUser.id);
     persistUsers(updatedUsers);
 
     toast({
@@ -310,7 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     logout();
-  }, [currentUser, users, logout, toast]);
+  }, [currentUser, logout, toast, persistUsers]);
 
   const deleteUserById = useCallback((userId: string) => {
     if (currentUser?.id === userId) {
@@ -322,22 +289,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    const userToDelete = users.find(u => u.id === userId);
+    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
+    const userToDelete = currentUsers.find(u => u.id === userId);
     if (!userToDelete) return;
 
-    const updatedUsers = users.filter(u => u.id !== userId);
+    const updatedUsers = currentUsers.filter(u => u.id !== userId);
     persistUsers(updatedUsers);
 
     toast({
       title: "Customer Deleted",
       description: `The account for ${userToDelete.name} has been deleted.`,
     });
-  }, [currentUser, users, toast]);
+  }, [currentUser, toast, persistUsers]);
 
   const isAuthenticated = !!currentUser;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, users, signup, login, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById, resetPassword }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentUser, users, requestOtp, verifyOtpAndLogin, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById }}>
       {children}
     </AuthContext.Provider>
   );

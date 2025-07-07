@@ -33,7 +33,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  password?: string;
+  password?: string; // Keep for admin, remove for customers
   phone?: string;
   addresses?: Address[];
 };

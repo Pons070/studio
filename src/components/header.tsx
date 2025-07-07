@@ -17,11 +17,16 @@ import { useBrand } from '@/store/brand';
 import Image from 'next/image';
 import { useAuth } from '@/store/auth';
 import { cn } from '@/lib/utils';
+import { CartSheet } from './cart-sheet';
+import { useCart } from '@/store/cart';
+import { Badge } from './ui/badge';
 
 export function Header() {
   const pathname = usePathname();
   const { brandInfo } = useBrand();
   const { isAuthenticated, currentUser, logout } = useAuth();
+  const { items } = useCart();
+  const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   if (pathname.startsWith('/admin')) {
     return null;
@@ -47,12 +52,22 @@ export function Header() {
             <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">
               About Us
             </Link>
-            <Link href="/orders" className="text-muted-foreground hover:text-primary transition-colors">
-              My Orders
+             <Link href="/reviews" className="text-muted-foreground hover:text-primary transition-colors">
+              Reviews
             </Link>
           </nav>
 
           <div className="flex items-center gap-4">
+              <CartSheet>
+                <Button variant="outline" size="icon" className="relative">
+                    <Utensils className="h-6 w-6" />
+                    {itemCount > 0 && (
+                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center text-xs">
+                            {itemCount}
+                        </Badge>
+                    )}
+                </Button>
+              </CartSheet>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="rounded-full">
@@ -85,10 +100,7 @@ export function Header() {
                     <DropdownMenuLabel>Welcome, Guest</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/login"><LogIn className="mr-2 h-4 w-4" />Log In</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/signup"><UserPlus className="mr-2 h-4 w-4" />Sign Up</Link>
+                      <Link href="/login"><LogIn className="mr-2 h-4 w-4" />Log In / Sign Up</Link>
                     </DropdownMenuItem>
                   </>
                 )}
