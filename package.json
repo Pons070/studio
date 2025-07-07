@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm:genkit:watch\" \"next dev\"",
-    "genkit:watch": "GCLOUD_CORE_DISABLE_PROMPTS=1 genkit start -- tsx --watch src/ai/dev.ts --ignore \"./.next/**\" --ignore \"./node_modules/**\"",
+    "genkit:watch": "cross-env GCLOUD_CORE_DISABLE_PROMPTS=1 genkit start -- tsx --watch src/ai/dev.ts --ignore \"./.next/**\" --ignore \"./node_modules/**\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -63,6 +63,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
     "genkit-cli": "^1.13.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
