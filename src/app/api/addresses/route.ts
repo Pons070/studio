@@ -1,22 +1,34 @@
 
 import { NextResponse } from 'next/server';
 import type { Address } from '@/lib/types';
-
-// In a real application, these handlers would interact with a database.
-// For this prototype, we'll simulate the API's role: validating input
-// and returning a success response with the manipulated data object.
-// The actual state persistence is handled on the client-side.
+import { users } from '@/lib/user-store';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    // Here you would validate the address data (e.g., using Zod)
+    const { userId, ...addressData } = body;
+    
+    if (!userId) {
+        return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
+    }
+
+    const user = users.find(u => u.id === userId);
+    if (!user) {
+        return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
+    }
+    
     const newAddress: Address = {
-      ...body,
-      id: `ADDR-${Date.now()}`, // Generate ID on the "server"
-      isDefault: body.isDefault || false,
+      ...addressData,
+      id: `ADDR-${Date.now()}`,
     };
-    return NextResponse.json({ success: true, address: newAddress });
+    
+    if (!user.addresses) {
+      user.addresses = [];
+    }
+    
+    user.addresses.push(newAddress);
+
+    return NextResponse.json({ success: true, user: user });
   } catch (error) {
     return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
   }
@@ -24,12 +36,26 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
     try {
-        const body: Address = await request.json();
-        if (!body.id) {
-            return NextResponse.json({ success: false, message: 'Address ID is required for an update.' }, { status: 400 });
+        const body: Address & { userId: string } = await request.json();
+        const { userId, ...addressData } = body;
+
+        if (!userId || !addressData.id) {
+            return NextResponse.json({ success: false, message: 'User ID and Address ID are required for an update.' }, { status: 400 });
         }
-        // In a real app, update the address in the DB. Here we just validate and return it.
-        return NextResponse.json({ success: true, address: body });
+        
+        const user = users.find(u => u.id === userId);
+        if (!user || !user.addresses) {
+            return NextResponse.json({ success: false, message: 'User or addresses not found.' }, { status: 404 });
+        }
+        
+        const addressIndex = user.addresses.findIndex(a => a.id === addressData.id);
+        if (addressIndex === -1) {
+            return NextResponse.json({ success: false, message: 'Address not found.' }, { status: 404 });
+        }
+
+        user.addresses[addressIndex] = addressData;
+
+        return NextResponse.json({ success: true, user: user });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
     }
@@ -37,12 +63,24 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
-        const { id } = await request.json();
-        if (!id) {
-            return NextResponse.json({ success: false, message: 'Address ID is required for deletion.' }, { status: 400 });
+        const { userId, addressId } = await request.json();
+        if (!userId || !addressId) {
+            return NextResponse.json({ success: false, message: 'User ID and Address ID are required for deletion.' }, { status: 400 });
         }
-        // In a real app, delete the address from the DB. Here, we just confirm the action.
-        return NextResponse.json({ success: true, id });
+
+        const user = users.find(u => u.id === userId);
+        if (!user || !user.addresses) {
+            return NextResponse.json({ success: false, message: 'User or addresses not found.' }, { status: 404 });
+        }
+        
+        const initialLength = user.addresses.length;
+        user.addresses = user.addresses.filter(a => a.id !== addressId);
+        
+        if (user.addresses.length === initialLength) {
+             return NextResponse.json({ success: false, message: 'Address not found.' }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, user: user });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
     }

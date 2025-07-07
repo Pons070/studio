@@ -1,8 +1,8 @@
 
-
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import type { Order, CartItem, Address, UpdateRequest } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './auth';
@@ -26,57 +26,55 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currentUser } = useAuth();
+  const pathname = usePathname();
+  const isAdminPath = pathname.startsWith('/admin');
 
   useEffect(() => {
     async function fetchOrders() {
-      if (!currentUser) {
+      if (!currentUser && !isAdminPath) {
         setOrders([]);
         setIsLoading(false);
         return;
       }
       setIsLoading(true);
+      
+      const endpoint = isAdminPath ? '/api/admin/orders' : `/api/orders?userId=${currentUser?.id}`;
+      
       try {
-        const response = await fetch(`/api/orders?userId=${currentUser.id}`);
+        // Admins need a current user to be logged in, even if the API doesn't use the ID.
+        // For customer paths, we definitely need a user.
+        if (!currentUser) {
+            setIsLoading(false);
+            return;
+        }
+
+        const response = await fetch(endpoint);
         const data = await response.json();
         if (data.success) {
           setOrders(data.orders);
         } else {
-          toast({ title: "Error", description: "Could not fetch your orders.", variant: "destructive" });
+          toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
         }
       } catch (error) {
         console.error("Failed to fetch orders:", error);
-        toast({ title: "Network Error", description: "Failed to connect to the server for your orders.", variant: "destructive" });
+        toast({ title: "Network Error", description: "Failed to connect to the server for orders.", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     }
     fetchOrders();
-  }, [currentUser, toast]);
+  }, [currentUser, toast, isAdminPath]);
 
   const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number, deliveryFee?: number) => {
     if (!currentUser) {
-      toast({
-        title: "Authentication Error",
-        description: "You must be logged in to place an order.",
-        variant: "destructive",
-      });
+      toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
       return undefined;
     }
     
     const orderInput = {
-        customerId: currentUser.id,
-        customerName: currentUser.name,
-        customerEmail: currentUser.email,
-        address: deliveryAddress,
-        pickupDate: format(pickupDate, 'yyyy-MM-dd'),
-        pickupTime: pickupTime,
-        total: total,
-        items: items,
-        cookingNotes: cookingNotes || undefined,
-        updateRequests: [],
-        appliedCoupon: appliedCoupon,
-        discountAmount: discountAmount,
-        deliveryFee: deliveryFee,
+        customerId: currentUser.id, customerName: currentUser.name, customerEmail: currentUser.email,
+        address: deliveryAddress, pickupDate: format(pickupDate, 'yyyy-MM-dd'), pickupTime, total, items,
+        cookingNotes: cookingNotes || undefined, updateRequests: [], appliedCoupon, discountAmount, deliveryFee,
     };
 
     try {
@@ -85,45 +83,20 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(orderInput),
         });
-
         const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            toast({
-                title: 'Order Failed',
-                description: result.message || 'There was an error placing your order.',
-                variant: 'destructive',
-            });
-            return undefined;
-        }
+        if (!response.ok || !result.success) throw new Error(result.message);
 
         const newOrder: Order = result.order;
-
-        setOrders(prevOrders => [newOrder, ...prevOrders]);
-
-        toast({
-            title: "Pre-Order Placed!",
-            description: "Your order has been successfully submitted. You will receive an email confirmation shortly.",
-            variant: "success",
-        });
-        
+        setOrders(prev => [newOrder, ...prev]);
+        toast({ title: "Pre-Order Placed!", variant: "success" });
         return newOrder;
-
     } catch (error) {
-        console.error("Failed to call create-order API:", error);
-        toast({
-            title: 'Network Error',
-            description: 'Could not connect to the server to place your order.',
-            variant: 'destructive',
-        });
+        toast({ title: 'Order Failed', description: (error as Error).message, variant: 'destructive' });
         return undefined;
     }
   }, [toast, currentUser]);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string, cancellationAction?: 'refund' | 'donate') => {
-    const orderToUpdate = orders.find(o => o.id === orderId);
-    if (!orderToUpdate) return;
-    
     const updates: Partial<Order> = { status };
     if (status === 'Cancelled') {
         updates.cancellationDate = format(new Date(), 'yyyy-MM-dd');
@@ -139,45 +112,22 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ orderId, ...updates }),
         });
         const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            toast({ title: "Error", description: result.message || "Failed to update order.", variant: "destructive" });
-            return;
-        }
+        if (!response.ok || !result.success) throw new Error(result.message);
 
         const updatedOrder: Order = result.order;
         setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
         
         if (status === 'Cancelled' && customerEmail) {
-            try {
-                await sendOrderNotification({
-                    order: updatedOrder,
-                    notificationType: 'customerCancellation',
-                    customerEmail: customerEmail,
-                    adminEmail: 'sangkar111@gmail.com'
-                });
-                toast({
-                    title: "Order Cancelled",
-                    description: `Order #${orderId} has been cancelled and a confirmation email has been sent.`,
-                });
-            } catch (error) {
-                console.error("Failed to send cancellation email:", error);
-                toast({
-                    title: "Order Cancelled",
-                    description: `Order #${orderId} has been cancelled, but we failed to send a confirmation email.`,
-                    variant: 'destructive',
-                });
-            }
-        } else {
-            toast({
-                title: "Order Status Updated",
-                description: `Order #${orderId} has been updated to "${status}".`,
+            await sendOrderNotification({
+                order: updatedOrder, notificationType: 'customerCancellation',
+                customerEmail: customerEmail, adminEmail: 'sangkar111@gmail.com'
             });
         }
+        toast({ title: "Order Status Updated" });
     } catch (error) {
-        toast({ title: 'Network Error', description: 'Could not connect to the server to update order.', variant: 'destructive' });
+        toast({ title: 'Update Failed', description: (error as Error).message, variant: 'destructive' });
     }
-}, [orders, toast]);
+}, [toast]);
 
   const addReviewToOrder = useCallback(async (orderId: string, reviewId: string) => {
     try {
@@ -187,19 +137,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ orderId, reviewId }),
         });
         const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            toast({ title: "Error", description: result.message || "Failed to link review to order.", variant: "destructive" });
-            return;
-        }
+        if (!response.ok || !result.success) throw new Error(result.message);
         
-        setOrders(prevOrders =>
-            prevOrders.map(order =>
-                order.id === orderId ? { ...order, reviewId } : order
-            )
-        );
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, reviewId } : o));
     } catch (error) {
-        toast({ title: 'Network Error', description: 'Could not connect to the server.', variant: 'destructive' });
+        toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
     }
   }, [toast]);
 
@@ -210,21 +152,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId, reviewId: undefined }),
         });
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            // Silently fail is okay here, as it's a cleanup operation
-            console.error("Failed to unlink review from order:", result.message);
-            return;
-        }
-
-        setOrders(prevOrders =>
-          prevOrders.map(order =>
-            order.id === orderId ? { ...order, reviewId: undefined } : order
-          )
-        );
+        if (!response.ok) throw new Error('Failed to unlink review');
+        
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, reviewId: undefined } : o));
     } catch (error) {
-        console.error("Network error while unlinking review:", error);
+        console.error("Failed to unlink review from order:", (error as Error).message);
     }
   }, []);
 
@@ -233,12 +165,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     if (!orderToUpdate || !message.trim()) return;
 
     const newRequest: UpdateRequest = {
-        id: `MSG-${Date.now()}`,
-        message,
-        from,
-        timestamp: new Date().toISOString(),
+        id: `MSG-${Date.now()}`, message, from, timestamp: new Date().toISOString()
     };
-
     const updatedRequests = [...(orderToUpdate.updateRequests || []), newRequest];
 
     try {
@@ -248,27 +176,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ orderId, updateRequests: updatedRequests }),
         });
         const result = await response.json();
-        
-        if (!response.ok || !result.success) {
-            toast({ title: "Error", description: result.message || "Failed to send message.", variant: "destructive" });
-            return;
-        }
+        if (!response.ok || !result.success) throw new Error(result.message);
 
         setOrders(prev => prev.map(o => (o.id === orderId ? result.order : o)));
-
-        if (from === 'admin') {
-          toast({
-            title: "Reply Sent!",
-            description: "Your reply has been sent to the customer.",
-          });
-        } else {
-          toast({
-            title: "Message Sent!",
-            description: "Your inquiry has been sent to the restaurant.",
-          });
-        }
+        toast({ title: "Message Sent!" });
     } catch (error) {
-        toast({ title: 'Network Error', description: 'Could not connect to the server to send message.', variant: 'destructive' });
+        toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
     }
   }, [orders, toast]);
 

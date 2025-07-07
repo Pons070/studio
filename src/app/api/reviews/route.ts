@@ -1,11 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { reviews as mockReviews } from '@/lib/mock-data'; // Use mock-data as a "database" for GET
+import { reviews } from '@/lib/review-store';
 import type { Review } from '@/lib/types';
 
 // GET - Fetches all reviews
 export async function GET() {
-  return NextResponse.json({ success: true, reviews: mockReviews });
+  return NextResponse.json({ success: true, reviews: reviews });
 }
 
 // POST - Creates a new review
@@ -18,13 +18,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
     }
 
-    // Simulate creating a new review on the server
     const newReview: Review = {
       ...body,
       id: `REV-${Date.now()}`,
       date: new Date().toISOString().split('T')[0],
       isPublished: false, // Reviews should be moderated first
     };
+    
+    reviews.unshift(newReview);
 
     return NextResponse.json({ success: true, review: newReview });
   } catch (error) {
@@ -41,8 +42,13 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Review ID is required for an update.' }, { status: 400 });
         }
         
-        // In a real app, find the review in the DB and update it.
-        // Here, we just validate and return the received object.
+        const index = reviews.findIndex(r => r.id === body.id);
+        if (index === -1) {
+            return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
+        }
+        
+        reviews[index] = body;
+        
         return NextResponse.json({ success: true, review: body });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
@@ -57,7 +63,13 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Review ID is required for deletion.' }, { status: 400 });
         }
         
-        // In a real app, you'd delete from the DB.
+        const index = reviews.findIndex(r => r.id === id);
+        if (index === -1) {
+             return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
+        }
+        
+        reviews.splice(index, 1);
+        
         return NextResponse.json({ success: true, id });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });

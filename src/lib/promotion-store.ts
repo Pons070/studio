@@ -1,0 +1,40 @@
+
+import type { Promotion } from './types';
+
+export let promotions: Promotion[] = [
+  {
+    id: 'PROMO-1',
+    title: '🎉 Welcome Offer for New Customers!',
+    description: 'Get 15% off your first order with us. We are so happy to have you!',
+    targetAudience: 'new',
+    isActive: true,
+    couponCode: 'WELCOME15',
+    discountType: 'percentage',
+    discountValue: 15,
+  },
+  {
+    id: 'PROMO-2',
+    title: 'Weekday Special for Regulars!',
+    description: 'Enjoy a free dessert on us as a thank you for your continued support. Valid on weekdays.',
+    targetAudience: 'existing',
+    isActive: true,
+    couponCode: 'SWEETTREAT',
+    discountType: 'flat',
+    discountValue: 7.50,
+    minOrderValue: 20,
+    startDate: '2024-06-01',
+    activeDays: [1, 2, 3, 4, 5], // Mon-Fri
+  },
+   {
+    id: 'PROMO-3',
+    title: 'Summer Special - All Customers',
+    description: 'Get a free drink with any main course ordered this month.',
+    targetAudience: 'all',
+    isActive: false,
+    couponCode: 'SUMMERDRINK',
+    discountType: 'flat',
+    discountValue: 3.00,
+    startDate: '2023-07-01',
+    endDate: '2023-07-31',
+  },
+];

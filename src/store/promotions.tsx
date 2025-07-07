@@ -3,76 +3,98 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { Promotion } from '@/lib/types';
-import { promotions as mockPromotions } from '@/lib/mock-data';
 import { useToast } from "@/hooks/use-toast";
 
 type PromotionContextType = {
   promotions: Promotion[];
-  addPromotion: (promotion: Omit<Promotion, 'id' | 'isActive'>) => void;
-  updatePromotion: (promotion: Promotion) => void;
-  deletePromotion: (promotionId: string) => void;
+  isLoading: boolean;
+  addPromotion: (promotion: Omit<Promotion, 'id'>) => Promise<void>;
+  updatePromotion: (promotion: Promotion) => Promise<void>;
+  deletePromotion: (promotionId: string) => Promise<void>;
 };
 
 const PromotionContext = createContext<PromotionContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'culina-preorder-promotions';
-
 export function PromotionProvider({ children }: { children: ReactNode }) {
-  const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchPromotions = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const item = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (item) {
-        setPromotions(JSON.parse(item));
-      }
+        const response = await fetch('/api/promotions');
+        const data = await response.json();
+        if (data.success) {
+            setPromotions(data.promotions);
+        } else {
+            toast({ title: 'Error', description: 'Could not fetch promotions.', variant: 'destructive' });
+        }
     } catch (error) {
-      console.error("Failed to load promotions from localStorage", error);
+        console.error("Failed to fetch promotions", error);
+        toast({ title: 'Network Error', description: 'Could not connect to server for promotions.', variant: 'destructive' });
+    } finally {
+        setIsLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(promotions));
-    } catch (error) {
-      console.error("Failed to save promotions to localStorage", error);
-    }
-  }, [promotions]);
-
-  const addPromotion = useCallback((promotionData: Omit<Promotion, 'id' | 'isActive'>) => {
-    const newPromotion: Promotion = {
-      ...promotionData,
-      id: `PROMO-${Date.now()}`,
-      isActive: true,
-    };
-    setPromotions(prev => [newPromotion, ...prev]);
-    toast({
-      title: "Promotion Added",
-      description: `The promotion "${newPromotion.title}" has been created.`,
-    });
   }, [toast]);
 
-  const updatePromotion = useCallback((promotionData: Promotion) => {
-    setPromotions(prev =>
-      prev.map(p => (p.id === promotionData.id ? promotionData : p))
-    );
-    toast({
-      title: "Promotion Updated",
-      description: `The promotion "${promotionData.title}" has been updated.`,
-    });
+  useEffect(() => {
+    fetchPromotions();
+  }, [fetchPromotions]);
+
+  const addPromotion = useCallback(async (promotionData: Omit<Promotion, 'id'>) => {
+    try {
+      const response = await fetch('/api/promotions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(promotionData),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message);
+      
+      setPromotions(prev => [result.promotion, ...prev]);
+      toast({ title: "Promotion Added" });
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
   }, [toast]);
 
-  const deletePromotion = useCallback((promotionId: string) => {
-    setPromotions(prev => prev.filter(p => p.id !== promotionId));
-    toast({
-      title: "Promotion Deleted",
-      description: `The promotion has been removed.`,
-    });
+  const updatePromotion = useCallback(async (promotionData: Promotion) => {
+    try {
+      const response = await fetch('/api/promotions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(promotionData),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message);
+      
+      setPromotions(prev => prev.map(p => (p.id === promotionData.id ? result.promotion : p)));
+      toast({ title: "Promotion Updated" });
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
+  }, [toast]);
+
+  const deletePromotion = useCallback(async (promotionId: string) => {
+    try {
+      const response = await fetch('/api/promotions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: promotionId }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message);
+      
+      setPromotions(prev => prev.filter(p => p.id !== promotionId));
+      toast({ title: "Promotion Deleted" });
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
   }, [toast]);
 
   return (
-    <PromotionContext.Provider value={{ promotions, addPromotion, updatePromotion, deletePromotion }}>
+    <PromotionContext.Provider value={{ promotions, isLoading, addPromotion, updatePromotion, deletePromotion }}>
       {children}
     </PromotionContext.Provider>
   );

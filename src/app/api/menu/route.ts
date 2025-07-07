@@ -1,16 +1,10 @@
 
 import { NextResponse } from 'next/server';
-import { menuItems } from '@/lib/mock-data'; // Use mock-data as a "database" for GET
+import { menuItems } from '@/lib/menu-store';
 import type { MenuItem } from '@/lib/types';
-
-// In this prototype, we're not persisting changes on the server.
-// The client-side state in MenuProvider will be the source of truth after the initial load.
-// These API routes simulate a real backend's behavior: validating input and returning objects.
 
 // GET - Fetches all menu items
 export async function GET() {
-  // In a real app, this would fetch from a database.
-  // Here, we return the initial mock data. The client will handle updates in its state.
   return NextResponse.json({ success: true, menuItems });
 }
 
@@ -24,7 +18,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
     }
 
-    // Simulate creating a new menu item on the server
     const newItem: MenuItem = {
       ...body,
       id: `MENU-${Date.now()}`,
@@ -33,6 +26,8 @@ export async function POST(request: Request) {
       isFeatured: false,
       imageUrl: body.imageUrl || 'https://placehold.co/600x400.png',
     };
+
+    menuItems.unshift(newItem);
 
     return NextResponse.json({ success: true, menuItem: newItem });
   } catch (error) {
@@ -49,8 +44,13 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Menu item ID is required for an update.' }, { status: 400 });
         }
         
-        // In a real app, you'd find the item in the DB and update it.
-        // Here, we just validate and return the received object, assuming the client sent valid data.
+        const index = menuItems.findIndex(item => item.id === body.id);
+        if (index === -1) {
+            return NextResponse.json({ success: false, message: 'Menu item not found.' }, { status: 404 });
+        }
+
+        menuItems[index] = body;
+        
         return NextResponse.json({ success: true, menuItem: body });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
@@ -65,8 +65,13 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Menu item ID is required for deletion.' }, { status: 400 });
         }
         
-        // In a real app, you'd delete from the DB.
-        // We just confirm the action.
+        const index = menuItems.findIndex(item => item.id === id);
+        if (index === -1) {
+            return NextResponse.json({ success: false, message: 'Menu item not found.' }, { status: 404 });
+        }
+        
+        menuItems.splice(index, 1);
+        
         return NextResponse.json({ success: true, id });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
