@@ -1,5 +1,5 @@
 
-import type { MenuItem, Order, Review, BrandInfo, Promotion, Address, DeliveryArea } from './types';
+import type { MenuItem, Order, Review, BrandInfo, Promotion, Address, DeliveryArea, User } from './types';
 
 export const brandInfo: BrandInfo = {
   name: 'CulinaPreOrder',
@@ -399,4 +399,61 @@ export const promotions: Promotion[] = [
   },
 ];
 
-    
+export const users: User[] = [
+  {
+    id: 'user-admin',
+    name: 'Admin',
+    email: 'admin@example.com',
+    password: 'password',
+    phone: '555-0100',
+    addresses: [],
+  },
+  {
+    id: 'user-alice',
+    name: 'Alice',
+    email: 'alice@example.com',
+    password: 'password',
+    phone: '555-0101',
+    addresses: [{ ...aliceAddress, id: 'addr-alice-1', label: 'Home', isDefault: true }],
+  },
+  {
+    id: 'user-diana',
+    name: 'Diana',
+    email: 'diana@example.com',
+    password: 'password',
+    phone: '555-0102',
+    addresses: [{ ...dianaAddress, id: 'addr-diana-1', label: 'Home', isDefault: true }],
+  },
+  {
+    id: 'user-charlie',
+    name: 'Charlie',
+    email: 'charlie@example.com',
+    password: 'password',
+    phone: '555-0103',
+    addresses: [{ ...charlieAddress, id: 'addr-charlie-1', label: 'Work', isDefault: true }],
+  },
+  {
+    id: 'user-eve',
+    name: 'Eve',
+    email: 'eve@example.com',
+    password: 'password',
+    phone: '555-0104',
+    addresses: [{ ...eveAddress, id: 'addr-eve-1', label: 'Home', isDefault: true }],
+  },
+  {
+    id: 'user-bob',
+    name: 'Bob',
+    email: 'bob@example.com',
+    password: 'password',
+    phone: '555-0105',
+    addresses: [{ ...bobAddress, id: 'addr-bob-1', label: 'Home', isDefault: true }],
+  },
+  {
+    id: 'user-frank',
+    name: 'Frank',
+    email: 'frank@example.com',
+    password: 'password',
+    phone: '555-0106',
+    addresses: [{ ...frankAddress, id: 'addr-frank-1', label: 'Home', isDefault: true }],
+  }
+];

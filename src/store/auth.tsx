@@ -6,6 +6,7 @@ import { createContext, useContext, useState, ReactNode, useCallback, useEffect 
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import type { Address, User } from '@/lib/types';
+import { users as mockUsers } from '@/lib/mock-data';
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -40,16 +41,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
+      let finalUsers: User[];
       const storedUsers = window.localStorage.getItem(USERS_STORAGE_KEY);
+      
       if (storedUsers) {
-        setUsers(JSON.parse(storedUsers));
+        finalUsers = JSON.parse(storedUsers);
+      } else {
+        // If no users in storage, seed with mock data
+        finalUsers = mockUsers;
+        window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mockUsers));
       }
+      setUsers(finalUsers);
+
       const storedCurrentUser = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
       if (storedCurrentUser) {
-        setCurrentUser(JSON.parse(storedCurrentUser));
+        const currentUserData = JSON.parse(storedCurrentUser);
+        // Make sure the current user from storage still exists in our user list
+        const userExists = finalUsers.some(u => u.id === currentUserData.id);
+        if (userExists) {
+            setCurrentUser(currentUserData);
+        } else {
+            // Current user was deleted or data is out of sync, log them out.
+            window.localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+            setCurrentUser(null);
+        }
       }
     } catch (error) {
       console.error("Failed to load auth data from localStorage", error);
+      // Fallback to mock data if storage is corrupted
+      setUsers(mockUsers);
     }
   }, []);
 
