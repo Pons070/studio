@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -66,6 +65,7 @@ import { useRouter } from 'next/navigation';
 import { getBusinessInsights, type BusinessInsightsOutput } from '@/ai/flows/business-insights-flow';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, Tooltip, ResponsiveContainer, Cell, YAxis, Legend } from 'recharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const getBadgeVariant = (status: string): VariantProps<typeof badgeVariants>["variant"] => {
     switch (status) {
@@ -557,13 +557,43 @@ function OrderManagement() {
     setOrderToCancel(null);
   }
 
-  const filteredOrders = orders.filter(o =>
+  const filteredOrders = useMemo(() => orders.filter(o =>
     o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     o.customerName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [orders, searchQuery]);
 
-  const activeOrders = filteredOrders.filter(o => o.status === 'Pending' || o.status === 'Confirmed').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
-  const historicalOrders = filteredOrders.filter(o => o.status === 'Completed' || o.status === 'Cancelled').sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
+  const activeOrders = useMemo(() => filteredOrders
+    .filter(o => o.status === 'Pending' || o.status === 'Confirmed')
+    .sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime()), [filteredOrders]);
+
+  const { recentHistory, archivedOrders } = useMemo(() => {
+    const historical = filteredOrders.filter(o => o.status === 'Completed' || o.status === 'Cancelled');
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+    
+    let recent: Order[] = [];
+    let archived: Order[] = [];
+
+    historical.forEach(order => {
+      if (new Date(order.pickupDate) < fifteenDaysAgo) {
+        archived.push(order);
+      } else {
+        recent.push(order);
+      }
+    });
+
+    recent.sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
+
+    if (recent.length > 100) {
+      const toArchive = recent.splice(100);
+      archived.push(...toArchive);
+    }
+
+    archived.sort((a, b) => new Date(b.pickupDate).getTime() - new Date(a.pickupDate).getTime());
+
+    return { recentHistory: recent, archivedOrders: archived };
+  }, [filteredOrders]);
+
 
   return (
     <>
@@ -596,14 +626,29 @@ function OrderManagement() {
         <Card>
           <CardHeader>
             <CardTitle>Order History</CardTitle>
-            <CardDescription>Completed and cancelled orders.</CardDescription>
+            <CardDescription>Completed and cancelled orders. Older orders are automatically archived.</CardDescription>
           </CardHeader>
           <CardContent>
-            <OrderTable 
-              orders={historicalOrders} 
-              onSelectOrder={setSelectedOrder}
-              onDeleteOrder={handleConfirmCancellation}
-            />
+            <Tabs defaultValue="recent" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="recent">Recent History</TabsTrigger>
+                <TabsTrigger value="archive">Archive</TabsTrigger>
+              </TabsList>
+              <TabsContent value="recent" className="mt-4">
+                <OrderTable 
+                  orders={recentHistory} 
+                  onSelectOrder={setSelectedOrder}
+                  onDeleteOrder={handleConfirmCancellation}
+                />
+              </TabsContent>
+              <TabsContent value="archive" className="mt-4">
+                 <OrderTable 
+                  orders={archivedOrders} 
+                  onSelectOrder={setSelectedOrder}
+                  onDeleteOrder={handleConfirmCancellation}
+                />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
@@ -3399,8 +3444,6 @@ export default function AdminDashboardPage() {
       </div>
   );
 }
-
-
-
+    
 
     
