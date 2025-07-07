@@ -1319,7 +1319,7 @@ function DeliveryAreaDialog({ isOpen, onOpenChange, onSave, area }: { isOpen: bo
 }
 
 function BrandManagement() {
-  const { brandInfo, updateBrandInfo, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea } = useBrand();
+  const { brandInfo, updateBrandInfo } = useBrand();
   const [name, setName] = useState(brandInfo.name);
   const [logoUrl, setLogoUrl] = useState(brandInfo.logoUrl);
   const [phone, setPhone] = useState(brandInfo.phone);
@@ -1335,8 +1335,6 @@ function BrandManagement() {
   const [logoShape, setLogoShape] = useState(brandInfo.logoShape || 'square');
   const [isCropDialogOpen, setCropDialogOpen] = useState(false);
   const [imgSrcToCrop, setImgSrcToCrop] = useState('');
-  const [isAreaDialogOpen, setAreaDialogOpen] = useState(false);
-  const [editingArea, setEditingArea] = useState<DeliveryArea | null>(null);
 
   const palettes = [
     { name: 'Oceanic Blue', primaryColor: '217 91% 60%', backgroundColor: '210 40% 98%', accentColor: '198 93% 60%' },
@@ -1438,25 +1436,6 @@ function BrandManagement() {
       deliveryAreas: brandInfo.deliveryAreas, // Make sure to pass existing areas
     });
     setTimeout(() => setIsSaving(false), 500);
-  }
-
-  const handleEditArea = (area: DeliveryArea) => {
-    setEditingArea(area);
-    setAreaDialogOpen(true);
-  }
-  
-  const handleAddNewArea = () => {
-    setEditingArea(null);
-    setAreaDialogOpen(true);
-  }
-
-  const handleSaveArea = (areaData: DeliveryArea | Omit<DeliveryArea, 'id'>) => {
-    if ('id' in areaData && areaData.id) {
-        updateDeliveryArea(areaData as DeliveryArea);
-    } else {
-        addDeliveryArea(areaData as Omit<DeliveryArea, 'id'>);
-    }
-    setAreaDialogOpen(false);
   }
 
   const isDirty = name !== brandInfo.name ||
@@ -1580,65 +1559,6 @@ function BrandManagement() {
             </div>
         </div>
         
-        <Separator />
-
-        <div className="space-y-4">
-            <h3 className="text-lg font-medium flex items-center gap-2"><Truck /> Delivery Management</h3>
-            <Card>
-                <CardContent className="p-4">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Pincode</TableHead>
-                                <TableHead>Area Name</TableHead>
-                                <TableHead>Cost</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {(brandInfo.deliveryAreas || []).map(area => (
-                                <TableRow key={area.id}>
-                                    <TableCell>{area.pincode}</TableCell>
-                                    <TableCell>{area.areaName}</TableCell>
-                                    <TableCell>Rs.{area.cost.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEditArea(area)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                         <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This will remove the delivery area for "{area.areaName} - {area.pincode}".
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => deleteDeliveryArea(area.id)} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-                <CardFooter>
-                    <Button onClick={handleAddNewArea} variant="secondary">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Delivery Area
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
-
-
         <Separator className="my-6" />
 
         <div className="space-y-6">
@@ -1792,6 +1712,92 @@ function BrandManagement() {
           setCropDialogOpen(false);
         }}
       />
+    </>
+  );
+}
+
+function DeliveryManagement() {
+  const { brandInfo, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea } = useBrand();
+  const [isAreaDialogOpen, setAreaDialogOpen] = useState(false);
+  const [editingArea, setEditingArea] = useState<DeliveryArea | null>(null);
+
+  const handleEditArea = (area: DeliveryArea) => {
+    setEditingArea(area);
+    setAreaDialogOpen(true);
+  }
+  
+  const handleAddNewArea = () => {
+    setEditingArea(null);
+    setAreaDialogOpen(true);
+  }
+
+  const handleSaveArea = (areaData: DeliveryArea | Omit<DeliveryArea, 'id'>) => {
+    if ('id' in areaData && areaData.id) {
+        updateDeliveryArea(areaData as DeliveryArea);
+    } else {
+        addDeliveryArea(areaData as Omit<DeliveryArea, 'id'>);
+    }
+    setAreaDialogOpen(false);
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Delivery Areas & Costs</CardTitle>
+          <CardDescription>Define where you deliver and set the corresponding fees.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+              <TableHeader>
+                  <TableRow>
+                      <TableHead>Pincode</TableHead>
+                      <TableHead>Area Name</TableHead>
+                      <TableHead>Cost</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+              </TableHeader>
+              <TableBody>
+                  {(brandInfo.deliveryAreas || []).map(area => (
+                      <TableRow key={area.id}>
+                          <TableCell>{area.pincode}</TableCell>
+                          <TableCell>{area.areaName}</TableCell>
+                          <TableCell>Rs.{area.cost.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => handleEditArea(area)}>
+                                  <Edit className="h-4 w-4" />
+                              </Button>
+                               <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                          <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                              This will remove the delivery area for "{area.areaName} - {area.pincode}".
+                                          </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => deleteDeliveryArea(area.id)} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                  </AlertDialogContent>
+                              </AlertDialog>
+                          </TableCell>
+                      </TableRow>
+                  ))}
+              </TableBody>
+          </Table>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleAddNewArea}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Delivery Area
+          </Button>
+        </CardFooter>
+      </Card>
       <DeliveryAreaDialog
         isOpen={isAreaDialogOpen}
         onOpenChange={setAreaDialogOpen}
@@ -3149,6 +3155,7 @@ export default function AdminDashboardPage() {
     { id: 'menu', label: 'Manage Menu', description: "Add, edit, or remove menu items.", icon: Utensils },
     { id: 'reviews', label: 'Manage Reviews', description: "Moderate and reply to feedback.", icon: Star },
     { id: 'promotions', label: 'Manage Promotions', description: "Create and manage special offers.", icon: Megaphone },
+    { id: 'delivery', label: 'Manage Delivery', description: "Set up delivery zones and costs.", icon: Truck },
     { id: 'brand', label: 'Manage Brand', description: "Customize your store's appearance.", icon: Palette },
     { id: 'customers', label: 'Manage Customers', description: "View and manage user accounts.", icon: Users },
     { id: 'analytics', label: 'Analytics', description: "Gain insights into your business performance.", icon: BarChart2 },
@@ -3160,6 +3167,7 @@ export default function AdminDashboardPage() {
       case 'menu': return <MenuManagement />;
       case 'reviews': return <ReviewManagement />;
       case 'promotions': return <PromotionManagement />;
+      case 'delivery': return <DeliveryManagement />;
       case 'brand': return <BrandManagement />;
       case 'customers': return <CustomerManagement />;
       case 'analytics': return <AnalyticsAndReports />;
@@ -3259,3 +3267,4 @@ export default function AdminDashboardPage() {
       </div>
   );
 }
+
