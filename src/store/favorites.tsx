@@ -32,19 +32,32 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storageKey = getStorageKey();
     if (storageKey) {
-      try {
-        const item = window.localStorage.getItem(storageKey);
-        if (item) {
-          const { itemIds, orderIds } = JSON.parse(item);
-          setFavoriteItemIds(itemIds || []);
-          setFavoriteOrderIds(orderIds || []);
-        } else {
-            setFavoriteItemIds([]);
-            setFavoriteOrderIds([]);
+        // First, try loading from localStorage for speed
+        try {
+            const item = window.localStorage.getItem(storageKey);
+            if (item) {
+            const { itemIds, orderIds } = JSON.parse(item);
+            setFavoriteItemIds(itemIds || []);
+            setFavoriteOrderIds(orderIds || []);
+            }
+        } catch (error) {
+            console.error("Failed to load favorites from localStorage", error);
         }
-      } catch (error) {
-        console.error("Failed to load favorites from localStorage", error);
-      }
+        
+        // Then, simulate fetching from API to demonstrate pattern
+        if (currentUser?.id) {
+            fetch(`/api/favorites?userId=${currentUser.id}`)
+                .then(res => res.json())
+                .then(data => {
+                if(data.success) {
+                    // In a real app, you might merge client and server state here.
+                    // For this prototype, we do nothing with the response as localStorage is king.
+                    console.log("Simulated fetch for favorites complete.");
+                }
+                })
+                .catch(err => console.error("Could not fetch favorites", err));
+        }
+
     } else {
         // Clear favorites when user logs out
         setFavoriteItemIds([]);
@@ -63,41 +76,77 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     }
   }, [getStorageKey]);
 
-  const toggleFavoriteItem = useCallback((itemId: string) => {
-    if (!isAuthenticated) {
+  const toggleFavoriteItem = useCallback(async (itemId: string) => {
+    if (!isAuthenticated || !currentUser) {
         toast({ title: "Please log in to add favorites.", variant: "destructive" });
         return;
     }
-    let newFavoriteItemIds;
     const isFavorite = favoriteItemIds.includes(itemId);
-    if (isFavorite) {
-      newFavoriteItemIds = favoriteItemIds.filter(id => id !== itemId);
-      toast({ title: "Removed from Favorites" });
-    } else {
-      newFavoriteItemIds = [...favoriteItemIds, itemId];
-      toast({ title: "Added to Favorites" });
-    }
-    setFavoriteItemIds(newFavoriteItemIds);
-    persistFavorites(newFavoriteItemIds, favoriteOrderIds);
-  }, [favoriteItemIds, favoriteOrderIds, persistFavorites, toast, isAuthenticated]);
+    
+    try {
+        const response = await fetch('/api/favorites', {
+            method: isFavorite ? 'DELETE' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id, type: 'item', id: itemId }),
+        });
+        const result = await response.json();
 
-  const toggleFavoriteOrder = useCallback((orderId: string) => {
-     if (!isAuthenticated) {
+        if (!response.ok || !result.success) {
+            toast({ title: "Error", description: result.message || "Failed to update favorites.", variant: "destructive" });
+            return;
+        }
+
+        let newFavoriteItemIds;
+        if (isFavorite) {
+          newFavoriteItemIds = favoriteItemIds.filter(id => id !== itemId);
+          toast({ title: "Removed from Favorites" });
+        } else {
+          newFavoriteItemIds = [...favoriteItemIds, itemId];
+          toast({ title: "Added to Favorites" });
+        }
+        setFavoriteItemIds(newFavoriteItemIds);
+        persistFavorites(newFavoriteItemIds, favoriteOrderIds);
+
+    } catch (error) {
+        toast({ title: 'Network Error', description: 'Could not connect to the server to update favorites.', variant: 'destructive' });
+    }
+  }, [favoriteItemIds, favoriteOrderIds, persistFavorites, toast, isAuthenticated, currentUser]);
+
+  const toggleFavoriteOrder = useCallback(async (orderId: string) => {
+     if (!isAuthenticated || !currentUser) {
         toast({ title: "Please log in to add favorites.", variant: "destructive" });
         return;
     }
-    let newFavoriteOrderIds;
     const isFavorite = favoriteOrderIds.includes(orderId);
-    if (isFavorite) {
-      newFavoriteOrderIds = favoriteOrderIds.filter(id => id !== orderId);
-      toast({ title: "Removed from Favorite Orders" });
-    } else {
-      newFavoriteOrderIds = [...favoriteOrderIds, orderId];
-      toast({ title: "Added to Favorite Orders" });
+
+    try {
+        const response = await fetch('/api/favorites', {
+            method: isFavorite ? 'DELETE' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id, type: 'order', id: orderId }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            toast({ title: "Error", description: result.message || "Failed to update favorites.", variant: "destructive" });
+            return;
+        }
+        
+        let newFavoriteOrderIds;
+        if (isFavorite) {
+          newFavoriteOrderIds = favoriteOrderIds.filter(id => id !== orderId);
+          toast({ title: "Removed from Favorite Orders" });
+        } else {
+          newFavoriteOrderIds = [...favoriteOrderIds, orderId];
+          toast({ title: "Added to Favorite Orders" });
+        }
+        setFavoriteOrderIds(newFavoriteOrderIds);
+        persistFavorites(favoriteItemIds, newFavoriteOrderIds);
+
+    } catch (error) {
+        toast({ title: 'Network Error', description: 'Could not connect to the server to update favorites.', variant: 'destructive' });
     }
-    setFavoriteOrderIds(newFavoriteOrderIds);
-    persistFavorites(favoriteItemIds, newFavoriteOrderIds);
-  }, [favoriteOrderIds, favoriteItemIds, persistFavorites, toast, isAuthenticated]);
+  }, [favoriteOrderIds, favoriteItemIds, persistFavorites, toast, isAuthenticated, currentUser]);
 
   const isItemFavorite = useCallback((itemId: string) => {
     return favoriteItemIds.includes(itemId);

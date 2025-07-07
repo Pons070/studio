@@ -19,12 +19,12 @@ type AuthContextType = {
   requestOtp: (phone: string) => Promise<OtpRequestResult>;
   verifyOtpAndLogin: (phone: string, otp: string, name?: string) => Promise<boolean>;
   logout: (options?: { idle: boolean }) => void;
-  updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => void;
+  updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => Promise<void>;
   addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => Promise<void>;
   updateAddress: (address: Address) => Promise<void>;
   deleteAddress: (addressId: string) => Promise<void>;
   setDefaultAddress: (addressId: string) => void;
-  deleteUser: () => void;
+  deleteUser: () => Promise<void>;
   deleteUserById: (userId: string) => void;
 };
 
@@ -235,34 +235,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [toast, persistUsers, persistCurrentUser]);
 
 
-  const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => {
-     // Always read the latest user list from storage before updating
-    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
-    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
-    
-    const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-    const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
-    
-    if (!currentUserData) return;
-    
-    let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
-    if (!userToUpdate) return;
-    
-    const updatedUser: User = { 
-      ...userToUpdate,
-      ...data,
-      password: userToUpdate.password,
-    };
-    
-    const updatedUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
-    persistUsers(updatedUsers);
-    persistCurrentUser(updatedUser);
+  const updateUser = useCallback(async (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => {
+    if (!currentUser) return;
 
-    toast({
-        title: "Profile Updated",
-        description: "Your details have been successfully saved.",
-    });
-  }, [toast, persistUsers, persistCurrentUser]);
+    try {
+        const response = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id, ...data }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            toast({ title: "Error", description: result.message || "Failed to update profile.", variant: "destructive" });
+            return;
+        }
+        
+        const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+        const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+        
+        const updatedUser: User = result.user;
+        const updatedUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+        
+        persistUsers(updatedUsers);
+        persistCurrentUser(updatedUser);
+
+        toast({
+            title: "Profile Updated",
+            description: "Your details have been successfully saved.",
+        });
+
+    } catch (error) {
+        toast({ title: 'Network Error', description: 'Could not connect to the server to update profile.', variant: 'destructive' });
+    }
+  }, [currentUser, toast, persistUsers, persistCurrentUser]);
 
   const addAddress = useCallback(async (addressData: Omit<Address, 'id' | 'isDefault'>) => {
     if (!currentUser) return;
@@ -409,26 +415,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({ title: "Default Address Updated", description: "Your default address has been set." });
   }, [toast, persistUsers, persistCurrentUser]);
   
-  const deleteUser = useCallback(() => {
-    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
-    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
-    
-    const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-    const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
+  const deleteUser = useCallback(async () => {
+    if (!currentUser) return;
 
-    if (!currentUserData) return;
+    try {
+        const response = await fetch('/api/profile', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id }),
+        });
+        const result = await response.json();
 
-    const updatedUsers = currentUsers.filter(u => u.id !== currentUserData.id);
-    persistUsers(updatedUsers);
+        if (!response.ok || !result.success) {
+            toast({ title: "Error", description: result.message || "Failed to delete account.", variant: "destructive" });
+            return;
+        }
 
-    toast({
-      title: "Account Deleted",
-      description: "Your account has been permanently deleted.",
-      variant: "destructive",
-    });
+        const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+        const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+        
+        const updatedUsers = currentUsers.filter(u => u.id !== currentUser.id);
+        persistUsers(updatedUsers);
 
-    logout();
-  }, [logout, toast, persistUsers]);
+        toast({
+          title: "Account Deleted",
+          description: "Your account has been permanently deleted.",
+          variant: "destructive",
+        });
+
+        logout();
+
+    } catch (error) {
+        toast({ title: 'Network Error', description: 'Could not connect to the server to delete your account.', variant: 'destructive' });
+    }
+  }, [currentUser, logout, toast, persistUsers]);
 
   const deleteUserById = useCallback((userId: string) => {
     const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
