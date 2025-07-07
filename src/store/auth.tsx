@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import type { Address, User } from '@/lib/types';
 import { users as mockUsers } from '@/lib/mock-data';
-import { useBrand } from './brand';
 
 type OtpRequestResult = {
   success: boolean;
@@ -19,7 +18,7 @@ type AuthContextType = {
   users: User[];
   requestOtp: (phone: string) => Promise<OtpRequestResult>;
   verifyOtpAndLogin: (phone: string, otp: string, name?: string) => Promise<boolean>;
-  logout: () => void;
+  logout: (options?: { idle: boolean }) => void;
   updateUser: (data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => void;
   addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => void;
   updateAddress: (address: Address) => void;
@@ -44,36 +43,93 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-  const { brandInfo } = useBrand();
 
   const persistUsers = useCallback((updatedUsers: User[]) => {
-    window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
     setUsers(updatedUsers);
+    window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   }, []);
 
   const persistCurrentUser = useCallback((user: User | null) => {
+    setCurrentUser(user);
     if (user) {
         const { password, ...userToStore } = user;
         window.localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(userToStore));
     } else {
         window.localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
     }
-    setCurrentUser(user);
   }, []);
 
-  useEffect(() => {
-    const storedUsers = window.localStorage.getItem(USERS_STORAGE_KEY);
-    const loadedUsers = storedUsers ? JSON.parse(storedUsers) : mockUsers;
-    setUsers(loadedUsers);
+  const logout = useCallback((options?: { idle: boolean }) => {
+    persistCurrentUser(null);
+    if (options?.idle) {
+        toast({
+            title: "Session Expired",
+            description: "You have been logged out due to inactivity.",
+        });
+    } else {
+        toast({
+            title: "Logged Out",
+            description: "You have been successfully logged out.",
+        });
+    }
+    router.push('/login');
+  }, [router, toast, persistCurrentUser]);
 
-    if (!storedUsers) {
-      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+  // Idle timer logic
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const events: (keyof WindowEventMap)[] = [
+      'mousemove',
+      'mousedown',
+      'keypress',
+      'scroll',
+      'touchstart',
+      'visibilitychange',
+    ];
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        // Check if user is still logged in before logging out
+        const storedUser = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+        if (storedUser) {
+          logout({ idle: true });
+        }
+      }, 15 * 60 * 1000); // 15 minutes
+    };
+    
+    // Only set up the timer if the user is logged in.
+    if (currentUser) {
+        events.forEach(event => {
+            window.addEventListener(event, resetTimer, { passive: true });
+        });
+        resetTimer(); // Initialize timer
     }
 
-    const storedCurrentUser = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-    if (storedCurrentUser) {
-        const currentUserData = JSON.parse(storedCurrentUser);
-        const fullUser = loadedUsers.find((u: User) => u.id === currentUserData.id);
+    // Cleanup function
+    return () => {
+        clearTimeout(timeoutId);
+        events.forEach(event => {
+            window.removeEventListener(event, resetTimer);
+        });
+    };
+  }, [currentUser, logout]);
+
+
+  useEffect(() => {
+    const storedUsersRaw = window.localStorage.getItem(USERS_STORAGE_KEY);
+    const users = storedUsersRaw ? JSON.parse(storedUsersRaw) : mockUsers;
+    setUsers(users);
+
+    if (!storedUsersRaw) {
+      window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mockUsers));
+    }
+    
+    const storedCurrentUserRaw = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    if (storedCurrentUserRaw) {
+        const currentUserData = JSON.parse(storedCurrentUserRaw);
+        const fullUser = users.find((u: User) => u.id === currentUserData.id);
         setCurrentUser(fullUser || null);
     }
   }, []);
@@ -109,8 +165,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // OTP is correct, clear it
     delete otpStore[phone];
 
-    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
-    let userToLogin = currentUsers.find(u => u.phone === phone);
+    let userToLogin: User | undefined;
+    
+    // Always read the latest user list from storage
+    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+    
+    userToLogin = currentUsers.find(u => u.phone === phone);
 
     // If user doesn't exist, it's a signup
     if (!userToLogin) {
@@ -141,20 +202,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [toast, persistUsers, persistCurrentUser]);
 
 
-  const logout = useCallback(() => {
-    persistCurrentUser(null);
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
-    router.push('/');
-  }, [router, toast, persistCurrentUser]);
-
   const updateUser = useCallback((data: Partial<Omit<User, 'id' | 'email' | 'password' | 'addresses'>>) => {
-    if (!currentUser) return;
+     // Always read the latest user list from storage before updating
+    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
     
-    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
-    let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
+    const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
+    
+    if (!currentUserData) return;
+    
+    let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
     if (!userToUpdate) return;
     
     const updatedUser: User = { 
@@ -163,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: userToUpdate.password,
     };
     
-    const updatedUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+    const updatedUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
     persistUsers(updatedUsers);
     persistCurrentUser(updatedUser);
 
@@ -171,13 +229,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Profile Updated",
         description: "Your details have been successfully saved.",
     });
-  }, [currentUser, toast, persistUsers, persistCurrentUser]);
+  }, [toast, persistUsers, persistCurrentUser]);
 
   const addAddress = useCallback((addressData: Omit<Address, 'id' | 'isDefault'>) => {
-    if (!currentUser) return;
+    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
     
-    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
-    let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
+    const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
+    
+    if (!currentUserData) return;
+
+    let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
     if (!userToUpdate) return;
 
     const currentAddresses = userToUpdate.addresses || [];
@@ -195,24 +258,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const updatedAddresses = [...currentAddresses, newAddress];
     const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
     
-    const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+    const newUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
     persistUsers(newUsers);
     persistCurrentUser(updatedUser);
 
     toast({ title: "Address Added", description: "Your new address has been saved." });
-  }, [currentUser, toast, persistUsers, persistCurrentUser]);
+  }, [toast, persistUsers, persistCurrentUser]);
 
   const updateAddress = useCallback((addressData: Address) => {
       if (!currentUser || !addressData.id) return;
       
-      const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
-      let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
+      const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+      const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+    
+      const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+      const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
+    
+      if (!currentUserData || !addressData.id) return;
+      
+      let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
       if (!userToUpdate) return;
       
       const updatedAddresses = (userToUpdate.addresses || []).map(addr => addr.id === addressData.id ? addressData : addr);
       const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
       
-      const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+      const newUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
       persistUsers(newUsers);
       persistCurrentUser(updatedUser);
 
@@ -220,10 +290,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [currentUser, toast, persistUsers, persistCurrentUser]);
   
   const deleteAddress = useCallback((addressId: string) => {
-      if (!currentUser) return;
+      const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+      const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+    
+      const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+      const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
+    
+      if (!currentUserData) return;
       
-      const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
-      let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
+      let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
       if (!userToUpdate) return;
 
       let updatedAddresses = (userToUpdate.addresses || []).filter(addr => addr.id !== addressId);
@@ -235,18 +310,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
       
-      const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+      const newUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
       persistUsers(newUsers);
       persistCurrentUser(updatedUser);
       
       toast({ title: "Address Deleted", description: "The address has been removed." });
-  }, [currentUser, toast, persistUsers, persistCurrentUser]);
+  }, [toast, persistUsers, persistCurrentUser]);
 
   const setDefaultAddress = useCallback((addressId: string) => {
-      if (!currentUser) return;
+      const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+      const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+    
+      const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+      const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
+    
+      if (!currentUserData) return;
       
-      const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
-      let userToUpdate = currentUsers.find(u => u.id === currentUser.id);
+      let userToUpdate = currentUsers.find(u => u.id === currentUserData.id);
       if (!userToUpdate) return;
       
       const updatedAddresses = (userToUpdate.addresses || []).map(addr => ({
@@ -256,18 +336,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const updatedUser = { ...userToUpdate, addresses: updatedAddresses };
       
-      const newUsers = currentUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+      const newUsers = currentUsers.map(u => u.id === currentUserData.id ? updatedUser : u);
       persistUsers(newUsers);
       persistCurrentUser(updatedUser);
 
       toast({ title: "Default Address Updated", description: "Your default address has been set." });
-  }, [currentUser, toast, persistUsers, persistCurrentUser]);
+  }, [toast, persistUsers, persistCurrentUser]);
   
   const deleteUser = useCallback(() => {
-    if (!currentUser) return;
+    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
+    
+    const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
 
-    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
-    const updatedUsers = currentUsers.filter(u => u.id !== currentUser.id);
+    if (!currentUserData) return;
+
+    const updatedUsers = currentUsers.filter(u => u.id !== currentUserData.id);
     persistUsers(updatedUsers);
 
     toast({
@@ -277,10 +362,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     logout();
-  }, [currentUser, logout, toast, persistUsers]);
+  }, [logout, toast, persistUsers]);
 
   const deleteUserById = useCallback((userId: string) => {
-    if (currentUser?.id === userId) {
+    const currentUserFromStorage = window.localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    const currentUserData: User | null = currentUserFromStorage ? JSON.parse(currentUserFromStorage) : null;
+
+    if (currentUserData?.id === userId) {
         toast({
             title: "Action Not Allowed",
             description: "You cannot delete your own account from the customer management panel.",
@@ -288,8 +376,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         return;
     }
+    
+    const usersFromStorage = window.localStorage.getItem(USERS_STORAGE_KEY);
+    const currentUsers: User[] = usersFromStorage ? JSON.parse(usersFromStorage) : [];
 
-    const currentUsers: User[] = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]');
     const userToDelete = currentUsers.find(u => u.id === userId);
     if (!userToDelete) return;
 
@@ -300,7 +390,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       title: "Customer Deleted",
       description: `The account for ${userToDelete.name} has been deleted.`,
     });
-  }, [currentUser, toast, persistUsers]);
+  }, [toast, persistUsers]);
 
   const isAuthenticated = !!currentUser;
 
