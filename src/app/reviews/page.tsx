@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useReviews } from '@/store/reviews';
@@ -6,6 +7,7 @@ import { useBrand } from '@/store/brand';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Star, Quote } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -24,7 +26,7 @@ function StarDisplay({ rating }: { rating: number }) {
 }
 
 export default function ReviewsPage() {
-  const { reviews } = useReviews();
+  const { reviews, isLoading } = useReviews();
   const { brandInfo } = useBrand();
   const publishedReviews = reviews.filter(r => r.isPublished);
 
@@ -37,7 +39,26 @@ export default function ReviewsPage() {
         </p>
       </div>
 
-      {publishedReviews.length > 0 ? (
+      {isLoading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="flex flex-col justify-between">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-6 w-24" />
+                  <div className="flex items-center">
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-grow space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : publishedReviews.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {publishedReviews.map((review) => (
             <Card key={review.id} className="flex flex-col justify-between shadow-lg transform transition-transform duration-300 hover:-translate-y-1">
