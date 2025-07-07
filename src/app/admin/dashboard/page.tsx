@@ -2475,6 +2475,48 @@ function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange, onExpo
     );
 }
 
+function PincodeDetailsDialog({ details, isOpen, onOpenChange, onExport, onSelectOrder }: { details: { pincode: string; orders: Order[] } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; onSelectOrder: (order: Order) => void; }) {
+    if (!details) return null;
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Orders for Pincode: "{details.pincode}"</DialogTitle>
+                    <DialogDescription>
+                        A total of {details.orders.length} order(s) were delivered to this pincode.
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] pr-4">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Order ID</TableHead>
+                                <TableHead>Customer</TableHead>
+                                <TableHead>Pickup Date</TableHead>
+                                <TableHead className="text-right">Total</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {details.orders.map(order => (
+                                <TableRow key={order.id} onClick={() => onSelectOrder(order)} className="cursor-pointer">
+                                    <TableCell>{order.id}</TableCell>
+                                    <TableCell>{order.customerName}</TableCell>
+                                    <TableCell>{order.pickupDate ? new Date(`${order.pickupDate}T00:00:00`).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell className="text-right">Rs.{order.total.toFixed(2)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export to CSV</Button>
+                    <DialogClose asChild><Button variant="secondary">Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport, onSelectOrder }: { details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onExport: () => void; onSelectOrder: (order: Order) => void; }) {
     if (!details) return null;
 
@@ -2559,6 +2601,7 @@ function AnalyticsAndReports() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellationDetails, setCancellationDetails] = useState<{ reason: string; orders: Order[] } | null>(null);
+  const [pincodeDetails, setPincodeDetails] = useState<{ pincode: string; orders: Order[] } | null>(null);
   const [metricDetails, setMetricDetails] = useState<{ title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | null>(null);
   const [fullySelectedOrder, setFullySelectedOrder] = useState<Order | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
@@ -2575,6 +2618,7 @@ function AnalyticsAndReports() {
     const averageRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
     const totalDiscounts = completedOrders.reduce((sum, o) => sum + (o.discountAmount || 0), 0);
     const totalDonatedOrders = donatedOrders.length;
+    const totalDeliveryFees = completedOrders.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
 
     return {
       totalRevenue,
@@ -2585,6 +2629,7 @@ function AnalyticsAndReports() {
       totalCancelledOrders,
       totalDiscounts,
       totalDonatedOrders,
+      totalDeliveryFees
     };
   }, [completedOrders, cancelledOrders, reviews, donatedOrders]);
 
@@ -2643,6 +2688,23 @@ function AnalyticsAndReports() {
       .map(([reason, count]) => ({ reason, count }))
       .sort((a, b) => b.count - a.count);
   }, [orders]);
+  
+    const ordersByPincode = useMemo(() => {
+        const pincodeCounts: { [key: string]: number } = {};
+        orders
+          .filter(o => o.status === 'Completed')
+          .forEach(order => {
+              const pincode = order.address.pincode;
+              if (!pincodeCounts[pincode]) {
+                  pincodeCounts[pincode] = 0;
+              }
+              pincodeCounts[pincode]++;
+          });
+        
+        return Object.entries(pincodeCounts)
+          .map(([pincode, count]) => ({ pincode, count }))
+          .sort((a, b) => b.count - a.count);
+    }, [orders]);
 
   const handleConfirmCancellation = (order: Order) => {
     setFullySelectedOrder(null);
@@ -2662,6 +2724,14 @@ function AnalyticsAndReports() {
         const reason = data.activePayload[0].payload.reason;
         const filteredOrders = orders.filter(o => o.cancellationReason === reason);
         setCancellationDetails({ reason, orders: filteredOrders });
+    }
+  };
+
+  const handlePincodeClick = (data: any) => {
+    if (data && data.activePayload && data.activePayload[0]) {
+        const pincode = data.activePayload[0].payload.pincode;
+        const filteredOrders = orders.filter(o => o.address.pincode === pincode && o.status === 'Completed');
+        setPincodeDetails({ pincode, orders: filteredOrders });
     }
   };
 
@@ -2689,11 +2759,20 @@ function AnalyticsAndReports() {
     }
   };
 
-  const handleExport = (details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | { reason: string; orders: Order[] }) => {
+  const handleExport = (details: { title: string; data: (Order[] | Review[]); type: 'orders' | 'reviews' } | { reason: string; orders: Order[] } | { pincode: string; orders: Order[] }) => {
     let dataToExport: any[];
     let filename: string;
 
-    if ('reason' in details) { // CancellationReasonDetails
+    if ('pincode' in details) {
+        dataToExport = details.orders.map(o => ({
+            order_id: o.id,
+            customer_name: o.customerName,
+            pickup_date: o.pickupDate,
+            total: o.total,
+            delivery_fee: o.deliveryFee?.toFixed(2) || '0.00'
+        }));
+        filename = `orders_pincode_${details.pincode}.csv`;
+    } else if ('reason' in details) {
         dataToExport = details.orders.map(o => ({
             order_id: o.id,
             customer_name: o.customerName,
@@ -2701,7 +2780,7 @@ function AnalyticsAndReports() {
             total: o.total,
         }));
         filename = `cancelled_orders_${details.reason.replace(/\s+/g, '_').toLowerCase()}.csv`;
-    } else { // MetricDetails
+    } else {
         if (details.type === 'orders') {
             dataToExport = (details.data as Order[]).map(o => ({
                 order_id: o.id,
@@ -2717,7 +2796,7 @@ function AnalyticsAndReports() {
                 cancelled_by: o.cancelledBy || 'N/A',
                 cancellation_reason: o.cancellationReason || 'N/A'
             }));
-        } else { // Reviews
+        } else {
              dataToExport = (details.data as Review[]).map(r => ({
                 customer_name: r.customerName,
                 rating: r.rating,
@@ -2806,7 +2885,7 @@ function AnalyticsAndReports() {
         <Button onClick={handleDownloadPdf} variant="outline"><Download className="mr-2 h-4 w-4"/>Download PDF</Button>
     </div>
     <div id="analytics-printable-area" className="space-y-6 mt-4">
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => completedOrders.length > 0 && setMetricDetails({ title: 'Completed Orders', data: completedOrders, type: 'orders' })}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -2846,6 +2925,20 @@ function AnalyticsAndReports() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Rs.{stats.totalDiscounts.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => {
+            const deliveryOrders = completedOrders.filter(o => o.deliveryFee && o.deliveryFee > 0);
+            if (deliveryOrders.length > 0) {
+                setMetricDetails({ title: 'Orders with Delivery Fees', data: deliveryOrders, type: 'orders' });
+            }
+        }}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Delivery Fees</CardTitle>
+            <Truck />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Rs.{stats.totalDeliveryFees.toFixed(2)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -2941,6 +3034,35 @@ function AnalyticsAndReports() {
           </CardContent>
         </Card>
       </div>
+
+       {ordersByPincode.length > 0 && (
+        <Card className="lg:col-span-7">
+            <CardHeader>
+                <CardTitle>Completed Orders by Pincode</CardTitle>
+                <CardDescription>Click on a bar to see the list of orders.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={ordersByPincode} onClick={handlePincodeClick}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="pincode" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                        <Tooltip
+                            content={({ active, payload, label }) =>
+                            active && payload && payload.length ? (
+                                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                <p className="font-bold">Pincode: {label}</p>
+                                <p className="text-sm text-muted-foreground">Orders: {payload[0].value}</p>
+                                </div>
+                            ) : null
+                            }
+                        />
+                        <Bar dataKey="count" fill="currentColor" radius={[4, 4, 0, 0]} className="fill-primary/80 cursor-pointer" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
+      )}
 
        {cancellationReasons.length > 0 && (
           <Card>
@@ -3046,6 +3168,13 @@ function AnalyticsAndReports() {
         isOpen={!!cancellationDetails}
         onOpenChange={(open) => !open && setCancellationDetails(null)}
         onExport={() => cancellationDetails && handleExport(cancellationDetails)}
+        onSelectOrder={setFullySelectedOrder}
+    />
+     <PincodeDetailsDialog 
+        details={pincodeDetails}
+        isOpen={!!pincodeDetails}
+        onOpenChange={(open) => !open && setPincodeDetails(null)}
+        onExport={() => pincodeDetails && handleExport(pincodeDetails)}
         onSelectOrder={setFullySelectedOrder}
     />
      <MetricDetailsDialog 
