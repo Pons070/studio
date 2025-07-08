@@ -135,9 +135,10 @@ export function Footer() {
         </div>
         <div className="mt-8 pt-6 border-t text-center">
             <p className="text-xs text-muted-foreground">
-              {currentYear && (
-                <span onClick={handleSecretAdminTrigger} className="cursor-pointer">© {currentYear}</span>
-              )} Poiesis Technologies. All rights reserved.
+              <span onClick={handleSecretAdminTrigger} className="cursor-pointer">
+                © {currentYear || new Date().getFullYear()}
+              </span>
+              {' '}Poiesis Technologies. All rights reserved.
             </p>
         </div>
       </div>
