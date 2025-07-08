@@ -1,24 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetData, appendSheetData, updateSheetData, findRowIndex, objectToRow } from '@/lib/google-sheets';
+import { getMenuItems, addMenuItemToStore, updateMenuItemInStore, deleteMenuItemFromStore } from '@/lib/menu-store';
 import type { MenuItem } from '@/lib/types';
-
-const SHEET_NAME = 'Menu';
-const HEADERS = ['id', 'name', 'description', 'price', 'imageUrl', 'category', 'aiHint', 'isAvailable', 'isFeatured'];
-
-function parseMenuItem(row: any): MenuItem {
-    return {
-        ...row,
-        price: parseFloat(row.price),
-        isAvailable: row.isAvailable === 'TRUE',
-        isFeatured: row.isFeatured === 'TRUE',
-    };
-}
 
 export async function GET() {
   try {
-    const data = await getSheetData(`${SHEET_NAME}!A:I`);
-    const menuItems = data.map(parseMenuItem);
+    const menuItems = getMenuItems();
     return NextResponse.json({ success: true, menuItems });
   } catch (error) {
     console.error("Error in GET /api/menu:", error);
@@ -33,7 +20,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
     }
 
-    const newItemData: Partial<MenuItem> = {
+    const newItem: MenuItem = {
       ...body,
       id: `ITEM-${Date.now()}`,
       aiHint: body.name.toLowerCase(),
@@ -42,10 +29,9 @@ export async function POST(request: Request) {
       imageUrl: body.imageUrl || 'https://placehold.co/600x400.png',
     };
     
-    const newRow = objectToRow(HEADERS, newItemData);
-    await appendSheetData(SHEET_NAME, newRow);
+    addMenuItemToStore(newItem);
     
-    return NextResponse.json({ success: true, menuItem: newItemData as MenuItem });
+    return NextResponse.json({ success: true, menuItem: newItem });
   } catch (error) {
     console.error("Error in POST /api/menu:", error);
     return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
@@ -59,15 +45,12 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Menu item ID is required.' }, { status: 400 });
         }
         
-        const rowIndex = await findRowIndex(SHEET_NAME, body.id);
-        if (rowIndex === -1) {
+        const updatedItem = updateMenuItemInStore(body);
+        if (!updatedItem) {
             return NextResponse.json({ success: false, message: 'Menu item not found.' }, { status: 404 });
         }
-
-        const updatedRow = objectToRow(HEADERS, body);
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
         
-        return NextResponse.json({ success: true, menuItem: body });
+        return NextResponse.json({ success: true, menuItem: updatedItem });
     } catch (error) {
         console.error("Error in PUT /api/menu:", error);
         return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
@@ -81,13 +64,10 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Menu item ID is required.' }, { status: 400 });
         }
         
-        const rowIndex = await findRowIndex(SHEET_NAME, id);
-        if (rowIndex === -1) {
+        const deleted = deleteMenuItemFromStore(id);
+        if (!deleted) {
              return NextResponse.json({ success: false, message: 'Menu item not found.' }, { status: 404 });
         }
-
-        const emptyRow = Array(HEADERS.length).fill('');
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, emptyRow);
         
         return NextResponse.json({ success: true, id });
     } catch (error) {

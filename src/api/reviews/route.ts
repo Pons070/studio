@@ -1,24 +1,12 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetData, appendSheetData, updateSheetData, findRowIndex, objectToRow } from '@/lib/google-sheets';
+import { getReviews, addReviewToStore, updateReviewInStore, deleteReviewFromStore } from '@/lib/review-store';
+import { updateOrderInStore } from '@/lib/order-store';
 import type { Review } from '@/lib/types';
-
-const SHEET_NAME = 'Reviews';
-const ORDERS_SHEET_NAME = 'Orders';
-const HEADERS = ['id', 'orderId', 'customerName', 'rating', 'comment', 'date', 'adminReply', 'isPublished'];
-
-function parseReview(row: any): Review {
-    return {
-        ...row,
-        rating: parseInt(row.rating, 10),
-        isPublished: row.isPublished === 'TRUE',
-    };
-}
 
 export async function GET() {
   try {
-    const data = await getSheetData(`${SHEET_NAME}!A:H`);
-    const reviews = data.map(parseReview);
+    const reviews = getReviews();
     return NextResponse.json({ success: true, reviews });
   } catch (error) {
     console.error("Error in GET /api/reviews:", error);
@@ -33,23 +21,19 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
     }
 
-    const reviewData: Partial<Review> = {
+    const newReview: Review = {
       ...body,
       id: `REV-${Date.now()}`,
       date: new Date().toISOString().split('T')[0],
       isPublished: false,
     };
     
-    const newRow = objectToRow(HEADERS, reviewData);
-    await appendSheetData(SHEET_NAME, newRow);
+    addReviewToStore(newReview);
     
     // Also update the related order with the new reviewId
-    const orderRowIndex = await findRowIndex(ORDERS_SHEET_NAME, body.orderId);
-    if (orderRowIndex !== -1) {
-        await updateSheetData(`${ORDERS_SHEET_NAME}!K${orderRowIndex}`, [[reviewData.id]]);
-    }
+    updateOrderInStore(body.orderId, { reviewId: newReview.id });
 
-    return NextResponse.json({ success: true, review: reviewData as Review });
+    return NextResponse.json({ success: true, review: newReview });
   } catch (error) {
     console.error("Error in POST /api/reviews:", error);
     return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
@@ -63,15 +47,12 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Review ID is required.' }, { status: 400 });
         }
         
-        const rowIndex = await findRowIndex(SHEET_NAME, body.id);
-        if (rowIndex === -1) {
+        const updatedReview = updateReviewInStore(body);
+        if (!updatedReview) {
             return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
         }
-
-        const updatedRow = objectToRow(HEADERS, body);
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
         
-        return NextResponse.json({ success: true, review: body });
+        return NextResponse.json({ success: true, review: updatedReview });
     } catch (error) {
         console.error("Error in PUT /api/reviews:", error);
         return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
@@ -85,21 +66,14 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Review ID is required.' }, { status: 400 });
         }
         
-        const rowIndex = await findRowIndex(SHEET_NAME, id);
-        if (rowIndex === -1) {
+        const deleted = deleteReviewFromStore(id);
+        if (!deleted) {
             return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
         }
 
-        // Clear the review row
-        const emptyRow = Array(HEADERS.length).fill('');
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, emptyRow);
-
         // Unlink review from order
         if (orderId) {
-            const orderRowIndex = await findRowIndex(ORDERS_SHEET_NAME, orderId);
-            if (orderRowIndex !== -1) {
-                await updateSheetData(`${ORDERS_SHEET_NAME}!K${orderRowIndex}`, [['']]);
-            }
+            updateOrderInStore(orderId, { reviewId: undefined });
         }
         
         return NextResponse.json({ success: true, id });

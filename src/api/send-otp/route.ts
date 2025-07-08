@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { otpStore } from '@/lib/otp-store';
-import { getSheetData } from '@/lib/google-sheets';
+import { findUserByPhone } from '@/lib/user-store';
 
 export async function POST(request: Request) {
   try {
@@ -11,10 +11,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Invalid phone number provided.' }, { status: 400 });
     }
 
-    const usersData = await getSheetData('Users!A:H');
-    const existingUser = usersData.find(u => u.phone === phoneNumber && !u.deletedAt);
+    const existingUser = findUserByPhone(phoneNumber);
     const isNewUser = !existingUser;
 
+    // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[phoneNumber] = otp;
 

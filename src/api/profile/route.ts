@@ -1,21 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetValues, convertRowsToObjects, findRowIndex, updateSheetData, objectToRow } from '@/lib/google-sheets';
-import type { User } from '@/lib/types';
-
-const SHEET_NAME = 'Users';
-const HEADERS = ['id', 'name', 'email', 'phone', 'addresses', 'createdAt', 'updatedAt', 'deletedAt'];
-
-async function getUser(userId: string): Promise<{user: User, rowIndex: number} | null> {
-    const rowIndex = await findRowIndex(SHEET_NAME, userId);
-    if (rowIndex === -1) return null;
-    const rows = await getSheetValues(`${SHEET_NAME}!A${rowIndex}:H${rowIndex}`);
-    if (!rows.length) return null;
-    
-    const userObject = convertRowsToObjects(HEADERS, rows)[0];
-    const user = { ...userObject, addresses: typeof userObject.addresses === 'string' ? JSON.parse(userObject.addresses) : [] };
-    return { user, rowIndex };
-}
+import { findUserById, updateUser as updateUserInStore } from '@/lib/user-store';
 
 export async function PUT(request: Request) {
   try {
@@ -26,17 +11,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
     
-    const userData = await getUser(userId);
-    if (!userData) {
+    const user = findUserById(userId);
+    if (!user) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
-    
-    const { user, rowIndex } = userData;
 
     const updatedUser = { ...user, ...profileData, updatedAt: new Date().toISOString() };
-    const updatedRow = objectToRow(HEADERS, updatedUser);
-
-    await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
+    updateUserInStore(updatedUser);
 
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {
@@ -52,19 +33,18 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
         }
         
-        const userData = await getUser(userId);
-        if (!userData) {
+        const user = findUserById(userId);
+        if (!user) {
              return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
-        const { user, rowIndex } = userData;
         
         if (user.email === 'admin@example.com') {
             return NextResponse.json({ success: false, message: 'Admin account cannot be deleted.' }, { status: 403 });
         }
         
+        // Soft delete the user
         const updatedUser = { ...user, deletedAt: new Date().toISOString() };
-        const updatedRow = objectToRow(HEADERS, updatedUser);
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
+        updateUserInStore(updatedUser);
         
         return NextResponse.json({ success: true, userId });
     } catch (error) {

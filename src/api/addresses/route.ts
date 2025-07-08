@@ -1,21 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetValues, convertRowsToObjects, findRowIndex, updateSheetData, objectToRow } from '@/lib/google-sheets';
-import type { Address, User } from '@/lib/types';
-
-const SHEET_NAME = 'Users';
-const HEADERS = ['id', 'name', 'email', 'phone', 'addresses', 'createdAt', 'updatedAt', 'deletedAt'];
-
-async function getUser(userId: string): Promise<{user: User, rowIndex: number} | null> {
-    const rowIndex = await findRowIndex(SHEET_NAME, userId);
-    if (rowIndex === -1) return null;
-    const rows = await getSheetValues(`${SHEET_NAME}!A${rowIndex}:H${rowIndex}`);
-    if (!rows.length) return null;
-    
-    const userObject = convertRowsToObjects(HEADERS, rows)[0];
-    const user = { ...userObject, addresses: typeof userObject.addresses === 'string' ? JSON.parse(userObject.addresses) : [] };
-    return { user, rowIndex };
-}
+import { findUserById, updateUser } from '@/lib/user-store';
+import type { Address } from '@/lib/types';
 
 export async function POST(request: Request) {
   try {
@@ -26,12 +12,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
 
-    const userData = await getUser(userId);
-    if (!userData) {
+    const user = findUserById(userId);
+    if (!user) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
-    
-    const { user, rowIndex } = userData;
     
     const newAddress: Address = {
       ...addressData,
@@ -40,12 +24,9 @@ export async function POST(request: Request) {
     };
     
     const updatedAddresses = [...(user.addresses || []), newAddress];
-    const updatedUser = { ...user, addresses: updatedAddresses };
-    const updatedRow = objectToRow(HEADERS, updatedUser);
+    updateUser({ ...user, addresses: updatedAddresses });
 
-    await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
-
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({ success: true, user: { ...user, addresses: updatedAddresses } });
   } catch (error) {
     console.error("Error in POST /api/addresses:", error);
     return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
@@ -61,12 +42,11 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required.' }, { status: 400 });
         }
         
-        const userData = await getUser(userId);
-        if (!userData) {
+        const user = findUserById(userId);
+        if (!user) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
 
-        const { user, rowIndex } = userData;
         let addresses = user.addresses || [];
         
         const addressIndex = addresses.findIndex(a => a.id === addressData.id);
@@ -81,8 +61,7 @@ export async function PUT(request: Request) {
         addresses[addressIndex] = { ...addresses[addressIndex], ...addressData };
 
         const updatedUser = { ...user, addresses };
-        const updatedRow = objectToRow(HEADERS, updatedUser);
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
+        updateUser(updatedUser);
         
         return NextResponse.json({ success: true, user: updatedUser });
 
@@ -99,12 +78,11 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required.' }, { status: 400 });
         }
 
-        const userData = await getUser(userId);
-        if (!userData) {
+        const user = findUserById(userId);
+        if (!user) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
 
-        const { user, rowIndex } = userData;
         const addresses = user.addresses || [];
         
         const addressToDelete = addresses.find(a => a.id === addressId);
@@ -119,8 +97,7 @@ export async function DELETE(request: Request) {
         }
         
         const updatedUser = { ...user, addresses: updatedAddresses };
-        const updatedRow = objectToRow(HEADERS, updatedUser);
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
+        updateUser(updatedUser);
 
         return NextResponse.json({ success: true, user: updatedUser });
     } catch (error) {
