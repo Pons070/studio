@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -65,10 +64,23 @@ export default function CheckoutPage() {
   const [isAddressDialogOpen, setAddressDialogOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
 
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (currentUser?.addresses && currentUser.addresses.length > 0) {
@@ -143,7 +155,6 @@ export default function CheckoutPage() {
     setAppliedPromotion(promotion);
     toast({ title: 'Coupon Applied!', description: promotion.title });
     setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 5000); // Confetti for 5 seconds
   }
 
   const handleRemoveCoupon = () => {
@@ -364,7 +375,22 @@ export default function CheckoutPage() {
 
   return (
     <>
-      {showConfetti && <Confetti recycle={false} />}
+      {showConfetti && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          numberOfPieces={400}
+          recycle={false}
+          gravity={0.3}
+          onConfettiComplete={() => setShowConfetti(false)}
+          confettiSource={{
+            x: windowSize.width / 2,
+            y: windowSize.height / 2,
+            w: 0,
+            h: 0,
+          }}
+        />
+      )}
       <div>
         <h1 className="text-4xl font-headline font-bold text-center mb-10 text-white">Checkout</h1>
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
