@@ -1338,7 +1338,7 @@ function ImageCropDialog({
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
-    const aspect = shape === 'square' ? 1 : width / height;
+    const aspect = shape === 'square' ? 1 : undefined; // Allow free aspect for non-square
     const newCrop = centerCrop(
       makeAspectCrop(
         {
@@ -1559,10 +1559,10 @@ function BrandManagement() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!brandInfo) return;
     setIsSaving(true);
-    updateBrandInfo({
+    await updateBrandInfo({
       ...brandInfo,
       name,
       logoUrl,
@@ -1582,7 +1582,7 @@ function BrandManagement() {
       showPhoneInAbout: showPhone,
       theme,
     });
-    setTimeout(() => setIsSaving(false), 500);
+    setIsSaving(false);
   }
 
   const isDirty = brandInfo ? (
