@@ -1,6 +1,4 @@
 
-'use server';
-
 import { google } from 'googleapis';
 
 // --- IMPORTANT SETUP INSTRUCTIONS ---
