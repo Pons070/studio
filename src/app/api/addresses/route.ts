@@ -1,13 +1,19 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, writeBatch } from 'firebase/firestore';
+import { getSheetData, findRowIndex, updateSheetData, objectToRow } from '@/lib/google-sheets';
 import type { Address, User } from '@/lib/types';
 
-async function getUserDoc(userId: string) {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-    return { userRef, userDoc };
+const SHEET_NAME = 'Users';
+const HEADERS = ['id', 'name', 'email', 'phone', 'addresses', 'createdAt', 'updatedAt', 'deletedAt'];
+
+async function getUser(userId: string): Promise<{user: User, rowIndex: number} | null> {
+    const rowIndex = await findRowIndex(SHEET_NAME, userId);
+    if (rowIndex === -1) return null;
+    const data = await getSheetData(`${SHEET_NAME}!A${rowIndex}:H${rowIndex}`);
+    if (!data.length) return null;
+    
+    const user = { ...data[0], addresses: typeof data[0].addresses === 'string' ? JSON.parse(data[0].addresses) : [] };
+    return { user, rowIndex };
 }
 
 export async function POST(request: Request) {
@@ -19,29 +25,29 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
 
-    const { userRef, userDoc } = await getUserDoc(userId);
-    if (!userDoc.exists()) {
+    const userData = await getUser(userId);
+    if (!userData) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
     
-    const currentUserData = userDoc.data() as User;
+    const { user, rowIndex } = userData;
     
     const newAddress: Address = {
       ...addressData,
       id: `ADDR-${Date.now()}`,
-      isDefault: !currentUserData.addresses || currentUserData.addresses.length === 0,
+      isDefault: !user.addresses || user.addresses.length === 0,
     };
     
-    await updateDoc(userRef, {
-        addresses: arrayUnion(newAddress)
-    });
+    const updatedAddresses = [...(user.addresses || []), newAddress];
+    const updatedUser = { ...user, addresses: updatedAddresses };
+    const updatedRow = objectToRow(HEADERS, updatedUser);
 
-    const finalUser = { ...currentUserData, addresses: [...(currentUserData.addresses || []), newAddress]};
+    await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
 
-    return NextResponse.json({ success: true, user: finalUser });
+    return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {
     console.error("Error in POST /api/addresses:", error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
 
@@ -54,13 +60,13 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required.' }, { status: 400 });
         }
         
-        const { userRef, userDoc } = await getUserDoc(userId);
-        if (!userDoc.exists()) {
+        const userData = await getUser(userId);
+        if (!userData) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
-        
-        const currentUserData = userDoc.data() as User;
-        let addresses = currentUserData.addresses || [];
+
+        const { user, rowIndex } = userData;
+        let addresses = user.addresses || [];
         
         const addressIndex = addresses.findIndex(a => a.id === addressData.id);
         if (addressIndex === -1) {
@@ -73,14 +79,15 @@ export async function PUT(request: Request) {
         
         addresses[addressIndex] = { ...addresses[addressIndex], ...addressData };
 
-        await updateDoc(userRef, { addresses });
+        const updatedUser = { ...user, addresses };
+        const updatedRow = objectToRow(HEADERS, updatedUser);
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
         
-        const finalUser = { ...currentUserData, addresses };
-        return NextResponse.json({ success: true, user: finalUser });
+        return NextResponse.json({ success: true, user: updatedUser });
 
     } catch (error) {
         console.error("Error in PUT /api/addresses:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }
 
@@ -91,13 +98,13 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required.' }, { status: 400 });
         }
 
-        const { userRef, userDoc } = await getUserDoc(userId);
-        if (!userDoc.exists()) {
+        const userData = await getUser(userId);
+        if (!userData) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
-        
-        const currentUserData = userDoc.data() as User;
-        const addresses = currentUserData.addresses || [];
+
+        const { user, rowIndex } = userData;
+        const addresses = user.addresses || [];
         
         const addressToDelete = addresses.find(a => a.id === addressId);
         if (!addressToDelete) {
@@ -110,13 +117,13 @@ export async function DELETE(request: Request) {
             updatedAddresses[0].isDefault = true;
         }
         
-        await updateDoc(userRef, { addresses: updatedAddresses });
-        
-        const finalUser = { ...currentUserData, addresses: updatedAddresses };
+        const updatedUser = { ...user, addresses: updatedAddresses };
+        const updatedRow = objectToRow(HEADERS, updatedUser);
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
 
-        return NextResponse.json({ success: true, user: finalUser });
+        return NextResponse.json({ success: true, user: updatedUser });
     } catch (error) {
         console.error("Error in DELETE /api/addresses:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }

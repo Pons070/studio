@@ -1,9 +1,30 @@
 
 import { NextResponse } from 'next/server';
-import { getOrders } from '@/lib/order-store';
+import { getSheetData } from '@/lib/google-sheets';
+import type { Order } from '@/lib/types';
 
-// GET - Fetches all orders for the admin dashboard
+const SHEET_NAME = 'Orders';
+
+function parseOrder(row: any): Order {
+    return {
+        ...row,
+        total: parseFloat(row.total),
+        discountAmount: row.discountAmount ? parseFloat(row.discountAmount) : undefined,
+        deliveryFee: row.deliveryFee ? parseFloat(row.deliveryFee) : undefined,
+        items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items,
+        address: typeof row.address === 'string' ? JSON.parse(row.address) : row.address,
+        updateRequests: typeof row.updateRequests === 'string' ? JSON.parse(row.updateRequests) : row.updateRequests,
+    };
+}
+
+
 export async function GET() {
-  // In a real app, you would add authentication to ensure only admins can access this.
-  return NextResponse.json({ success: true, orders: getOrders() });
+  try {
+    const data = await getSheetData(`${SHEET_NAME}!A:T`);
+    const orders = data.map(parseOrder);
+    return NextResponse.json({ success: true, orders: orders });
+  } catch (error) {
+    console.error("Error in GET /api/admin/orders:", error);
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
+  }
 }

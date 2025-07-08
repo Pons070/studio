@@ -1,82 +1,99 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { getSheetData, appendSheetData, updateSheetData, findRowIndex, objectToRow } from '@/lib/google-sheets';
 import type { Promotion } from '@/lib/types';
+import { z } from 'zod';
 
-const initialPromotions: Omit<Promotion, 'id'>[] = [
-  { title: '🎉 Welcome Offer for New Customers!', description: 'Get 15% off your first order with us. We are so happy to have you!', targetAudience: 'new', isActive: true, couponCode: 'WELCOME15', discountType: 'percentage', discountValue: 15 },
-  { title: 'Weekday Special for Regulars!', description: 'Enjoy a free dessert on us as a thank you for your continued support. Valid on weekdays.', targetAudience: 'existing', isActive: true, couponCode: 'SWEETTREAT', discountType: 'flat', discountValue: 7.50, minOrderValue: 20, startDate: '2024-06-01', activeDays: [1, 2, 3, 4, 5] },
-  { title: 'Summer Special - All Customers', description: 'Get a free drink with any main course ordered this month.', targetAudience: 'all', isActive: false, couponCode: 'SUMMERDRINK', discountType: 'flat', discountValue: 3.00, startDate: '2023-07-01', endDate: '2023-07-31' },
-];
+const SHEET_NAME = 'Promotions';
+const HEADERS = ['id', 'title', 'description', 'targetAudience', 'isActive', 'couponCode', 'discountType', 'discountValue', 'minOrderValue', 'startDate', 'endDate', 'activeDays'];
 
-async function seedPromotions() {
-    const promotionsCollection = collection(db, 'promotions');
-    const batch = writeBatch(db);
-    initialPromotions.forEach(item => {
-        const docRef = doc(promotionsCollection);
-        batch.set(docRef, item);
-    });
-    await batch.commit();
+function parsePromotion(row: any): Promotion {
+    return {
+        ...row,
+        isActive: row.isActive === 'TRUE',
+        discountValue: parseFloat(row.discountValue),
+        minOrderValue: row.minOrderValue ? parseFloat(row.minOrderValue) : undefined,
+        activeDays: typeof row.activeDays === 'string' ? JSON.parse(row.activeDays) : row.activeDays,
+    };
 }
 
-// GET - Fetches all promotions, seeding if necessary
+const CreatePromotionSchema = z.object({
+  title: z.string().min(1, { message: 'Title is required.' }),
+  description: z.string().optional(),
+  targetAudience: z.enum(['all', 'new', 'existing']),
+  isActive: z.boolean(),
+  couponCode: z.string().min(1, { message: 'Coupon code is required.' }),
+  discountType: z.enum(['percentage', 'flat']),
+  discountValue: z.number().gte(0, { message: 'Discount value cannot be negative.' }),
+  minOrderValue: z.number().gte(0, { message: 'Minimum order value cannot be negative.' }).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  activeDays: z.array(z.number().int().min(0).max(6)).optional(),
+});
+
+const UpdatePromotionSchema = CreatePromotionSchema.extend({
+    id: z.string().min(1, { message: 'Promotion ID is required.' })
+});
+
 export async function GET() {
   try {
-    const promotionsCollection = collection(db, 'promotions');
-    let snapshot = await getDocs(promotionsCollection);
-
-    if (snapshot.empty) {
-      await seedPromotions();
-      snapshot = await getDocs(promotionsCollection);
-    }
-    
-    const promotions = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const data = await getSheetData(`${SHEET_NAME}!A:L`);
+    const promotions = data.map(parsePromotion);
     return NextResponse.json({ success: true, promotions });
   } catch (error) {
     console.error("Error in GET /api/promotions:", error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
 
-// POST - Creates a new promotion
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    if (!body.title || !body.couponCode || !body.discountType) {
-        return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
+    const validationResult = CreatePromotionSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json({ success: false, message: 'Invalid data provided.', errors: validationResult.error.flatten().fieldErrors }, { status: 400 });
     }
     
-    const docRef = await addDoc(collection(db, 'promotions'), body);
-    const newPromotion: Promotion = { ...body, id: docRef.id };
+    const newPromoData: Partial<Promotion> = {
+        ...validationResult.data,
+        id: `PROMO-${Date.now()}`,
+    };
+
+    const newRow = objectToRow(HEADERS, newPromoData);
+    await appendSheetData(SHEET_NAME, newRow);
     
-    return NextResponse.json({ success: true, promotion: newPromotion });
+    return NextResponse.json({ success: true, promotion: newPromoData as Promotion });
   } catch (error) {
     console.error("Error in POST /api/promotions:", error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
 
-// PUT - Updates an existing promotion
 export async function PUT(request: Request) {
     try {
-        const body: Promotion = await request.json();
-        if (!body.id) {
-            return NextResponse.json({ success: false, message: 'Promotion ID is required.' }, { status: 400 });
+        const body = await request.json();
+        const validationResult = UpdatePromotionSchema.safeParse(body);
+        if (!validationResult.success) {
+            return NextResponse.json({ success: false, message: 'Invalid data provided.', errors: validationResult.error.flatten().fieldErrors }, { status: 400 });
         }
+
+        const promoData = validationResult.data;
         
-        const { id, ...promoData } = body;
-        const promoRef = doc(db, 'promotions', id);
-        await updateDoc(promoRef, promoData);
+        const rowIndex = await findRowIndex(SHEET_NAME, promoData.id);
+        if (rowIndex === -1) {
+            return NextResponse.json({ success: false, message: 'Promotion not found.' }, { status: 404 });
+        }
+
+        const updatedRow = objectToRow(HEADERS, promoData);
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
         
-        return NextResponse.json({ success: true, promotion: body });
+        return NextResponse.json({ success: true, promotion: promoData });
     } catch (error) {
         console.error("Error in PUT /api/promotions:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }
 
-// DELETE - Deletes a promotion
 export async function DELETE(request: Request) {
     try {
         const { id } = await request.json();
@@ -84,11 +101,17 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Promotion ID is required.' }, { status: 400 });
         }
         
-        await deleteDoc(doc(db, 'promotions', id));
-        
+        const rowIndex = await findRowIndex(SHEET_NAME, id);
+        if (rowIndex === -1) {
+            return NextResponse.json({ success: false, message: 'Promotion not found.' }, { status: 404 });
+        }
+
+        const emptyRow = Array(HEADERS.length).fill('');
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, emptyRow);
+
         return NextResponse.json({ success: true, id });
     } catch (error) {
         console.error("Error in DELETE /api/promotions:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }

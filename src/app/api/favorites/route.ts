@@ -1,15 +1,21 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getSheetData, findRowIndex, updateSheetData, appendSheetData } from '@/lib/google-sheets';
 
-async function getFavoritesDoc(userId: string) {
-    const favRef = doc(db, `users/${userId}/favorites/main`);
-    const favDoc = await getDoc(favRef);
-    return { favRef, favDoc };
+const SHEET_NAME = 'Favorites';
+
+async function getFavorites(userId: string) {
+    const data = await getSheetData(`${SHEET_NAME}!A:C`);
+    const favs = data.find((row: any) => row.userId === userId);
+    if (favs) {
+        return {
+            itemIds: favs.itemIds ? JSON.parse(favs.itemIds) : [],
+            orderIds: favs.orderIds ? JSON.parse(favs.orderIds) : [],
+        };
+    }
+    return { itemIds: [], orderIds: [] };
 }
 
-// GET - Fetches favorites for a user
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -19,20 +25,14 @@ export async function GET(request: Request) {
     }
 
     try {
-        const { favDoc } = await getFavoritesDoc(userId);
-        if (favDoc.exists()) {
-            return NextResponse.json({ success: true, favorites: favDoc.data() });
-        } else {
-            // No favorites document yet, return empty structure
-            return NextResponse.json({ success: true, favorites: { itemIds: [], orderIds: [] } });
-        }
+        const favorites = await getFavorites(userId);
+        return NextResponse.json({ success: true, favorites });
     } catch (error) {
         console.error("Error in GET /api/favorites:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }
 
-// POST - Adds a favorite
 export async function POST(request: Request) {
     try {
         const { userId, type, id } = await request.json();
@@ -40,23 +40,27 @@ export async function POST(request: Request) {
              return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
         }
 
-        const { favRef, favDoc } = await getFavoritesDoc(userId);
+        const rowIndex = await findRowIndex(SHEET_NAME, userId);
+        const currentFavorites = await getFavorites(userId);
         const fieldToUpdate = type === 'item' ? 'itemIds' : 'orderIds';
+        const updatedIds = [...new Set([...currentFavorites[fieldToUpdate], id])];
+        currentFavorites[fieldToUpdate] = updatedIds;
 
-        if (favDoc.exists()) {
-            await updateDoc(favRef, { [fieldToUpdate]: arrayUnion(id) });
+        const rowData = [userId, JSON.stringify(currentFavorites.itemIds), JSON.stringify(currentFavorites.orderIds)];
+
+        if (rowIndex !== -1) {
+            await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, rowData);
         } else {
-            await setDoc(favRef, { [fieldToUpdate]: [id] });
+            await appendSheetData(SHEET_NAME, rowData);
         }
         
         return NextResponse.json({ success: true });
     } catch (error) {
          console.error("Error in POST /api/favorites:", error);
-         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+         return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }
 
-// DELETE - Removes a favorite
 export async function DELETE(request: Request) {
     try {
         const { userId, type, id } = await request.json();
@@ -64,17 +68,21 @@ export async function DELETE(request: Request) {
              return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
         }
         
-        const { favRef, favDoc } = await getFavoritesDoc(userId);
-        if (!favDoc.exists()) {
+        const rowIndex = await findRowIndex(SHEET_NAME, userId);
+        if (rowIndex === -1) {
             return NextResponse.json({ success: true }); // Nothing to delete
         }
-
+        
+        const currentFavorites = await getFavorites(userId);
         const fieldToUpdate = type === 'item' ? 'itemIds' : 'orderIds';
-        await updateDoc(favRef, { [fieldToUpdate]: arrayRemove(id) });
+        currentFavorites[fieldToUpdate] = currentFavorites[fieldToUpdate].filter((favId: string) => favId !== id);
+
+        const rowData = [userId, JSON.stringify(currentFavorites.itemIds), JSON.stringify(currentFavorites.orderIds)];
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, rowData);
         
         return NextResponse.json({ success: true });
     } catch (error) {
          console.error("Error in DELETE /api/favorites:", error);
-         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+         return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }

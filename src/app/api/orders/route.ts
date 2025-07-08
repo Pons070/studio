@@ -1,9 +1,23 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { getSheetData, findRowIndex, updateSheetData, objectToRow } from '@/lib/google-sheets';
+import type { Order } from '@/lib/types';
 
-// GET - Fetches orders for a specific user
+const SHEET_NAME = 'Orders';
+const HEADERS = ['id', 'customerId', 'customerName', 'address', 'orderDate', 'pickupDate', 'pickupTime', 'status', 'total', 'items', 'reviewId', 'cancellationDate', 'cancellationReason', 'cancelledBy', 'cancellationAction', 'cookingNotes', 'updateRequests', 'appliedCoupon', 'discountAmount', 'deliveryFee'];
+
+function parseOrder(row: any): Order {
+    return {
+        ...row,
+        total: parseFloat(row.total),
+        discountAmount: row.discountAmount ? parseFloat(row.discountAmount) : undefined,
+        deliveryFee: row.deliveryFee ? parseFloat(row.deliveryFee) : undefined,
+        items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items,
+        address: typeof row.address === 'string' ? JSON.parse(row.address) : row.address,
+        updateRequests: typeof row.updateRequests === 'string' ? JSON.parse(row.updateRequests) : row.updateRequests,
+    };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId');
@@ -13,17 +27,15 @@ export async function GET(request: Request) {
   }
   
   try {
-    const q = query(collection(db, "orders"), where("customerId", "==", userId));
-    const querySnapshot = await getDocs(q);
-    const userOrders = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const data = await getSheetData(`${SHEET_NAME}!A:T`);
+    const userOrders = data.filter((row: any) => row.customerId === userId).map(parseOrder);
     return NextResponse.json({ success: true, orders: userOrders });
   } catch (error) {
     console.error("Error in GET /api/orders:", error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
 
-// PUT - Updates an existing order
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
@@ -33,15 +45,24 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Order ID is required.' }, { status: 400 });
         }
         
-        const orderRef = doc(db, 'orders', orderId);
-        await updateDoc(orderRef, updates);
-
-        const updatedOrderDoc = await getDoc(orderRef);
-        const updatedOrder = { ...updatedOrderDoc.data(), id: updatedOrderDoc.id };
+        const rowIndex = await findRowIndex(SHEET_NAME, orderId);
+        if (rowIndex === -1) {
+             return NextResponse.json({ success: false, message: 'Order not found.' }, { status: 404 });
+        }
         
-        return NextResponse.json({ success: true, order: updatedOrder });
+        const data = await getSheetData(`${SHEET_NAME}!A${rowIndex}:T${rowIndex}`);
+        if (!data.length) {
+            return NextResponse.json({ success: false, message: 'Order not found.' }, { status: 404 });
+        }
+        const existingOrder = parseOrder(data[0]);
+
+        const updatedOrderData = { ...existingOrder, ...updates };
+        const updatedRow = objectToRow(HEADERS, updatedOrderData);
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
+        
+        return NextResponse.json({ success: true, order: updatedOrderData });
     } catch (error) {
         console.error("Error in PUT /api/orders:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }

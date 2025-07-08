@@ -3,8 +3,11 @@ import { NextResponse } from 'next/server';
 import type { Order } from '@/lib/types';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 import { format } from 'date-fns';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
+import { appendSheetData, objectToRow, getSheetData } from '@/lib/google-sheets';
+
+const BRAND_SHEET_NAME = 'Brand';
+const ORDERS_SHEET_NAME = 'Orders';
+const HEADERS = ['id', 'customerId', 'customerName', 'address', 'orderDate', 'pickupDate', 'pickupTime', 'status', 'total', 'items', 'reviewId', 'cancellationDate', 'cancellationReason', 'cancelledBy', 'cancellationAction', 'cookingNotes', 'updateRequests', 'appliedCoupon', 'discountAmount', 'deliveryFee'];
 
 export async function POST(request: Request) {
   try {
@@ -15,25 +18,19 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required order information.' }, { status: 400 });
     }
     
-    const brandRef = doc(db, 'brand', 'info');
-    const brandDoc = await getDoc(brandRef);
-    const adminEmail = brandDoc.exists() ? brandDoc.data().adminEmail : 'admin@example.com';
-
-    const orderData: Omit<Order, 'id'> = {
+    const brandData = await getSheetData(`${BRAND_SHEET_NAME}!E2:E2`);
+    const adminEmail = brandData.length ? brandData[0].adminEmail : 'admin@example.com';
+    
+    const newOrder: Order = {
       ...orderInput,
+      id: `ORD-${Date.now()}`,
       orderDate: format(new Date(), 'yyyy-MM-dd'),
       status: 'Pending',
     };
     
-    // Add to Firestore and get the new document reference
-    const docRef = await addDoc(collection(db, 'orders'), orderData);
-    
-    const newOrder: Order = {
-        ...orderData,
-        id: docRef.id,
-    };
+    const newRow = objectToRow(HEADERS, newOrder);
+    await appendSheetData(ORDERS_SHEET_NAME, newRow);
 
-    // Fire-and-forget notifications
     Promise.all([
       sendOrderNotification({
         order: newOrder,
@@ -55,6 +52,6 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Error in /api/create-order:', error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
