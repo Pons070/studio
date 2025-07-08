@@ -1,16 +1,32 @@
 
+import fs from 'fs';
+import path from 'path';
 import type { Review } from './types';
-import { initialReviews } from './mock-data';
 
-declare global {
-  var reviewsStore: Review[] | undefined;
+const dataFilePath = path.join(process.cwd(), 'data/reviews.json');
+let reviewsCache: Review[] | null = null;
+
+function getStore(): Review[] {
+    if (reviewsCache) {
+        return reviewsCache;
+    }
+    try {
+        const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
+        const data = JSON.parse(fileContent);
+        reviewsCache = data;
+        return data;
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+            console.error(`Error: Reviews data file not found at ${dataFilePath}. Please ensure it exists.`);
+            return [];
+        }
+        throw error;
+    }
 }
 
-const getStore = (): Review[] => {
-    if (!globalThis.reviewsStore) {
-        globalThis.reviewsStore = [...initialReviews];
-    }
-    return globalThis.reviewsStore;
+function saveStore(data: Review[]): void {
+    reviewsCache = data;
+    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 // ---- Public API for the Review Store ----
@@ -20,7 +36,9 @@ export function getReviews(): Review[] {
 }
 
 export function addReviewToStore(newReview: Review): void {
-  getStore().unshift(newReview);
+  const store = getStore();
+  store.unshift(newReview);
+  saveStore(store);
 }
 
 export function updateReviewInStore(updatedReview: Review): Review | null {
@@ -30,6 +48,7 @@ export function updateReviewInStore(updatedReview: Review): Review | null {
         return null;
     }
     store[index] = updatedReview;
+    saveStore(store);
     return updatedReview;
 }
 
@@ -40,5 +59,6 @@ export function deleteReviewFromStore(reviewId: string): boolean {
         return false;
     }
     store.splice(index, 1);
+    saveStore(store);
     return true;
 }

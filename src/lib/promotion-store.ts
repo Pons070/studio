@@ -1,16 +1,32 @@
 
+import fs from 'fs';
+import path from 'path';
 import type { Promotion } from './types';
-import { initialPromotions } from './mock-data';
 
-declare global {
-  var promotionsStore: Promotion[] | undefined;
+const dataFilePath = path.join(process.cwd(), 'data/promotions.json');
+let promotionsCache: Promotion[] | null = null;
+
+function getStore(): Promotion[] {
+    if (promotionsCache) {
+        return promotionsCache;
+    }
+    try {
+        const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
+        const data = JSON.parse(fileContent);
+        promotionsCache = data;
+        return data;
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+            console.error(`Error: Promotions data file not found at ${dataFilePath}. Please ensure it exists.`);
+            return [];
+        }
+        throw error;
+    }
 }
 
-const getStore = (): Promotion[] => {
-    if (!globalThis.promotionsStore) {
-        globalThis.promotionsStore = [...initialPromotions];
-    }
-    return globalThis.promotionsStore;
+function saveStore(data: Promotion[]): void {
+    promotionsCache = data;
+    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 // ---- Public API for the Promotion Store ----
@@ -20,7 +36,9 @@ export function getPromotions(): Promotion[] {
 }
 
 export function addPromotionToStore(newPromotion: Promotion): void {
-  getStore().unshift(newPromotion);
+  const store = getStore();
+  store.unshift(newPromotion);
+  saveStore(store);
 }
 
 export function updatePromotionInStore(updatedPromotion: Promotion): Promotion | null {
@@ -30,6 +48,7 @@ export function updatePromotionInStore(updatedPromotion: Promotion): Promotion |
         return null;
     }
     store[index] = updatedPromotion;
+    saveStore(store);
     return updatedPromotion;
 }
 
@@ -40,5 +59,6 @@ export function deletePromotionFromStore(promotionId: string): boolean {
         return false;
     }
     store.splice(index, 1);
+    saveStore(store);
     return true;
 }

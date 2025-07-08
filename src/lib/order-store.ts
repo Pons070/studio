@@ -1,17 +1,32 @@
 
-import type { Order } from '@/lib/types';
-import { initialOrders } from './mock-data';
+import fs from 'fs';
+import path from 'path';
+import type { Order } from './types';
 
-declare global {
-  var ordersStore: Order[] | undefined;
+const dataFilePath = path.join(process.cwd(), 'data/orders.json');
+let ordersCache: Order[] | null = null;
+
+function getStore(): Order[] {
+    if (ordersCache) {
+        return ordersCache;
+    }
+    try {
+        const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
+        const data = JSON.parse(fileContent);
+        ordersCache = data;
+        return data;
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+            console.error(`Error: Orders data file not found at ${dataFilePath}. Please ensure it exists.`);
+            return [];
+        }
+        throw error;
+    }
 }
 
-// Centralized store access
-const getStore = (): Order[] => {
-    if (!globalThis.ordersStore) {
-        globalThis.ordersStore = initialOrders;
-    }
-    return globalThis.ordersStore;
+function saveStore(data: Order[]): void {
+    ordersCache = data;
+    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 // ---- Public API for the Order Store ----
@@ -25,7 +40,9 @@ export const findOrderById = (orderId: string): Order | undefined => {
 }
 
 export const addOrderToStore = (newOrder: Order): void => {
-    getStore().unshift(newOrder);
+    const store = getStore();
+    store.unshift(newOrder);
+    saveStore(store);
 }
 
 export const updateOrderInStore = (orderId: string, updates: Partial<Order>): Order | null => {
@@ -36,5 +53,6 @@ export const updateOrderInStore = (orderId: string, updates: Partial<Order>): Or
     }
     const updatedOrder = { ...store[orderIndex], ...updates };
     store[orderIndex] = updatedOrder;
+    saveStore(store);
     return updatedOrder;
 }

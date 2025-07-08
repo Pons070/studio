@@ -1,29 +1,40 @@
 
+import fs from 'fs';
+import path from 'path';
 import type { User } from './types';
-import { initialUsers } from './mock-data';
 
-// This ensures the store persists across hot reloads in development,
-// making our in-memory "database" more consistent.
-declare global {
-  var usersStore: User[] | undefined;
+const dataFilePath = path.join(process.cwd(), 'data/users.json');
+let usersCache: User[] | null = null;
+
+function getStore(): User[] {
+    if (usersCache) {
+        return usersCache;
+    }
+    try {
+        const fileContent = fs.readFileSync(dataFilePath, 'utf-8');
+        const data = JSON.parse(fileContent);
+        usersCache = data;
+        return data;
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+            console.error(`Error: User data file not found at ${dataFilePath}. Please ensure it exists.`);
+            return [];
+        }
+        throw error;
+    }
 }
 
-// Centralized functions to interact with the user store
-// This avoids issues with module caching in Next.js dev server.
-const getStore = (): User[] => {
-    if (!globalThis.usersStore) {
-        globalThis.usersStore = initialUsers;
-    }
-    return globalThis.usersStore;
-};
+function saveStore(data: User[]): void {
+    usersCache = data;
+    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
 
 export const getUsers = (): User[] => {
-    // Return a copy to prevent mutation
     return getStore().map(u => ({ ...u }));
 }
 
 export const findUserBy = (predicate: (user: User) => boolean): User | undefined => {
-    // Return a copy to prevent mutation of the original object in the store from the caller
     const user = getStore().find(predicate);
     return user ? { ...user } : undefined;
 };
@@ -37,24 +48,28 @@ export const findUserByPhone = (phone: string): User | undefined => {
 };
 
 export const addUser = (user: User): void => {
-    getStore().push(user);
+    const store = getStore();
+    store.push(user);
+    saveStore(store);
 };
 
 export const updateUser = (updatedUser: User): boolean => {
-    const users = getStore();
-    const index = users.findIndex(u => u.id === updatedUser.id);
+    const store = getStore();
+    const index = store.findIndex(u => u.id === updatedUser.id);
     if (index !== -1) {
-        users[index] = updatedUser;
+        store[index] = updatedUser;
+        saveStore(store);
         return true;
     }
     return false;
 };
 
 export const deleteUserPermanently = (id: string): boolean => {
-    const users = getStore();
-    const index = users.findIndex(u => u.id === id);
+    const store = getStore();
+    const index = store.findIndex(u => u.id === id);
     if (index !== -1) {
-        users.splice(index, 1);
+        store.splice(index, 1);
+        saveStore(store);
         return true;
     }
     return false;
