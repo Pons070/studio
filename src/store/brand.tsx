@@ -46,30 +46,46 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [fetchBrandInfo]);
 
   useEffect(() => {
-    // This effect synchronizes the brand theme with the CSS variables on the root element.
-    if (typeof window === 'undefined' || !brandInfo?.theme) {
+    // This effect synchronizes the brand theme with the CSS variables by injecting a <style> tag.
+    // This is a robust method for dynamic, app-wide theming.
+    if (typeof window === 'undefined') {
       return;
     }
 
-    const theme = brandInfo.theme;
-    const root = document.documentElement;
+    const styleId = 'dynamic-theme-styles';
+    let styleTag = document.getElementById(styleId) as HTMLStyleElement | null;
 
-    const applyStyle = (property: string, value: string | null | undefined) => {
-      if (value && value.trim() !== 'none') {
-        root.style.setProperty(property, value);
-      } else {
-        root.style.removeProperty(property);
-      }
-    };
+    // Create the style tag if it doesn't exist
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = styleId;
+      document.head.appendChild(styleTag);
+    }
     
-    applyStyle('--primary', theme.primaryColor);
-    applyStyle('--background', theme.backgroundColor);
-    applyStyle('--accent', theme.accentColor);
-    applyStyle('--card', theme.cardColor);
-    applyStyle('--card-alpha', theme.cardOpacity?.toString());
-    applyStyle('--radius', theme.borderRadius ? `${theme.borderRadius}rem` : null);
-    applyStyle('--background-image', theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : 'none');
+    const theme = brandInfo?.theme;
 
+    if (!theme) {
+        // If no theme, ensure the style tag is empty
+        styleTag.innerHTML = '';
+        return;
+    }
+
+    // Build the CSS string from the theme object
+    const css = `
+      :root {
+        ${theme.primaryColor ? `--primary: ${theme.primaryColor};` : ''}
+        ${theme.backgroundColor ? `--background: ${theme.backgroundColor};` : ''}
+        ${theme.accentColor ? `--accent: ${theme.accentColor};` : ''}
+        ${theme.cardColor ? `--card: ${theme.cardColor};` : ''}
+        ${theme.cardOpacity !== undefined ? `--card-alpha: ${theme.cardOpacity};` : ''}
+        ${theme.borderRadius !== undefined ? `--radius: ${theme.borderRadius}rem;` : ''}
+        ${theme.backgroundImageUrl ? `--background-image: url(${theme.backgroundImageUrl});` : '--background-image: none;'}
+      }
+    `;
+
+    // Apply the styles by updating the content of the style tag
+    styleTag.innerHTML = css;
+    
   }, [brandInfo?.theme]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
