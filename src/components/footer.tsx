@@ -23,10 +23,10 @@ export function Footer() {
   const { brandInfo } = useBrand();
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [currentYear, setCurrentYear] = useState('');
 
   useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
+    setCurrentYear(new Date().getFullYear().toString());
   }, []);
 
   const handleSecretAdminTrigger = useCallback((e: React.MouseEvent) => {
@@ -136,7 +136,7 @@ export function Footer() {
         <div className="mt-8 pt-6 border-t text-center">
             <p className="text-xs text-muted-foreground">
               <span onClick={handleSecretAdminTrigger} className="cursor-pointer">
-                © {currentYear || new Date().getFullYear()}
+                © {currentYear}
               </span>
               {' '}Poiesis Technologies. All rights reserved.
             </p>
