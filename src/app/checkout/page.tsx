@@ -38,12 +38,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { usePromotions } from '@/store/promotions';
 import { AddressDialog } from '@/components/address-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
   const { addOrder, orders } = useOrders();
-  const { brandInfo } = useBrand();
+  const { brandInfo, isLoading: isBrandLoading } = useBrand();
   const { currentUser, isAuthenticated, addAddress } = useAuth();
   const { promotions } = usePromotions();
   
@@ -63,8 +64,6 @@ export default function CheckoutPage() {
 
   const router = useRouter();
   const { toast } = useToast();
-  
-  const isClosed = brandInfo.businessHours.status === 'closed';
 
   useEffect(() => {
     if (currentUser?.addresses && currentUser.addresses.length > 0) {
@@ -88,7 +87,7 @@ export default function CheckoutPage() {
   const selectedAddress = currentUser?.addresses?.find(a => a.id === selectedAddressId);
   
   useEffect(() => {
-    if (selectedAddress && brandInfo.deliveryAreas) {
+    if (selectedAddress && brandInfo?.deliveryAreas) {
         const area = brandInfo.deliveryAreas.find(da => da.pincode === selectedAddress.pincode);
         if (area) {
             setDeliveryFee(area.cost);
@@ -102,7 +101,7 @@ export default function CheckoutPage() {
         setDeliveryFee(0);
         setIsDeliverySupported(true); // Assume support until an address proves otherwise
     }
-  }, [selectedAddress, brandInfo.deliveryAreas]);
+  }, [selectedAddress, brandInfo?.deliveryAreas]);
 
 
   const handleApplyCoupon = () => {
@@ -151,7 +150,71 @@ export default function CheckoutPage() {
     const { id, isDefault, ...newAddressData } = data;
     addAddress(newAddressData);
   }
+  
+  if (isBrandLoading) {
+    return (
+      <div>
+        <h1 className="text-4xl font-headline font-bold text-center mb-10 text-white">Checkout</h1>
+        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-8">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-1/2" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2 md:gap-8">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-24 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-8 lg:sticky top-24 h-fit">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-1/2" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-px w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-px w-full" />
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+              <CardFooter className="flex-col gap-4">
+                <Skeleton className="h-12 w-full" />
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  if (!brandInfo) {
+    return (
+        <div className="text-center py-10">
+            <p className="text-muted-foreground">Could not load restaurant information.</p>
+        </div>
+    );
+  }
+  
+  const isClosed = brandInfo.businessHours.status === 'closed';
   const isProfileIncomplete = isAuthenticated && !currentUser?.phone;
   const hasNoAddress = isAuthenticated && (!currentUser?.addresses || currentUser.addresses.length === 0);
   const isUserBlocked = isAuthenticated && currentUser ? (brandInfo.blockedCustomerEmails || []).includes(currentUser.email) : false;
