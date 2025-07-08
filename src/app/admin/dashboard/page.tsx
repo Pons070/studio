@@ -1493,6 +1493,13 @@ function BrandManagement() {
     { name: 'Autumn Glow', primaryColor: '38 92% 50%', backgroundColor: '30 60% 98%', accentColor: '45 80% 75%' },
   ];
 
+  const festivePalettes = [
+    { name: 'Diwali', primaryColor: '0 59% 41%', backgroundColor: '39 77% 95%', accentColor: '38 92% 50%' },
+    { name: 'Christmas', primaryColor: '0 72% 51%', backgroundColor: '210 40% 98%', accentColor: '142 76% 36%' },
+    { name: 'Holi', primaryColor: '322 89% 57%', backgroundColor: '0 0% 98%', accentColor: '187 85% 43%' },
+    { name: 'Eid', primaryColor: '145 63% 42%', backgroundColor: '0 0% 100%', accentColor: '45 100% 51%' },
+  ];
+
   const cardColorsPalette = [
     '0 0% 100%',     // White
     '240 5% 96%',    // Off-White (Cool)
@@ -1793,6 +1800,39 @@ function BrandManagement() {
               <Label>Color Palette</Label>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 pt-2">
                 {palettes.map((palette) => {
+                  const isSelected = theme.primaryColor === palette.primaryColor && theme.backgroundColor === palette.backgroundColor;
+                  return (
+                    <div key={palette.name} onClick={() => handlePaletteSelect(palette)} className="cursor-pointer group">
+                      <div className="relative">
+                        <div className={cn("rounded-md border-2 p-1 transition-all", isSelected ? 'border-primary shadow-lg' : 'border-card group-hover:border-border')}>
+                          <div className="flex h-16 w-full rounded-sm overflow-hidden">
+                            <div className="w-1/2" style={{ backgroundColor: `hsl(${palette.backgroundColor})` }} />
+                            <div className="w-1/2 flex flex-col">
+                              <div className="h-2/3" style={{ backgroundColor: `hsl(${palette.primaryColor})` }} />
+                              <div className="h-1/3" style={{ backgroundColor: `hsl(${palette.accentColor})` }} />
+                            </div>
+                          </div>
+                        </div>
+                         {isSelected && (
+                            <div className="absolute -top-2 -right-2 h-6 w-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center border-2 border-background">
+                                <Check className="h-4 w-4" />
+                            </div>
+                        )}
+                      </div>
+                      <p className={cn("text-sm text-center mt-2 transition-colors", isSelected ? 'font-semibold text-primary' : 'text-muted-foreground group-hover:text-foreground')}>{palette.name}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label className="flex items-center gap-2"><Gift /> Festive Themes</Label>
+              <p className="text-sm text-muted-foreground -mt-1">
+                Apply a special theme for festive occasions with one click.
+              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 pt-2">
+                {festivePalettes.map((palette) => {
                   const isSelected = theme.primaryColor === palette.primaryColor && theme.backgroundColor === palette.backgroundColor;
                   return (
                     <div key={palette.name} onClick={() => handlePaletteSelect(palette)} className="cursor-pointer group">
