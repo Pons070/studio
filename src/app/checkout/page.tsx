@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -379,16 +380,8 @@ export default function CheckoutPage() {
         <Confetti
           width={windowSize.width}
           height={windowSize.height}
-          numberOfPieces={400}
           recycle={false}
-          gravity={0.3}
           onConfettiComplete={() => setShowConfetti(false)}
-          confettiSource={{
-            x: windowSize.width / 2,
-            y: windowSize.height / 2,
-            w: 0,
-            h: 0,
-          }}
         />
       )}
       <div>
