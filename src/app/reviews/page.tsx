@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useReviews } from '@/store/reviews';
@@ -26,20 +25,20 @@ function StarDisplay({ rating }: { rating: number }) {
 }
 
 export default function ReviewsPage() {
-  const { reviews, isLoading } = useReviews();
-  const { brandInfo } = useBrand();
+  const { reviews, isLoading: areReviewsLoading } = useReviews();
+  const { brandInfo, isLoading: isBrandLoading } = useBrand();
+  
+  const isLoading = areReviewsLoading || isBrandLoading;
+  
   const publishedReviews = reviews.filter(r => r.isPublished);
 
-  return (
-    <div className="space-y-12">
-      <div className="text-center">
-        <h1 className="text-4xl md:text-5xl font-headline font-bold">Customer Reviews</h1>
-        <p className="text-lg text-white font-bold mt-2">
-          Hear what our valued customers have to say about {brandInfo.name}.
-        </p>
-      </div>
-
-      {isLoading ? (
+  if (isLoading) {
+    return (
+      <div className="space-y-12">
+        <div className="text-center">
+          <Skeleton className="h-12 w-3/4 mx-auto mb-2" />
+          <Skeleton className="h-6 w-1/2 mx-auto" />
+        </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="flex flex-col justify-between">
@@ -58,7 +57,28 @@ export default function ReviewsPage() {
             </Card>
           ))}
         </div>
-      ) : publishedReviews.length > 0 ? (
+      </div>
+    );
+  }
+
+  if (!brandInfo) {
+    return (
+        <div className="text-center py-10">
+            <p className="text-muted-foreground">Could not load brand information.</p>
+        </div>
+    );
+  }
+
+  return (
+    <div className="space-y-12">
+      <div className="text-center">
+        <h1 className="text-4xl md:text-5xl font-headline font-bold">Customer Reviews</h1>
+        <p className="text-lg text-white font-bold mt-2">
+          Hear what our valued customers have to say about {brandInfo.name}.
+        </p>
+      </div>
+
+      {publishedReviews.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {publishedReviews.map((review) => (
             <Card key={review.id} className="flex flex-col justify-between shadow-lg transform transition-transform duration-300 hover:-translate-y-1">

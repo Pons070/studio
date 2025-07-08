@@ -126,7 +126,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onRequestUpd
     if (!order) return null;
 
     const review = order.reviewId ? reviews.find(r => r.id === order.reviewId) : null;
-    const canRequestUpdate = (brandInfo.allowOrderUpdates ?? true) && (order.status === 'Pending' || order.status === 'Confirmed') && (order.updateRequests?.filter(r => r.from === 'customer').length || 0) < 3;
+    const canRequestUpdate = (brandInfo?.allowOrderUpdates ?? true) && (order.status === 'Pending' || order.status === 'Confirmed') && (order.updateRequests?.filter(r => r.from === 'customer').length || 0) < 3;
     const subtotal = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     return (

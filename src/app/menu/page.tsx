@@ -26,14 +26,16 @@ const categoryIcons = {
 
 export default function MenuPage() {
   const { addItem } = useCart();
-  const { menuItems, isLoading } = useMenu();
-  const { brandInfo } = useBrand();
+  const { menuItems, isLoading: isMenuLoading } = useMenu();
+  const { brandInfo, isLoading: isBrandLoading } = useBrand();
   const { toggleFavoriteItem, isItemFavorite } = useFavorites();
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
+  const isLoading = isMenuLoading || isBrandLoading;
+
   const categories = ['Appetizers', 'Main Courses', 'Desserts', 'Drinks'];
-  const isClosed = brandInfo.businessHours.status === 'closed';
+  const isClosed = brandInfo?.businessHours?.status === 'closed';
 
   const filteredMenuItems = menuItems.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,6 +78,14 @@ export default function MenuPage() {
           </section>
         ))}
       </div>
+    );
+  }
+
+  if (!brandInfo) {
+    return (
+        <div className="text-center py-10">
+            <p className="text-muted-foreground">Could not load restaurant information.</p>
+        </div>
     );
   }
 
