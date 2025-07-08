@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
-import { Utensils, User, LogOut, History, LogIn, UserPlus, Settings, Star } from 'lucide-react';
+import { UtensilsCrossed, ShoppingCart, User, LogOut, History, LogIn, UserPlus, Settings, Star } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,11 +61,11 @@ export function Header() {
     <header className="bg-card shadow-md sticky top-0 z-40">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 group">
             {brandInfo.logoUrl ? (
               <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={40} height={40} className={cn("object-contain", brandInfo.logoShape === 'circle' ? 'rounded-full' : 'rounded-md')} />
             ) : (
-              <Utensils className="h-8 w-8 text-primary" />
+              <UtensilsCrossed className="h-8 w-8 text-primary transition-transform duration-300 ease-in-out group-hover:rotate-[-15deg]" />
             )}
             <span className="text-2xl font-headline font-bold text-foreground">{brandInfo.name}</span>
           </Link>
@@ -84,8 +84,8 @@ export function Header() {
 
           <div className="flex items-center gap-4">
               <CartSheet>
-                <Button variant="outline" size="icon" className="relative">
-                    <Utensils className="h-6 w-6" />
+                <Button variant="outline" size="icon" className="relative transition-transform duration-300 ease-in-out hover:rotate-12">
+                    <ShoppingCart className="h-6 w-6" />
                     {itemCount > 0 && (
                         <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center text-xs">
                             {itemCount}
