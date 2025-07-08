@@ -1,13 +1,12 @@
 
 import type { Order } from '@/lib/types';
-import { getUsers } from './user-store';
+import { users } from './user-store';
 import { menuItems } from './menu-store';
 
 declare global {
   var ordersStore: Order[] | undefined;
 }
 
-const users = getUsers();
 const findUser = (name: string) => users.find(u => u.name === name);
 const findMenuItem = (name: string) => menuItems.find(m => m.name === name);
 
