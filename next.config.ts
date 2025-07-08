@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push('@genkit-ai/googleai', 'genkit', 'zod');
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
