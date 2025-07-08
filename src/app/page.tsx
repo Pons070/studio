@@ -36,7 +36,7 @@ export default function Home() {
           </section>
 
           <section>
-            <h2 className="text-3xl font-headline font-bold text-center mb-10 text-white">Featured Dishes</h2>
+            <h2 className="text-3xl font-headline font-bold text-center mb-10 text-foreground">Featured Dishes</h2>
             <div className="grid md:grid-cols-3 gap-8">
               {[...Array(3)].map((_, i) => (
                 <Card key={i} className="flex flex-col">
@@ -95,7 +95,7 @@ export default function Home() {
           <h1 className="text-4xl md:text-6xl font-headline font-bold text-foreground mb-8 leading-tight">
             Savor the Moment, <span className="text-primary">Skip the Wait.</span>
           </h1>
-          <Button asChild size="lg" variant="destructive" className="font-bold text-lg" disabled={isClosed}>
+          <Button asChild size="lg" className="font-bold text-lg" disabled={isClosed}>
             <Link href="/menu">
               Order Now <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
@@ -103,7 +103,7 @@ export default function Home() {
         </section>
 
         <section>
-          <h2 className="text-3xl font-headline font-bold text-center mb-10 text-white">Featured Dishes</h2>
+          <h2 className="text-3xl font-headline font-bold text-center mb-10 text-foreground">Featured Dishes</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {isMenuLoading ? (
               [...Array(3)].map((_, i) => (
@@ -182,7 +182,7 @@ export default function Home() {
 
         {areReviewsLoading ? (
           <section>
-            <h2 className="text-3xl font-headline font-bold text-center mb-10 text-white">What Our Customers Say</h2>
+            <h2 className="text-3xl font-headline font-bold text-center mb-10 text-foreground">What Our Customers Say</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
               {[...Array(3)].map((_, i) => (
                 <Card key={i} className="flex flex-col h-full justify-between">
@@ -200,7 +200,7 @@ export default function Home() {
           </section>
         ) : featuredReviews.length > 0 && (
             <section>
-              <h2 className="text-3xl font-headline font-bold text-center mb-10 text-white">What Our Customers Say</h2>
+              <h2 className="text-3xl font-headline font-bold text-center mb-10 text-foreground">What Our Customers Say</h2>
               <Carousel
                 opts={{
                   align: "start",

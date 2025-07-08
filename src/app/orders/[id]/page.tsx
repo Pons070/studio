@@ -77,7 +77,7 @@ export default function OrderConfirmationPage() {
     if (order === null) {
         return (
             <div className="text-center py-10">
-                <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
+                <h1 className="text-2xl font-bold mb-4 font-headline">Order Not Found</h1>
                 <p className="text-muted-foreground mb-6">We couldn't find the order you're looking for, or it may not belong to you.</p>
                 <Button asChild>
                     <Link href="/orders">View All My Orders</Link>
@@ -93,14 +93,14 @@ export default function OrderConfirmationPage() {
             <div className="text-center p-6 bg-success/10 border border-success/20 rounded-lg">
                 <CheckCircle className="h-12 w-12 text-success mx-auto mb-4" />
                 <h1 className="text-2xl md:text-3xl font-headline font-bold text-success">Thank You for Your Order!</h1>
-                <p className="text-white font-bold mt-2">
+                <p className="text-muted-foreground mt-2">
                     Your pre-order has been placed successfully. You can track its status below.
                 </p>
             </div>
 
              <Card>
                 <CardHeader>
-                    <CardTitle>Order Summary</CardTitle>
+                    <CardTitle className="font-headline">Order Summary</CardTitle>
                     <CardDescription>Order ID: {order.id}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">

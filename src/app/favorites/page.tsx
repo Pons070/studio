@@ -44,8 +44,8 @@ export default function FavoritesPage() {
     return (
         <div className="space-y-12">
             <div className="text-center">
-                <h1 className="text-4xl md:text-5xl font-headline font-bold">My Favorites</h1>
-                <p className="text-lg text-white font-bold mt-2">Your favorite dishes and past orders, all in one place.</p>
+                <h1 className="text-4xl md:text-5xl font-headline font-bold text-foreground">My Favorites</h1>
+                <p className="text-lg text-muted-foreground mt-2">Your favorite dishes and past orders, all in one place.</p>
             </div>
 
             <Card>
@@ -73,7 +73,7 @@ export default function FavoritesPage() {
                                       <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                                     </div>
                                     <CardContent className="pt-4 flex-grow">
-                                        <CardTitle className="text-lg">{item.name}</CardTitle>
+                                        <CardTitle className="text-lg font-headline">{item.name}</CardTitle>
                                         <CardDescription className="text-sm mt-1">{item.description}</CardDescription>
                                     </CardContent>
                                     <CardFooter className="flex justify-between items-center mt-auto">

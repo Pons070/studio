@@ -46,8 +46,8 @@ export default function MenuPage() {
     return (
       <div className="space-y-12">
         <div className="text-center">
-          <h1 className="text-4xl md:text-5xl font-headline font-bold text-white">Our Menu</h1>
-          <p className="text-lg text-white font-bold mt-2">Handcrafted with love, just for you.</p>
+          <h1 className="text-4xl md:text-5xl font-headline font-bold text-foreground">Our Menu</h1>
+          <p className="text-lg text-muted-foreground mt-2">Handcrafted with love, just for you.</p>
         </div>
 
         <div className="max-w-lg mx-auto">
@@ -92,8 +92,8 @@ export default function MenuPage() {
   return (
     <div className="space-y-12">
       <div className="text-center">
-        <h1 className="text-4xl md:text-5xl font-headline font-bold text-white">Our Menu</h1>
-        <p className="text-lg text-white font-bold mt-2">Handcrafted with love, just for you.</p>
+        <h1 className="text-4xl md:text-5xl font-headline font-bold text-foreground">Our Menu</h1>
+        <p className="text-lg text-muted-foreground mt-2">Handcrafted with love, just for you.</p>
       </div>
 
       <div className="max-w-lg mx-auto">

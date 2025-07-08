@@ -153,7 +153,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Order Details</DialogTitle>
+                    <DialogTitle className="font-headline">Order Details</DialogTitle>
                     <DialogDescription>
                         Order ID: {order.id} | Customer: {order.customerName}
                     </DialogDescription>
@@ -313,7 +313,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogTitle className="font-headline">Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
                                     This will cancel the order. This action cannot be undone.
                                     </AlertDialogDescription>
@@ -360,7 +360,7 @@ function CancellationDialog({ order, isOpen, onOpenChange, onConfirm }: { order:
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Cancel Order #{order.id}</DialogTitle>
+                    <DialogTitle className="font-headline">Cancel Order #{order.id}</DialogTitle>
                     <DialogDescription>
                         Please provide a reason for cancelling this order. This will be shared with the customer.
                     </DialogDescription>
@@ -441,7 +441,7 @@ function OrderTable({ orders, onSelectOrder, onUpdateStatus, onDeleteOrder }: { 
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogTitle className="font-headline">Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
                                         This will cancel the order. This action cannot be undone.
                                     </AlertDialogDescription>
@@ -478,7 +478,7 @@ function InquiryNotificationDialog({ order, onOpenChange }: { order: Order | nul
         <Dialog open={!!order} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary" /> New Inquiry on Order #{order.id}</DialogTitle>
+                    <DialogTitle className="font-headline flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary" /> New Inquiry on Order #{order.id}</DialogTitle>
                     <DialogDescription>
                        From: {order.customerName}
                     </DialogDescription>
@@ -512,7 +512,7 @@ function NewOrderNotificationDialog({ order, onOpenChange, onGoToOrders }: { ord
         <Dialog open={!!order} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><PlusCircle className="h-5 w-5 text-primary" /> New Pre-Order Received!</DialogTitle>
+                    <DialogTitle className="font-headline flex items-center gap-2"><PlusCircle className="h-5 w-5 text-primary" /> New Pre-Order Received!</DialogTitle>
                     <DialogDescription>
                         Order ID: #{order.id} from {order.customerName}
                     </DialogDescription>
@@ -611,7 +611,7 @@ function OrderManagement() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Active Orders</CardTitle>
+            <CardTitle className="font-headline">Active Orders</CardTitle>
             <CardDescription>Newly received and ongoing orders that require attention.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -625,7 +625,7 @@ function OrderManagement() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Order History</CardTitle>
+            <CardTitle className="font-headline">Order History</CardTitle>
             <CardDescription>Completed and cancelled orders. Older orders are automatically archived.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -748,7 +748,7 @@ function MenuManagement() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Menu Items</CardTitle>
+          <CardTitle className="font-headline">Menu Items</CardTitle>
           <CardDescription>Add, edit, or remove menu items. Toggle their availability and featured status.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -808,7 +808,7 @@ function MenuManagement() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogTitle className="font-headline">Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
                             This action cannot be undone. This will permanently delete the menu item "{item.name}".
                           </AlertDialogDescription>
@@ -881,7 +881,7 @@ function MenuItemCropDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Crop Menu Item Image</DialogTitle>
+          <DialogTitle className="font-headline">Crop Menu Item Image</DialogTitle>
           <DialogDescription>
             Adjust the selection to crop the image.
           </DialogDescription>
@@ -964,7 +964,7 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
         <Dialog open={isOpen} onOpenChange={setOpen}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>{item ? 'Edit Menu Item' : 'Add New Menu Item'}</DialogTitle>
+                    <DialogTitle className="font-headline">{item ? 'Edit Menu Item' : 'Add New Menu Item'}</DialogTitle>
                     <DialogDescription>
                         {item ? 'Make changes to the menu item here.' : 'Add a new item to your menu.'}
                     </DialogDescription>
@@ -1066,7 +1066,7 @@ function ReplyDialog({ review, isOpen, onOpenChange, onSave }: { review: Review 
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Reply to Review</DialogTitle>
+                    <DialogTitle className="font-headline">Reply to Review</DialogTitle>
                     <DialogDescription>
                         Respond to {review.customerName}'s feedback for order {review.orderId}.
                     </DialogDescription>
@@ -1076,7 +1076,7 @@ function ReplyDialog({ review, isOpen, onOpenChange, onSave }: { review: Review 
                         <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <CardTitle className="text-base">{review.customerName}</CardTitle>
+                                    <CardTitle className="text-base font-headline">{review.customerName}</CardTitle>
                                     <CardDescription className="text-xs">{new Date(review.date).toLocaleDateString()}</CardDescription>
                                 </div>
                                 <StarDisplay rating={review.rating} />
@@ -1109,7 +1109,7 @@ function DeleteReviewDialog({ review, isOpen, onOpenChange, onConfirm }: { revie
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Delete Review?</DialogTitle>
+                    <DialogTitle className="font-headline">Delete Review?</DialogTitle>
                     <DialogDescription>
                         Are you sure you want to delete this review from "{review.customerName}"? This action cannot be undone.
                     </DialogDescription>
@@ -1187,7 +1187,7 @@ function ReviewManagement() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Customer Reviews</CardTitle>
+          <CardTitle className="font-headline">Customer Reviews</CardTitle>
           <CardDescription>View, reply to, publish, or delete customer feedback.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1370,7 +1370,7 @@ function ImageCropDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="font-headline">{title}</DialogTitle>
           <DialogDescription>
             Adjust the selection to crop your image.
           </DialogDescription>
@@ -1437,7 +1437,7 @@ function DeliveryAreaDialog({ isOpen, onOpenChange, onSave, area }: { isOpen: bo
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{area ? 'Edit Delivery Area' : 'Add New Delivery Area'}</DialogTitle>
+                    <DialogTitle className="font-headline">{area ? 'Edit Delivery Area' : 'Add New Delivery Area'}</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -1617,7 +1617,7 @@ function BrandManagement() {
     <>
     <Card>
       <CardHeader>
-        <CardTitle>Brand Management</CardTitle>
+        <CardTitle className="font-headline">Brand Management</CardTitle>
         <CardDescription>Update your restaurant's branding, contact information, and theme.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -1639,7 +1639,7 @@ function BrandManagement() {
         <Separator />
         
         <div className="space-y-4">
-            <Label className="text-base font-medium">Address</Label>
+            <h3 className="text-base font-medium">Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                   <Label htmlFor="doorNumber">Door Number</Label>
@@ -1967,7 +1967,7 @@ function DeliveryManagement() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Delivery Areas & Costs</CardTitle>
+          <CardTitle className="font-headline">Delivery Areas & Costs</CardTitle>
           <CardDescription>Define where you deliver and set the corresponding fees.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1998,7 +1998,7 @@ function DeliveryManagement() {
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                       <AlertDialogHeader>
-                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                          <AlertDialogTitle className="font-headline">Are you sure?</AlertDialogTitle>
                                           <AlertDialogDescription>
                                               This will remove the delivery area for "{area.areaName} - {area.pincode}".
                                           </AlertDialogDescription>
@@ -2110,7 +2110,7 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
         <Dialog open={isOpen} onOpenChange={setOpen}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{item ? 'Edit Promotion' : 'Add New Promotion'}</DialogTitle>
+                    <DialogTitle className="font-headline">{item ? 'Edit Promotion' : 'Add New Promotion'}</DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-4">
                 <div className="grid gap-4 py-4">
@@ -2299,7 +2299,7 @@ function PromotionManagement() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Manage Promotions</CardTitle>
+          <CardTitle className="font-headline">Manage Promotions</CardTitle>
           <CardDescription>Create and manage promotional offers for your customers.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -2338,7 +2338,7 @@ function PromotionManagement() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogTitle className="font-headline">Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
                                 This action cannot be undone. This will permanently delete the promotion "{promo.title}".
                             </AlertDialogDescription>
@@ -2373,7 +2373,7 @@ function DeleteCustomerDialog({ customer, isOpen, onOpenChange, onConfirm }: { c
         <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Customer?</AlertDialogTitle>
+                    <AlertDialogTitle className="font-headline">Delete Customer?</AlertDialogTitle>
                     <AlertDialogDescription>
                         Are you sure you want to delete the account for "{customer.name}"? This will permanently remove their profile and cannot be undone.
                     </AlertDialogDescription>
@@ -2396,7 +2396,7 @@ function BlockCustomerDialog({ customer, isOpen, onOpenChange, onConfirm, isBloc
         <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{isBlocking ? 'Block' : 'Unblock'} Customer?</AlertDialogTitle>
+                    <AlertDialogTitle className="font-headline">{isBlocking ? 'Block' : 'Unblock'} Customer?</AlertDialogTitle>
                     <AlertDialogDescription>
                         Are you sure you want to {isBlocking ? 'block' : 'unblock'} "{customer.name}"?
                         {isBlocking
@@ -2427,7 +2427,7 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggl
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Customer Details</DialogTitle>
+                    <DialogTitle className="font-headline">Customer Details</DialogTitle>
                     <DialogDescription>{customer.name} - {customer.email}</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-6">
@@ -2525,7 +2525,7 @@ function CustomerTable({ customers, onSelectCustomer, onDeleteCustomer }: { cust
                             </AlertDialogTrigger>
                              <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Customer?</AlertDialogTitle>
+                                    <AlertDialogTitle className="font-headline">Delete Customer?</AlertDialogTitle>
                                     <AlertDialogDescription>
                                         Are you sure you want to delete the account for "{customer.name}"? This will permanently remove their profile and cannot be undone.
                                     </AlertDialogDescription>
@@ -2605,7 +2605,7 @@ function CustomerManagement() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Customer Management</CardTitle>
+          <CardTitle className="font-headline">Customer Management</CardTitle>
           <CardDescription>View, search, and manage your customer accounts.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -2662,7 +2662,7 @@ function CancellationReasonDetailsDialog({ details, isOpen, onOpenChange, onExpo
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>Orders Cancelled Due To: "{details.reason}"</DialogTitle>
+                    <DialogTitle className="font-headline">Orders Cancelled Due To: "{details.reason}"</DialogTitle>
                     <DialogDescription>
                         A total of {details.orders.length} order(s) were cancelled for this reason.
                     </DialogDescription>
@@ -2704,7 +2704,7 @@ function PincodeDetailsDialog({ details, isOpen, onOpenChange, onExport, onSelec
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>Orders for Pincode: "{details.pincode}"</DialogTitle>
+                    <DialogTitle className="font-headline">Orders for Pincode: "{details.pincode}"</DialogTitle>
                     <DialogDescription>
                         A total of {details.orders.length} order(s) were delivered to this pincode.
                     </DialogDescription>
@@ -2760,7 +2760,7 @@ function MetricDetailsDialog({ details, isOpen, onOpenChange, onExport, onSelect
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>{details.title}</DialogTitle>
+                    <DialogTitle className="font-headline">{details.title}</DialogTitle>
                     <DialogDescription>
                         {description}
                     </DialogDescription>
@@ -3205,7 +3205,7 @@ function AnalyticsAndReports() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
-            <CardTitle>Sales Over Time</CardTitle>
+            <CardTitle className="font-headline">Sales Over Time</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             <ResponsiveContainer width="100%" height={350}>
@@ -3231,7 +3231,7 @@ function AnalyticsAndReports() {
 
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Top 5 Menu Items</CardTitle>
+            <CardTitle className="font-headline">Top 5 Menu Items</CardTitle>
             <CardDescription>By quantity sold across all orders.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -3261,7 +3261,7 @@ function AnalyticsAndReports() {
        {ordersByPincode.length > 0 && (
         <Card className="lg:col-span-7">
             <CardHeader>
-                <CardTitle>Completed Orders by Pincode</CardTitle>
+                <CardTitle className="font-headline">Completed Orders by Pincode</CardTitle>
                 <CardDescription>Click on a bar to see the list of orders.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -3290,7 +3290,7 @@ function AnalyticsAndReports() {
        {cancellationReasons.length > 0 && (
           <Card>
               <CardHeader>
-              <CardTitle>Cancellation Reasons</CardTitle>
+              <CardTitle className="font-headline">Cancellation Reasons</CardTitle>
               <CardDescription>Click on a bar to see the list of orders.</CardDescription>
               </CardHeader>
               <CardContent>
@@ -3331,7 +3331,7 @@ function AnalyticsAndReports() {
 
       <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Lightbulb /> AI-Powered Business Insights</CardTitle>
+            <CardTitle className="font-headline flex items-center gap-2"><Lightbulb /> AI-Powered Business Insights</CardTitle>
             <CardDescription>Actionable recommendations based on your restaurant's data.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -3372,7 +3372,7 @@ function AnalyticsAndReports() {
                             {insights.recommendations.map((rec, i) => (
                                 <Card key={i} className="bg-muted/50">
                                     <CardHeader className="pb-2">
-                                        <CardTitle className="text-base">{rec.title}</CardTitle>
+                                        <CardTitle className="font-headline text-base">{rec.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <p className="text-sm text-muted-foreground">{rec.description}</p>
@@ -3529,8 +3529,8 @@ export default function AdminDashboardPage() {
       <div className="space-y-6 p-4 md:p-6">
         <header className="flex justify-between items-start">
             <div className="space-y-2">
-                <h1 className="text-4xl font-headline font-bold text-white">Admin Dashboard</h1>
-                <p className="mt-2 text-lg text-white font-bold">Manage &amp; Control at your finger tips</p>
+                <h1 className="text-4xl font-headline font-bold text-foreground">Admin Dashboard</h1>
+                <p className="mt-2 text-lg text-muted-foreground">Manage &amp; Control at your finger tips</p>
             </div>
              <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={handleGoToOrders}>
@@ -3584,7 +3584,7 @@ export default function AdminDashboardPage() {
                 <span className="sr-only">Back to Dashboard</span>
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-headline font-bold text-white">{activeItem?.label}</h1>
+                    <h1 className="text-3xl font-headline font-bold text-foreground">{activeItem?.label}</h1>
                     <p className="text-muted-foreground">{activeItem?.description}</p>
                 </div>
             </div>

@@ -11,7 +11,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Alegreya', 'sans-serif'],
+        body: ['Lato', 'sans-serif'],
         headline: ['Alegreya', 'serif'],
         code: ['monospace'],
       },

@@ -41,7 +41,7 @@ export function CartSheet({ children }: { children: React.ReactNode }) {
                       <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold">{item.name}</h3>
+                      <h3 className="font-semibold font-headline">{item.name}</h3>
                       <p className="text-sm text-muted-foreground">Rs.{item.price.toFixed(2)}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Button
@@ -98,7 +98,7 @@ export function CartSheet({ children }: { children: React.ReactNode }) {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <ShoppingCart className="h-20 w-20 text-muted-foreground/50 mb-4" />
-            <h3 className="text-xl font-semibold text-muted-foreground">Your cart is empty</h3>
+            <h3 className="text-xl font-semibold text-muted-foreground font-headline">Your cart is empty</h3>
             <p className="text-sm text-muted-foreground mb-4">Add some delicious items from the menu.</p>
             <SheetClose asChild>
                 <Button asChild variant="secondary">

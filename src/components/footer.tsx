@@ -130,7 +130,7 @@ export function Footer() {
         </div>
         <div className="mt-8 pt-6 border-t text-center">
             <p className="text-xs text-muted-foreground">
-              <span onClick={handleSecretAdminTrigger} className="cursor-pointer" suppressHydrationWarning>
+              <span onClick={handleSecretAdminTrigger} className="cursor-pointer" suppressHydrationWarning={true}>
                 © {new Date().getFullYear()}
               </span>
               {' '}Poiesis Technologies. All rights reserved.

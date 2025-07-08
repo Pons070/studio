@@ -202,7 +202,7 @@ export default function CheckoutPage() {
   if (isBrandLoading) {
     return (
       <div>
-        <h1 className="text-4xl font-headline font-bold text-center mb-10 text-white">Checkout</h1>
+        <h1 className="text-4xl font-headline font-bold text-center mb-10 text-foreground">Checkout</h1>
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
             <Card>
@@ -377,7 +377,7 @@ export default function CheckoutPage() {
     return (
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Restaurant Closed</CardTitle>
+          <CardTitle className="font-headline">Restaurant Closed</CardTitle>
         </CardHeader>
         <CardContent>
           <Alert variant="destructive" className="items-center">
@@ -408,12 +408,12 @@ export default function CheckoutPage() {
         <DialogContent className="sm:max-w-md" hideCloseButton>
             <div className="flex flex-col items-center justify-center text-center p-8 space-y-4">
                 <CheckCircle className="h-20 w-20 text-success animate-in zoom-in-50 duration-500" />
-                <DialogTitle className="text-2xl font-bold text-success">Coupon Applied Successfully!</DialogTitle>
+                <DialogTitle className="text-2xl font-bold text-success font-headline">Coupon Applied Successfully!</DialogTitle>
             </div>
         </DialogContent>
       </Dialog>
       <div>
-        <h1 className="text-4xl font-headline font-bold text-center mb-10 text-white">Checkout</h1>
+        <h1 className="text-4xl font-headline font-bold text-center mb-10 text-foreground">Checkout</h1>
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
               {isUserBlocked && (
@@ -427,7 +427,7 @@ export default function CheckoutPage() {
               )}
               <Card>
                 <CardHeader>
-                  <CardTitle>1. Select Pickup Time</CardTitle>
+                  <CardTitle className="font-headline">1. Select Pickup Time</CardTitle>
                   <CardDescription>Choose when you'd like to receive your order.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2 md:gap-8">
@@ -478,7 +478,7 @@ export default function CheckoutPage() {
 
               <Card>
                   <CardHeader>
-                      <CardTitle>2. Select Delivery Address</CardTitle>
+                      <CardTitle className="font-headline">2. Select Delivery Address</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                       {isProfileIncomplete ? (
@@ -552,7 +552,7 @@ export default function CheckoutPage() {
 
                <Card>
                   <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> 3. Cooking Notes (Optional)</CardTitle>
+                      <CardTitle className="font-headline flex items-center gap-2"><FileText className="h-5 w-5" /> 3. Cooking Notes (Optional)</CardTitle>
                       <CardDescription>Have any special requests? Let the chef know.</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -569,7 +569,7 @@ export default function CheckoutPage() {
           <div className="space-y-8 lg:sticky top-24 h-fit">
               <Card>
                 <CardHeader>
-                  <CardTitle>4. Order Summary</CardTitle>
+                  <CardTitle className="font-headline">4. Order Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {items.length > 0 ? (
@@ -685,7 +685,7 @@ export default function CheckoutPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogTitle className="font-headline">Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 This will remove all items from your cart. This action cannot be undone.
                               </AlertDialogDescription>
