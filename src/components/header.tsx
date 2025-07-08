@@ -71,13 +71,13 @@ export function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-lg font-medium">
-            <Link href="/menu" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/menu" className="text-muted-foreground hover:text-destructive transition-colors">
               Menu
             </Link>
-            <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/about" className="text-muted-foreground hover:text-destructive transition-colors">
               About Us
             </Link>
-             <Link href="/reviews" className="text-muted-foreground hover:text-primary transition-colors">
+             <Link href="/reviews" className="text-muted-foreground hover:text-destructive transition-colors">
               Reviews
             </Link>
           </nav>
