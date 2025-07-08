@@ -1,7 +1,7 @@
 
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { BrandInfo, DeliveryArea } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,22 +45,27 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     fetchBrandInfo();
   }, [fetchBrandInfo]);
 
-  const brandStyles = useMemo(() => {
-    if (!brandInfo?.theme) return null;
+  useEffect(() => {
+    if (typeof window === 'undefined' || !brandInfo?.theme) return;
 
     const theme = brandInfo.theme;
-    const css = `
-      :root {
-        ${theme.primaryColor ? `--primary: ${theme.primaryColor};` : ''}
-        ${theme.backgroundColor ? `--background: ${theme.backgroundColor};` : ''}
-        ${theme.accentColor ? `--accent: ${theme.accentColor};` : ''}
-        ${theme.cardColor ? `--card: ${theme.cardColor};` : ''}
-        ${theme.cardOpacity !== undefined ? `--card-alpha: ${theme.cardOpacity};` : ''}
-        ${theme.borderRadius !== undefined ? `--radius: ${theme.borderRadius}rem;` : ''}
-        ${theme.backgroundImageUrl ? `--background-image: url(${theme.backgroundImageUrl});` : '--background-image: none;'}
+    const root = document.documentElement;
+
+    const setStyle = (prop: string, value: string | number | undefined | null) => {
+      if (value !== undefined && value !== null) {
+        root.style.setProperty(prop, value.toString());
       }
-    `;
-    return <style>{css}</style>;
+    };
+    
+    // Set theme properties
+    setStyle('--primary', theme.primaryColor);
+    setStyle('--background', theme.backgroundColor);
+    setStyle('--accent', theme.accentColor);
+    setStyle('--card', theme.cardColor);
+    setStyle('--card-alpha', theme.cardOpacity);
+    setStyle('--radius', theme.borderRadius ? `${theme.borderRadius}rem` : null);
+    setStyle('--background-image', theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : 'none');
+    
   }, [brandInfo?.theme]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
@@ -142,7 +147,6 @@ export function BrandProvider({ children }: { children: ReactNode }) {
 
   return (
     <BrandContext.Provider value={{ brandInfo: brandInfo!, isLoading, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
-      {brandStyles}
       {children}
     </BrandContext.Provider>
   );
