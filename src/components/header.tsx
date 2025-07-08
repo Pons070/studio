@@ -70,14 +70,14 @@ export function Header() {
             <span className="text-2xl font-headline font-bold text-foreground">{brandInfo.name}</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6 text-lg font-medium">
-            <Link href="/menu" className="text-muted-foreground hover:text-destructive transition-colors">
+          <nav className="hidden md:flex items-center gap-2 text-lg font-medium">
+            <Link href="/menu" className="text-muted-foreground px-3 py-2 rounded-md hover:bg-destructive hover:text-destructive-foreground transition-colors">
               Menu
             </Link>
-            <Link href="/about" className="text-muted-foreground hover:text-destructive transition-colors">
+            <Link href="/about" className="text-muted-foreground px-3 py-2 rounded-md hover:bg-destructive hover:text-destructive-foreground transition-colors">
               About Us
             </Link>
-             <Link href="/reviews" className="text-muted-foreground hover:text-destructive transition-colors">
+             <Link href="/reviews" className="text-muted-foreground px-3 py-2 rounded-md hover:bg-destructive hover:text-destructive-foreground transition-colors">
               Reviews
             </Link>
           </nav>
