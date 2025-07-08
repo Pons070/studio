@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, X, Truck, PlusCircle, Edit } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, X, Truck, PlusCircle, Edit, Minus, Plus } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -43,7 +43,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 export default function CheckoutPage() {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, updateQuantity, removeItem } = useCart();
   const { addOrder, orders } = useOrders();
   const { brandInfo, isLoading: isBrandLoading } = useBrand();
   const { currentUser, isAuthenticated, addAddress, updateAddress } = useAuth();
@@ -521,23 +521,57 @@ export default function CheckoutPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {items.length > 0 ? (
-                      <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+                      <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-2">
                           {items.map(item => (
-                              <div key={item.id} className="flex justify-between items-center">
-                              <div className="flex items-center gap-4">
-                                  <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md" />
-                                  <div>
-                                  <p className="font-semibold">{item.name}</p>
-                                  <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                              <div key={item.id} className="flex justify-between items-start gap-4 border-b pb-4 last:border-b-0">
+                                  <div className="flex items-start gap-4 flex-1">
+                                      <Image src={item.imageUrl} alt={item.name} width={64} height={64} className="rounded-md border" />
+                                      <div className="flex-1">
+                                          <p className="font-semibold">{item.name}</p>
+                                          <p className="text-sm text-muted-foreground">Rs.{item.price.toFixed(2)}</p>
+                                          <div className="flex items-center gap-2 mt-2">
+                                              <Button
+                                                  variant="outline"
+                                                  size="icon"
+                                                  className="h-8 w-8"
+                                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                              >
+                                                  <Minus className="h-4 w-4" />
+                                              </Button>
+                                              <Input
+                                                  type="number"
+                                                  readOnly
+                                                  value={item.quantity}
+                                                  className="h-8 w-12 text-center"
+                                              />
+                                              <Button
+                                                  variant="outline"
+                                                  size="icon"
+                                                  className="h-8 w-8"
+                                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                              >
+                                                  <Plus className="h-4 w-4" />
+                                              </Button>
+                                          </div>
+                                      </div>
                                   </div>
-                              </div>
-                              <p>Rs.{(item.price * item.quantity).toFixed(2)}</p>
+                                  <div className="text-right flex flex-col items-end">
+                                      <p className="font-semibold mb-1">Rs.{(item.price * item.quantity).toFixed(2)}</p>
+                                      <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeItem(item.id)}>
+                                          <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                  </div>
                               </div>
                           ))}
                       </div>
                   ) : (
                     <p className="text-muted-foreground text-center py-8">Your cart is empty.</p>
                   )}
+                  <Button asChild variant="outline" className="w-full">
+                      <Link href="/menu">
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add More Items
+                      </Link>
+                  </Button>
                   <Separator />
                   <div className="space-y-2">
                     <h4 className="font-semibold flex items-center gap-2"><TicketPercent className="h-5 w-5"/> Apply Coupon</h4>
