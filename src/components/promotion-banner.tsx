@@ -71,24 +71,35 @@ export function PromotionBanner() {
     return null;
   }
 
+  const promotionText = (
+    <span className="text-sm">
+        <span className="font-semibold">{activePromotion.title}</span>
+        {activePromotion.couponCode && (
+            <span className="ml-2 font-bold">Use Code: {activePromotion.couponCode}</span>
+        )}
+    </span>
+  );
+
   return (
     <div className="bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-4 text-center">
-            <Megaphone className="h-5 w-5 shrink-0" />
-            <p className="flex-1 text-sm">
-                <span className="font-semibold">{activePromotion.title}</span>
-                {activePromotion.couponCode && (
-                    <span className="ml-2 font-bold">Use Code: {activePromotion.couponCode}</span>
-                )}
-            </p>
-             <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0 -mr-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10"
-                onClick={() => setIsVisible(false)}
-            >
-                <X className="h-4 w-4" />
-            </Button>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="relative flex h-10 items-center justify-between">
+                <div className="flex flex-1 items-center gap-4 overflow-hidden">
+                    <Megaphone className="h-5 w-5 shrink-0" />
+                    <div className="flex animate-marquee whitespace-nowrap">
+                        <span className="mx-4">{promotionText}</span>
+                        <span className="mx-4">{promotionText}</span>
+                    </div>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10"
+                    onClick={() => setIsVisible(false)}
+                >
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
         </div>
     </div>
   );
