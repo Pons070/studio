@@ -39,6 +39,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const router = useRouter();
 
+  // Fetch all users for the admin dashboard
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+        try {
+            const response = await fetch('/api/admin/users');
+            const data = await response.json();
+            if (data.success) {
+                setUsers(data.users);
+            }
+        } catch (error) {
+            console.error("Failed to fetch all users for admin view", error);
+        }
+    }
+    // Only the admin user should fetch the full user list
+    if (currentUser?.email === 'admin@example.com') {
+        fetchAllUsers();
+    }
+  }, [currentUser]);
+
   const persistCurrentUser = useCallback((user: User | null) => {
     setCurrentUser(user);
     if (user) {

@@ -148,6 +148,11 @@ const getStore = (): User[] => {
     return globalThis.usersStore;
 };
 
+export const getUsers = (): User[] => {
+    // Return a copy to prevent mutation
+    return getStore().map(u => ({ ...u }));
+}
+
 export const findUserBy = (predicate: (user: User) => boolean): User | undefined => {
     // Return a copy to prevent mutation of the original object in the store from the caller
     const user = getStore().find(predicate);
