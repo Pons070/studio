@@ -163,6 +163,10 @@ export default function CheckoutPage() {
         return;
     }
 
+    // Trigger visual feedback immediately after validation passes
+    setShowConfetti(true);
+    setSuccessDialogOpen(true);
+
     let calculatedDiscount = 0;
     if (promotion.discountType === 'percentage') {
         calculatedDiscount = totalPrice * (promotion.discountValue / 100);
@@ -172,8 +176,6 @@ export default function CheckoutPage() {
 
     setDiscount(calculatedDiscount);
     setAppliedPromotion(promotion);
-    setShowConfetti(true);
-    setSuccessDialogOpen(true);
   }
 
   const handleRemoveCoupon = () => {
