@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import type { Order } from '@/lib/types';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 import { format } from 'date-fns';
-import { appendSheetData, objectToRow, getSheetData } from '@/lib/google-sheets';
+import { appendSheetData, objectToRow, getSheetValues } from '@/lib/google-sheets';
 
 const BRAND_SHEET_NAME = 'Brand';
 const ORDERS_SHEET_NAME = 'Orders';
@@ -18,8 +18,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required order information.' }, { status: 400 });
     }
     
-    const brandData = await getSheetData(`${BRAND_SHEET_NAME}!A2:B2`);
-    const adminEmail = brandData.length ? brandData[0].adminEmail : 'admin@example.com';
+    const adminEmailRows = await getSheetValues(`${BRAND_SHEET_NAME}!E2:E2`);
+    const adminEmail = (adminEmailRows.length && adminEmailRows[0].length) ? adminEmailRows[0][0] : 'admin@example.com';
     
     const newOrder: Order = {
       ...orderInput,

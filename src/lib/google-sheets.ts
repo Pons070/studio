@@ -33,7 +33,7 @@ const getSheets = () => {
 }
 
 // Helper to convert sheet rows to an array of objects
-const rowsToObjects = (headers: any[], rows: any[][]) => {
+export const convertRowsToObjects = (headers: any[], rows: any[][]) => {
   return rows.map((row) => {
     const obj: { [key: string]: any } = {};
     headers.forEach((header, i) => {
@@ -52,18 +52,29 @@ const rowsToObjects = (headers: any[], rows: any[][]) => {
   });
 };
 
-export async function getSheetData(range: string) {
+// This function will fetch the raw data as a 2D array
+export async function getSheetValues(range: string): Promise<any[][]> {
   try {
     const sheets = getSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range,
     });
-    const rows = response.data.values;
+    return response.data.values || [];
+  } catch (error) {
+    console.error(`Error getting sheet values from range ${range}:`, error);
+    throw new Error('Could not access the spreadsheet. Please check configuration and permissions.');
+  }
+}
+
+// This function fetches and processes sheets that have a header row in the specified range.
+export async function getSheetData(range: string) {
+  try {
+    const rows = await getSheetValues(range);
     if (rows && rows.length > 1) {
       const headers = rows[0];
       const dataRows = rows.slice(1);
-      return rowsToObjects(headers, dataRows);
+      return convertRowsToObjects(headers, dataRows);
     }
     return [];
   } catch (error) {

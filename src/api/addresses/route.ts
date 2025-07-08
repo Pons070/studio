@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetData, findRowIndex, updateSheetData, objectToRow } from '@/lib/google-sheets';
+import { getSheetValues, convertRowsToObjects, findRowIndex, updateSheetData, objectToRow } from '@/lib/google-sheets';
 import type { Address, User } from '@/lib/types';
 
 const SHEET_NAME = 'Users';
@@ -9,10 +9,11 @@ const HEADERS = ['id', 'name', 'email', 'phone', 'addresses', 'createdAt', 'upda
 async function getUser(userId: string): Promise<{user: User, rowIndex: number} | null> {
     const rowIndex = await findRowIndex(SHEET_NAME, userId);
     if (rowIndex === -1) return null;
-    const data = await getSheetData(`${SHEET_NAME}!A${rowIndex}:H${rowIndex}`);
-    if (!data.length) return null;
+    const rows = await getSheetValues(`${SHEET_NAME}!A${rowIndex}:H${rowIndex}`);
+    if (!rows.length) return null;
     
-    const user = { ...data[0], addresses: typeof data[0].addresses === 'string' ? JSON.parse(data[0].addresses) : [] };
+    const userObject = convertRowsToObjects(HEADERS, rows)[0];
+    const user = { ...userObject, addresses: typeof userObject.addresses === 'string' ? JSON.parse(userObject.addresses) : [] };
     return { user, rowIndex };
 }
 

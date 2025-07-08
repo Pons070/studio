@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetData, updateSheetData, objectToRow } from '@/lib/google-sheets';
+import { getSheetValues, convertRowsToObjects, updateSheetData, objectToRow } from '@/lib/google-sheets';
 import type { BrandInfo } from '@/lib/types';
 
 const SHEET_NAME = 'Brand';
@@ -22,11 +22,12 @@ function parseBrandInfo(row: any): BrandInfo {
 
 export async function GET() {
   try {
-    const data = await getSheetData(`${SHEET_NAME}!A2:P2`);
-    if (!data.length) {
+    const rows = await getSheetValues(`${SHEET_NAME}!A2:P2`);
+    if (!rows.length) {
       return NextResponse.json({ success: false, message: 'Brand information not found in spreadsheet.' }, { status: 404 });
     }
-    const brandInfo = parseBrandInfo(data[0]);
+    const brandInfoObject = convertRowsToObjects(HEADERS, rows)[0];
+    const brandInfo = parseBrandInfo(brandInfoObject);
     return NextResponse.json({ success: true, brandInfo });
   } catch (error) {
     console.error("Error in GET /api/brand:", error);
