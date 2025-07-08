@@ -11,9 +11,8 @@ export function FloatingRecommendButton({ shareUrl }: { shareUrl: string }) {
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="default"
           size="icon"
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-red-500 hover:bg-red-600 text-white"
           aria-label="Share the love"
         >
           <Heart className="h-7 w-7 fill-current" />
@@ -22,7 +21,7 @@ export function FloatingRecommendButton({ shareUrl }: { shareUrl: string }) {
       <PopoverContent className="w-80 mr-4">
         <div className="flex flex-col items-center text-center gap-4">
           <div className="space-y-2">
-            <h4 className="font-medium leading-none">Share the Love!</h4>
+            <h4 className="font-headline font-medium leading-none">Share the Love!</h4>
             <p className="text-sm text-muted-foreground whitespace-pre-line">
               Enjoying our food? Help us grow by recommending us to your friends and family!
             </p>
