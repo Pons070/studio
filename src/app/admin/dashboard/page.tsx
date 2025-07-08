@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent, Gift, Truck } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent, Gift, Truck, Eye, Phone } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User, DeliveryArea } from '@/lib/types';
 import {
   Dialog,
@@ -745,94 +745,175 @@ function MenuManagement() {
   );
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Menu Items</CardTitle>
-        <CardDescription>Add, edit, or remove menu items. Toggle their availability and featured status.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-4 mb-4">
-            <div className="relative flex-1 md:flex-initial md:w-1/3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                  placeholder="Search by name or category..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-              />
-            </div>
-            <div className="ml-auto">
-              <Button onClick={handleAddNew}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-              </Button>
-            </div>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Availability</TableHead>
-              <TableHead>Featured</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredItems.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium cursor-pointer" onClick={() => handleEdit(item)}>{item.name}</TableCell>
-                <TableCell>{item.category}</TableCell>
-                <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Switch
-                        checked={item.isAvailable}
-                        onCheckedChange={(checked) => handleAvailabilityChange(item.id, checked)}
-                        aria-label="Toggle availability"
-                    />
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Switch
-                        checked={!!item.isFeatured}
-                        onCheckedChange={(checked) => handleFeatureChange(item.id, checked)}
-                        aria-label="Toggle featured status"
-                    />
-                </TableCell>
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the menu item "{item.name}".
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteMenuItem(item.id)} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Menu Items</CardTitle>
+          <CardDescription>Add, edit, or remove menu items. Toggle their availability and featured status.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 mb-4">
+              <div className="relative flex-1 md:flex-initial md:w-1/3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search by name or category..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                />
+              </div>
+              <div className="ml-auto">
+                <Button onClick={handleAddNew}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+                </Button>
+              </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Availability</TableHead>
+                <TableHead>Featured</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
+            </TableHeader>
+            <TableBody>
+              {filteredItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium cursor-pointer" onClick={() => handleEdit(item)}>{item.name}</TableCell>
+                  <TableCell>{item.category}</TableCell>
+                  <TableCell>Rs.{item.price.toFixed(2)}</TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Switch
+                          checked={item.isAvailable}
+                          onCheckedChange={(checked) => handleAvailabilityChange(item.id, checked)}
+                          aria-label="Toggle availability"
+                      />
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Switch
+                          checked={!!item.isFeatured}
+                          onCheckedChange={(checked) => handleFeatureChange(item.id, checked)}
+                          aria-label="Toggle featured status"
+                      />
+                  </TableCell>
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the menu item "{item.name}".
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteMenuItem(item.id)} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
       <MenuItemDialog 
         isOpen={isDialogOpen}
         setOpen={setDialogOpen}
         item={selectedItem}
         onSave={handleSave}
       />
-    </Card>
+    </>
   );
 }
+
+function MenuItemCropDialog({
+  isOpen, 
+  onOpenChange, 
+  imgSrc, 
+  onSave, 
+}: { 
+  isOpen: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  imgSrc: string; 
+  onSave: (dataUrl: string) => void;
+}) {
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const { width, height } = e.currentTarget;
+    const newCrop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 90,
+        },
+        width / height, // aspect ratio
+        width,
+        height
+      ),
+      width,
+      height
+    );
+    setCrop(newCrop);
+  }
+
+  const handleSaveCrop = () => {
+    if (completedCrop && imgRef.current) {
+      const dataUrl = getCroppedImgDataUrl(imgRef.current, completedCrop);
+      onSave(dataUrl);
+      onOpenChange(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Crop Menu Item Image</DialogTitle>
+          <DialogDescription>
+            Adjust the selection to crop the image.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-center my-4">
+          {imgSrc && (
+            <ReactCrop
+              crop={crop}
+              onChange={(_, percentCrop) => setCrop(percentCrop)}
+              onComplete={(c) => setCompletedCrop(c)}
+            >
+              <img
+                ref={imgRef}
+                alt="Crop me"
+                src={imgSrc}
+                onLoad={onImageLoad}
+                style={{ maxHeight: '70vh' }}
+              />
+            </ReactCrop>
+          )}
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleSaveCrop}>Save Image</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, setOpen: (open: boolean) => void, item: MenuItem | null, onSave: (data: MenuItemDialogSaveData) => void }) {
     const [name, setName] = useState('');
@@ -840,6 +921,9 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
     const [price, setPrice] = useState(0);
     const [category, setCategory] = useState<MenuItem['category']>('Main Courses');
     const [imageUrl, setImageUrl] = useState('');
+    
+    const [isCropDialogOpen, setCropDialogOpen] = useState(false);
+    const [imgSrcToCrop, setImgSrcToCrop] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -864,7 +948,8 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImageUrl(reader.result as string);
+                setImgSrcToCrop(reader.result as string);
+                setCropDialogOpen(true);
             };
             reader.readAsDataURL(file);
         }
@@ -875,6 +960,7 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
     }
 
     return (
+        <>
         <Dialog open={isOpen} onOpenChange={setOpen}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
@@ -930,6 +1016,16 @@ function MenuItemDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, se
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        <MenuItemCropDialog
+            isOpen={isCropDialogOpen}
+            onOpenChange={setCropDialogOpen}
+            imgSrc={imgSrcToCrop}
+            onSave={(dataUrl) => {
+                setImageUrl(dataUrl);
+                setCropDialogOpen(false);
+            }}
+        />
+        </>
     )
 }
 
@@ -1173,6 +1269,7 @@ function ReviewManagement() {
 }
 
 const initialAddressState: Address = {
+    label: '',
     doorNumber: '',
     apartmentName: '',
     floorNumber: '',
@@ -1220,18 +1317,20 @@ function getCroppedImgDataUrl(image: HTMLImageElement, crop: PixelCrop): string 
     return canvas.toDataURL('image/png');
 }
 
-function LogoCropDialog({ 
+function ImageCropDialog({ 
   isOpen, 
   onOpenChange, 
   imgSrc, 
   onSave, 
-  shape 
+  shape,
+  title
 }: { 
   isOpen: boolean; 
   onOpenChange: (open: boolean) => void; 
   imgSrc: string; 
   onSave: (dataUrl: string) => void;
-  shape: 'square' | 'circle';
+  shape?: 'square' | 'circle';
+  title: string;
 }) {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -1239,13 +1338,14 @@ function LogoCropDialog({
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
+    const aspect = shape === 'square' ? 1 : width / height;
     const newCrop = centerCrop(
       makeAspectCrop(
         {
           unit: '%',
           width: 90,
         },
-        1, // aspect ratio 1:1
+        aspect,
         width,
         height
       ),
@@ -1267,9 +1367,9 @@ function LogoCropDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Crop Your Logo</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Adjust the selection to crop your logo.
+            Adjust the selection to crop your image.
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-center my-4">
@@ -1278,7 +1378,7 @@ function LogoCropDialog({
               crop={crop}
               onChange={(_, percentCrop) => setCrop(percentCrop)}
               onComplete={(c) => setCompletedCrop(c)}
-              aspect={1}
+              aspect={shape === 'square' ? 1 : undefined}
               circularCrop={shape === 'circle'}
             >
               <img
@@ -1295,7 +1395,7 @@ function LogoCropDialog({
           <DialogClose asChild>
             <Button type="button" variant="secondary">Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSaveCrop}>Save Logo</Button>
+          <Button onClick={handleSaveCrop}>Save Image</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1366,6 +1466,7 @@ function BrandManagement() {
   const [name, setName] = useState(brandInfo?.name || '');
   const [logoUrl, setLogoUrl] = useState(brandInfo?.logoUrl || '');
   const [phone, setPhone] = useState(brandInfo?.phone || '');
+  const [adminEmail, setAdminEmail] = useState(brandInfo?.adminEmail || '');
   const [address, setAddress] = useState<Address>(brandInfo?.address || initialAddressState);
   const [about, setAbout] = useState(brandInfo?.about || '');
   const [youtubeUrl, setYoutubeUrl] = useState(brandInfo?.youtubeUrl || '');
@@ -1373,11 +1474,16 @@ function BrandManagement() {
   const [businessStatus, setBusinessStatus] = useState(brandInfo?.businessHours?.status || 'open');
   const [closureMessage, setClosureMessage] = useState(brandInfo?.businessHours?.message || '');
   const [allowOrderUpdates, setAllowOrderUpdates] = useState(brandInfo?.allowOrderUpdates ?? true);
+  const [showAddress, setShowAddress] = useState(brandInfo?.showAddressInAbout ?? true);
+  const [showPhone, setShowPhone] = useState(brandInfo?.showPhoneInAbout ?? true);
   const [theme, setTheme] = useState<ThemeSettings>(brandInfo?.theme || initialThemeState);
   const [isSaving, setIsSaving] = useState(false);
   const [logoShape, setLogoShape] = useState(brandInfo?.logoShape || 'square');
+  
   const [isCropDialogOpen, setCropDialogOpen] = useState(false);
   const [imgSrcToCrop, setImgSrcToCrop] = useState('');
+  const [cropType, setCropType] = useState<'logo' | 'background'>('logo');
+
 
   const palettes = [
     { name: 'Oceanic Blue', primaryColor: '217 91% 60%', backgroundColor: '210 40% 98%', accentColor: '198 93% 60%' },
@@ -1416,6 +1522,7 @@ function BrandManagement() {
       setName(brandInfo.name);
       setLogoUrl(brandInfo.logoUrl);
       setPhone(brandInfo.phone);
+      setAdminEmail(brandInfo.adminEmail);
       setAddress(brandInfo.address || initialAddressState);
       setAbout(brandInfo.about || '');
       setYoutubeUrl(brandInfo.youtubeUrl || '');
@@ -1423,6 +1530,8 @@ function BrandManagement() {
       setBusinessStatus(brandInfo.businessHours.status);
       setClosureMessage(brandInfo.businessHours.message);
       setAllowOrderUpdates(brandInfo.allowOrderUpdates ?? true);
+      setShowAddress(brandInfo.showAddressInAbout ?? true);
+      setShowPhone(brandInfo.showPhoneInAbout ?? true);
       setTheme(brandInfo.theme || initialThemeState);
       setLogoShape(brandInfo.logoShape || 'square');
     }
@@ -1437,25 +1546,14 @@ function BrandManagement() {
     setTheme(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'background') => {
     if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         const reader = new FileReader();
         reader.onloadend = () => {
+            setCropType(type);
             setImgSrcToCrop(reader.result as string);
             setCropDialogOpen(true);
-        };
-        reader.readAsDataURL(file);
-    }
-  };
-
-  const handleBackgroundFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          setTheme(prev => ({ ...prev, backgroundImageUrl: result }));
         };
         reader.readAsDataURL(file);
     }
@@ -1470,6 +1568,7 @@ function BrandManagement() {
       logoUrl,
       logoShape,
       phone,
+      adminEmail,
       address,
       about,
       youtubeUrl,
@@ -1479,6 +1578,8 @@ function BrandManagement() {
         message: closureMessage
       },
       allowOrderUpdates,
+      showAddressInAbout: showAddress,
+      showPhoneInAbout: showPhone,
       theme,
     });
     setTimeout(() => setIsSaving(false), 500);
@@ -1489,6 +1590,7 @@ function BrandManagement() {
     logoUrl !== brandInfo.logoUrl ||
     logoShape !== (brandInfo.logoShape || 'square') ||
     phone !== brandInfo.phone ||
+    adminEmail !== brandInfo.adminEmail ||
     JSON.stringify(address) !== JSON.stringify(brandInfo.address) ||
     about !== (brandInfo.about || '') ||
     youtubeUrl !== (brandInfo.youtubeUrl || '') ||
@@ -1496,6 +1598,8 @@ function BrandManagement() {
     businessStatus !== brandInfo.businessHours.status ||
     (businessStatus === 'closed' && closureMessage !== brandInfo.businessHours.message) ||
     allowOrderUpdates !== (brandInfo.allowOrderUpdates ?? true) ||
+    showAddress !== (brandInfo.showAddressInAbout ?? true) ||
+    showPhone !== (brandInfo.showPhoneInAbout ?? true) ||
     JSON.stringify(theme) !== JSON.stringify(brandInfo.theme || initialThemeState)
   ) : false;
 
@@ -1515,6 +1619,10 @@ function BrandManagement() {
              <div className="space-y-2">
                 <Label htmlFor="brand-phone">Phone Number</Label>
                 <Input id="brand-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+             <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="admin-email">Admin Email for Notifications</Label>
+                <Input id="admin-email" type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
             </div>
         </div>
         
@@ -1584,7 +1692,7 @@ function BrandManagement() {
                                 <Building className="h-10 w-10" />
                             </div>
                         )}
-                        <Input id="logo" type="file" onChange={handleLogoFileChange} accept="image/*" className="max-w-xs" />
+                        <Input id="logo" type="file" onChange={(e) => handleFileChange(e, 'logo')} accept="image/*" className="max-w-xs" />
                     </div>
                 </div>
                 <div className="space-y-2">
@@ -1610,7 +1718,7 @@ function BrandManagement() {
         <Separator className="my-6" />
 
         <div className="space-y-6">
-          <h3 className="text-lg font-medium">Business Settings</h3>
+          <h3 className="text-lg font-medium">Business & Page Settings</h3>
           <div className="space-y-4">
             <div className="flex items-start space-x-4 rounded-lg border p-4">
                 <Switch
@@ -1656,6 +1764,20 @@ function BrandManagement() {
                   </p>
                 </div>
               )}
+               <div className="flex items-start space-x-4 rounded-lg border p-4">
+                <Switch id="show-address" checked={showAddress} onCheckedChange={setShowAddress} />
+                <div className="grid gap-1.5 flex-1">
+                    <Label htmlFor="show-address" className="text-base flex-grow cursor-pointer pt-0.5 flex items-center gap-2"><Eye/> Show Address</Label>
+                    <p className="text-sm text-muted-foreground">Display restaurant address on the 'About Us' page.</p>
+                </div>
+            </div>
+            <div className="flex items-start space-x-4 rounded-lg border p-4">
+                <Switch id="show-phone" checked={showPhone} onCheckedChange={setShowPhone} />
+                <div className="grid gap-1.5 flex-1">
+                     <Label htmlFor="show-phone" className="text-base flex-grow cursor-pointer pt-0.5 flex items-center gap-2"><Phone/> Show Phone</Label>
+                     <p className="text-sm text-muted-foreground">Display contact number on the 'About Us' page.</p>
+                </div>
+            </div>
           </div>
         </div>
 
@@ -1738,7 +1860,12 @@ function BrandManagement() {
 
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="backgroundImage">Background Image (Optional)</Label>
-              <Input id="backgroundImage" type="file" onChange={handleBackgroundFileChange} accept="image/*" />
+              <Input id="backgroundImage" type="file" onChange={(e) => handleFileChange(e, 'background')} accept="image/*" />
+              {theme.backgroundImageUrl && (
+                  <div className="relative w-full aspect-video rounded-md overflow-hidden border">
+                      <Image src={theme.backgroundImageUrl} alt="Background preview" fill className="object-cover" />
+                  </div>
+              )}
             </div>
           </div>
         </div>
@@ -1750,13 +1877,18 @@ function BrandManagement() {
           </Button>
       </CardFooter>
     </Card>
-      <LogoCropDialog
+      <ImageCropDialog
         isOpen={isCropDialogOpen}
         onOpenChange={setCropDialogOpen}
         imgSrc={imgSrcToCrop}
-        shape={logoShape}
+        shape={cropType === 'logo' ? logoShape : undefined}
+        title={cropType === 'logo' ? 'Crop Your Logo' : 'Crop Background Image'}
         onSave={(dataUrl) => {
-          setLogoUrl(dataUrl);
+          if (cropType === 'logo') {
+            setLogoUrl(dataUrl);
+          } else {
+            handleThemeChange('backgroundImageUrl', dataUrl);
+          }
           setCropDialogOpen(false);
         }}
       />

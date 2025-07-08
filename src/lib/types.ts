@@ -16,7 +16,7 @@ export type DeliveryArea = {
 
 export type Address = {
   id?: string;
-  label?: string;
+  label: string;
   isDefault?: boolean;
   doorNumber: string;
   apartmentName: string;
@@ -110,6 +110,9 @@ export type BrandInfo = {
   logoUrl: string;
   logoShape?: 'square' | 'circle';
   phone: string;
+  adminEmail: string;
+  showAddressInAbout: boolean;
+  showPhoneInAbout: boolean;
   address: Address;
   about: string;
   businessHours: {
@@ -138,3 +141,4 @@ export type Promotion = {
   endDate?: string;
   activeDays?: number[]; // 0 = Sun, 1 = Mon, ..., 6 = Sat
 };
+

@@ -88,30 +88,34 @@ export default function AboutPage() {
         </div>
 
         <div className="space-y-6">
-             <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="font-headline text-xl flex items-center">
-                        <Building className="h-5 w-5 mr-2 text-primary" />
-                        Our Location
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="text-muted-foreground">
-                   <p>{brandInfo.address.doorNumber}, {brandInfo.address.apartmentName}</p>
-                   <p>{brandInfo.address.area}</p>
-                   <p>{brandInfo.address.city}, {brandInfo.address.state} - {brandInfo.address.pincode}</p>
-                </CardContent>
-            </Card>
-             <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="font-headline text-xl flex items-center">
-                        <Phone className="h-5 w-5 mr-2 text-primary" />
-                         Contact Us
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="text-muted-foreground">
-                    <p>{brandInfo.phone}</p>
-                </CardContent>
-            </Card>
+            {brandInfo.showAddressInAbout && (
+              <Card className="shadow-lg">
+                  <CardHeader>
+                      <CardTitle className="font-headline text-xl flex items-center">
+                          <Building className="h-5 w-5 mr-2 text-primary" />
+                          Our Location
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-muted-foreground">
+                    <p>{brandInfo.address.doorNumber}, {brandInfo.address.apartmentName}</p>
+                    <p>{brandInfo.address.area}</p>
+                    <p>{brandInfo.address.city}, {brandInfo.address.state} - {brandInfo.address.pincode}</p>
+                  </CardContent>
+              </Card>
+            )}
+             {brandInfo.showPhoneInAbout && (
+              <Card className="shadow-lg">
+                  <CardHeader>
+                      <CardTitle className="font-headline text-xl flex items-center">
+                          <Phone className="h-5 w-5 mr-2 text-primary" />
+                          Contact Us
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-muted-foreground">
+                      <p>{brandInfo.phone}</p>
+                  </CardContent>
+              </Card>
+            )}
         </div>
       </div>
     </div>

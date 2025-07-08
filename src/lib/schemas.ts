@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 export const AddressSchema = z.object({
   id: z.string().optional(),
-  label: z.string().optional(),
+  label: z.string().min(1, { message: "Label is required." }),
   isDefault: z.boolean().optional(),
   doorNumber: z.string().min(1, { message: "Door number is required." }),
   apartmentName: z.string().min(1, { message: "Apartment/Building name is required." }),
@@ -65,6 +65,7 @@ export const OrderNotificationInputSchema = z.object({
   order: OrderSchema,
   notificationType: NotificationTypeSchema,
   customerEmail: z.string().email(),
-  adminEmail: z.string().email().default('sangkar111@gmail.com'),
+  adminEmail: z.string().email(),
 });
 export type OrderNotificationInput = z.infer<typeof OrderNotificationInputSchema>;
+

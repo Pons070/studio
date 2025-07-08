@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, Tag, X, Truck, PlusCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, X, Truck, PlusCircle, Edit } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -39,13 +39,14 @@ import { Input } from '@/components/ui/input';
 import { usePromotions } from '@/store/promotions';
 import { AddressDialog } from '@/components/address-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
   const { addOrder, orders } = useOrders();
   const { brandInfo, isLoading: isBrandLoading } = useBrand();
-  const { currentUser, isAuthenticated, addAddress } = useAuth();
+  const { currentUser, isAuthenticated, addAddress, updateAddress } = useAuth();
   const { promotions } = usePromotions();
   
   const [pickupDate, setPickupDate] = useState<Date | undefined>();
@@ -61,6 +62,8 @@ export default function CheckoutPage() {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [isDeliverySupported, setIsDeliverySupported] = useState(true);
   const [isAddressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+
 
   const router = useRouter();
   const { toast } = useToast();
@@ -146,9 +149,18 @@ export default function CheckoutPage() {
     toast({ title: 'Coupon Removed' });
   }
 
-  const handleSaveAddress = (data: Address) => {
-    const { id, isDefault, ...newAddressData } = data;
-    addAddress(newAddressData);
+  const handleSaveAddress = async (data: Address) => {
+    if (data.id) {
+        await updateAddress(data);
+    } else {
+        const { id, isDefault, ...newAddressData } = data;
+        await addAddress(newAddressData);
+    }
+  }
+
+  const handleEditAddress = (address: Address) => {
+      setEditingAddress(address);
+      setAddressDialogOpen(true);
   }
   
   if (isBrandLoading) {
@@ -434,7 +446,7 @@ export default function CheckoutPage() {
                               <AlertTitle>No Address Found</AlertTitle>
                               <AlertDescription className="flex justify-between items-center">
                                   <span>You don't have any saved addresses.</span>
-                                  <Button onClick={() => setAddressDialogOpen(true)} variant="secondary" size="sm">
+                                  <Button onClick={() => { setEditingAddress(null); setAddressDialogOpen(true); }} variant="secondary" size="sm">
                                       <PlusCircle className="mr-2 h-4 w-4" />
                                       Add Address
                                   </Button>
@@ -442,44 +454,33 @@ export default function CheckoutPage() {
                           </Alert>
                       ) : (
                            <div className="space-y-4">
-                                <Select onValueChange={setSelectedAddressId} value={selectedAddressId}>
-                                    <SelectTrigger className="w-full text-left h-auto items-start py-2">
-                                        <SelectValue asChild>
-                                            {selectedAddress ? (
-                                                <div className="flex items-center gap-3">
-                                                    <div className="shrink-0">
-                                                        {selectedAddress.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-semibold">{selectedAddress.label} {selectedAddress.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
-                                                        <p className="text-sm text-muted-foreground truncate">{formatAddress(selectedAddress)}</p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <span className="text-muted-foreground">Select a delivery address...</span>
-                                            )}
-                                        </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(currentUser?.addresses || []).map(address => (
-                                            <SelectItem key={address.id} value={address.id!} className="py-2">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="shrink-0">
-                                                        {address.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-semibold">{address.label} {address.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
-                                                        <p className="text-sm text-muted-foreground">{formatAddress(address)}</p>
-                                                    </div>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId} className="space-y-3">
+                                  {(currentUser?.addresses || []).map(address => (
+                                    <Label key={address.id} htmlFor={address.id!} className={cn("block cursor-pointer rounded-lg border p-4 transition-all", selectedAddressId === address.id && "border-primary ring-2 ring-primary")}>
+                                       <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-4">
+                                              <RadioGroupItem value={address.id!} id={address.id!} />
+                                              <div className="flex items-center gap-3">
+                                                  <div className="shrink-0">
+                                                      {address.label === 'Home' ? <Home className="h-5 w-5 text-muted-foreground" /> : <Building className="h-5 w-5 text-muted-foreground" />}
+                                                  </div>
+                                                  <div className="flex-1">
+                                                      <p className="font-semibold">{address.label} {address.isDefault && <Badge variant="outline" className="font-medium ml-2">Default</Badge>}</p>
+                                                      <p className="text-sm text-muted-foreground">{formatAddress(address)}</p>
+                                                  </div>
+                                              </div>
+                                            </div>
+                                            <Button variant="ghost" size="sm" onClick={(e) => { e.preventDefault(); handleEditAddress(address); }}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </Button>
+                                       </div>
+                                    </Label>
+                                  ))}
+                                </RadioGroup>
                                 <Button
                                 variant="outline"
                                 className="w-full"
-                                onClick={() => setAddressDialogOpen(true)}
+                                onClick={() => { setEditingAddress(null); setAddressDialogOpen(true); }}
                                 >
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Add a New Address
@@ -625,7 +626,7 @@ export default function CheckoutPage() {
         isOpen={isAddressDialogOpen}
         onOpenChange={setAddressDialogOpen}
         onSave={handleSaveAddress}
-        address={null}
+        address={editingAddress}
       />
     </>
   );

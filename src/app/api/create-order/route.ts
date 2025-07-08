@@ -4,6 +4,7 @@ import type { Order } from '@/lib/types';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 import { format } from 'date-fns';
 import { orders } from '@/lib/order-store';
+import { brandInfo } from '@/lib/brand-store';
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,8 @@ export async function POST(request: Request) {
     if (!customerEmail || !orderInput.customerId) {
         return NextResponse.json({ success: false, message: 'Missing required order information.' }, { status: 400 });
     }
+    
+    const adminEmail = brandInfo.adminEmail || 'admin@example.com';
 
     const newOrder: Order = {
       ...orderInput,
@@ -33,13 +36,13 @@ export async function POST(request: Request) {
         order: newOrder,
         notificationType: 'customerConfirmation',
         customerEmail: customerEmail,
-        adminEmail: 'sangkar111@gmail.com',
+        adminEmail: adminEmail,
       }),
       sendOrderNotification({
         order: newOrder,
         notificationType: 'adminNotification',
         customerEmail: customerEmail,
-        adminEmail: 'sangkar111@gmail.com',
+        adminEmail: adminEmail,
       }),
     ]).catch(error => {
       // This logging is important for debugging background tasks

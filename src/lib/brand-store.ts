@@ -1,4 +1,5 @@
 
+
 import type { BrandInfo } from './types';
 
 declare global {
@@ -11,7 +12,11 @@ if (!globalThis.brandInfoStore) {
     logoUrl: '',
     logoShape: 'square',
     phone: '123-456-7890',
+    adminEmail: 'admin@example.com',
+    showAddressInAbout: true,
+    showPhoneInAbout: true,
     address: {
+      label: 'Main Branch',
       doorNumber: '123',
       apartmentName: 'Foodie Building',
       area: 'Flavor Town',
@@ -52,3 +57,4 @@ export function setBrandInfo(newBrandInfo: BrandInfo) {
   globalThis.brandInfoStore = newBrandInfo;
   brandInfo = newBrandInfo;
 }
+
