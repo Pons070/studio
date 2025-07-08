@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from './ui/button';
-import { UtensilsCrossed, ShoppingCart, User, LogOut, History, LogIn, UserPlus, Settings, Star } from 'lucide-react';
+import { ShoppingCart, User, LogOut, History, LogIn, UserPlus, Settings, Star } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ import { CartSheet } from './cart-sheet';
 import { useCart } from '@/store/cart';
 import { Badge } from './ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AnimatedUtensils } from './animated-utensils';
 
 export function Header() {
   const pathname = usePathname();
@@ -65,7 +66,7 @@ export function Header() {
             {brandInfo.logoUrl ? (
               <Image src={brandInfo.logoUrl} alt={`${brandInfo.name} logo`} width={40} height={40} className={cn("object-contain", brandInfo.logoShape === 'circle' ? 'rounded-full' : 'rounded-md')} />
             ) : (
-              <UtensilsCrossed className="h-8 w-8 text-primary transition-transform duration-300 ease-in-out group-hover:rotate-[-15deg]" />
+              <AnimatedUtensils />
             )}
             <span className="text-2xl font-headline font-bold text-foreground">{brandInfo.name}</span>
           </Link>
