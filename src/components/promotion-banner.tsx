@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { usePromotions } from '@/store/promotions';
 import { useAuth } from '@/store/auth';
 import { useOrders } from '@/store/orders';
-import { Megaphone, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from './ui/button';
 import type { Promotion } from '@/lib/types';
 
@@ -85,7 +85,6 @@ export function PromotionBanner() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative flex h-10 items-center justify-between">
                 <div className="flex flex-1 items-center gap-4 overflow-hidden">
-                    <Megaphone className="h-5 w-5 shrink-0" />
                     <div className="flex animate-marquee whitespace-nowrap">
                         <span className="mx-4">{promotionText}</span>
                         <span className="mx-4">{promotionText}</span>
