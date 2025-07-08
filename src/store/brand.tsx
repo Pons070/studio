@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { BrandInfo, DeliveryArea } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from 'next-themes';
 
 type BrandContextType = {
   brandInfo: BrandInfo | null;
@@ -22,6 +23,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const [brandInfo, setBrandInfo] = useState<BrandInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { theme: activeTheme, systemTheme } = useTheme();
 
   const fetchBrandInfo = useCallback(async () => {
     setIsLoading(true);
@@ -49,11 +51,23 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     if (brandInfo?.theme) {
       const root = document.documentElement;
       const theme = brandInfo.theme;
-      
-      if (theme.primaryColor) root.style.setProperty('--primary', theme.primaryColor);
-      if (theme.backgroundColor) root.style.setProperty('--background', theme.backgroundColor);
-      if (theme.accentColor) root.style.setProperty('--accent', theme.accentColor);
-      if (theme.cardColor) root.style.setProperty('--card', theme.cardColor);
+      const effectiveTheme = activeTheme === 'system' ? systemTheme : activeTheme;
+
+      // Only apply custom brand colors in light mode to avoid overriding dark mode styles.
+      if (effectiveTheme === 'light') {
+        if (theme.primaryColor) root.style.setProperty('--primary', theme.primaryColor);
+        if (theme.backgroundColor) root.style.setProperty('--background', theme.backgroundColor);
+        if (theme.accentColor) root.style.setProperty('--accent', theme.accentColor);
+        if (theme.cardColor) root.style.setProperty('--card', theme.cardColor);
+      } else {
+        // When in dark mode, remove the inline styles so the .dark CSS from globals.css can take over.
+        root.style.removeProperty('--primary');
+        root.style.removeProperty('--background');
+        root.style.removeProperty('--accent');
+        root.style.removeProperty('--card');
+      }
+
+      // These properties are theme-agnostic and can be applied in both modes.
       if (theme.cardOpacity !== undefined) root.style.setProperty('--card-alpha', String(theme.cardOpacity));
       if (theme.borderRadius !== undefined) root.style.setProperty('--radius', `${theme.borderRadius}rem`);
 
@@ -66,7 +80,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
         document.body.style.backgroundImage = 'none';
       }
     }
-  }, [brandInfo?.theme]);
+  }, [brandInfo?.theme, activeTheme, systemTheme]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
     try {
