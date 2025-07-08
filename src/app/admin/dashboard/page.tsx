@@ -1175,7 +1175,10 @@ function ReviewManagement() {
   };
 
   const handleConfirmDelete = (reviewId: string) => {
-    deleteReview(reviewId);
+    const review = reviews.find(r => r.id === reviewId);
+    if (review) {
+      deleteReview(reviewId, review.orderId);
+    }
     setReviewToDelete(null);
   };
 
@@ -2139,12 +2142,12 @@ function PromotionDialog({ isOpen, setOpen, item, onSave }: { isOpen: boolean, s
                                 <Label htmlFor="r-flat">Flat Amount (Rs.)</Label>
                                 </div>
                             </RadioGroup>
-                             <Input type="number" value={discountValue} onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)} placeholder="e.g., 15 or 100" />
+                             <Input type="number" min="0" value={discountValue} onChange={(e) => setDiscountValue(Math.abs(parseFloat(e.target.value) || 0))} placeholder="e.g., 15 or 100" />
                         </div>
                     </div>
                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="promo-min-order" className="text-right">Min. Order (Rs.)</Label>
-                        <Input id="promo-min-order" type="number" value={minOrderValue} onChange={(e) => setMinOrderValue(parseFloat(e.target.value) || 0)} className="col-span-3" placeholder="0 for no minimum" />
+                        <Input id="promo-min-order" type="number" min="0" value={minOrderValue} onChange={(e) => setMinOrderValue(Math.abs(parseFloat(e.target.value) || 0))} className="col-span-3" placeholder="0 for no minimum" />
                     </div>
 
                     <Separator />
@@ -2272,7 +2275,7 @@ function PromotionManagement() {
       updatePromotion(promoData as Promotion);
     } else {
       const { id, ...newPromoData } = promoData;
-      addPromotion(newPromoData as Omit<Promotion, 'id' | 'isActive'>);
+      addPromotion(newPromoData as Omit<Promotion, 'id'>);
     }
     setDialogOpen(false);
   };
