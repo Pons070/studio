@@ -40,6 +40,7 @@ import { usePromotions } from '@/store/promotions';
 import { AddressDialog } from '@/components/address-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import Confetti from 'react-confetti';
 
 
 export default function CheckoutPage() {
@@ -63,6 +64,7 @@ export default function CheckoutPage() {
   const [isDeliverySupported, setIsDeliverySupported] = useState(true);
   const [isAddressDialogOpen, setAddressDialogOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
 
   const router = useRouter();
@@ -140,6 +142,8 @@ export default function CheckoutPage() {
     setDiscount(calculatedDiscount);
     setAppliedPromotion(promotion);
     toast({ title: 'Coupon Applied!', description: promotion.title });
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 5000); // Confetti for 5 seconds
   }
 
   const handleRemoveCoupon = () => {
@@ -360,6 +364,7 @@ export default function CheckoutPage() {
 
   return (
     <>
+      {showConfetti && <Confetti recycle={false} />}
       <div>
         <h1 className="text-4xl font-headline font-bold text-center mb-10 text-white">Checkout</h1>
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
