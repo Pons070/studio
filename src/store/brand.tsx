@@ -48,37 +48,39 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [fetchBrandInfo]);
 
   useEffect(() => {
+    const root = document.documentElement;
     if (brandInfo?.theme) {
-      const root = document.documentElement;
       const theme = brandInfo.theme;
       const effectiveTheme = activeTheme === 'system' ? systemTheme : activeTheme;
 
-      // Only apply custom brand colors in light mode to avoid overriding dark mode styles.
       if (effectiveTheme === 'light') {
         if (theme.primaryColor) root.style.setProperty('--primary', theme.primaryColor);
         if (theme.backgroundColor) root.style.setProperty('--background', theme.backgroundColor);
         if (theme.accentColor) root.style.setProperty('--accent', theme.accentColor);
         if (theme.cardColor) root.style.setProperty('--card', theme.cardColor);
       } else {
-        // When in dark mode, remove the inline styles so the .dark CSS from globals.css can take over.
         root.style.removeProperty('--primary');
         root.style.removeProperty('--background');
         root.style.removeProperty('--accent');
         root.style.removeProperty('--card');
       }
 
-      // These properties are theme-agnostic and can be applied in both modes.
       if (theme.cardOpacity !== undefined) root.style.setProperty('--card-alpha', String(theme.cardOpacity));
       if (theme.borderRadius !== undefined) root.style.setProperty('--radius', `${theme.borderRadius}rem`);
 
       if (theme.backgroundImageUrl) {
-        document.body.style.backgroundImage = `url(${theme.backgroundImageUrl})`;
-        document.body.style.backgroundSize = 'cover';
-        document.body.style.backgroundPosition = 'center';
-        document.body.style.backgroundAttachment = 'fixed';
+        root.style.setProperty('--background-image', `url(${theme.backgroundImageUrl})`);
       } else {
-        document.body.style.backgroundImage = 'none';
+        root.style.setProperty('--background-image', 'none');
       }
+    } else {
+      root.style.removeProperty('--primary');
+      root.style.removeProperty('--background');
+      root.style.removeProperty('--accent');
+      root.style.removeProperty('--card');
+      root.style.removeProperty('--card-alpha');
+      root.style.removeProperty('--radius');
+      root.style.setProperty('--background-image', 'none');
     }
   }, [brandInfo?.theme, activeTheme, systemTheme]);
 
