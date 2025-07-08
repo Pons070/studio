@@ -1,89 +1,49 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getSheetData, updateSheetData, objectToRow } from '@/lib/google-sheets';
 import type { BrandInfo } from '@/lib/types';
 
-// This is the initial data that will be seeded into Firestore on first load.
-const initialBrandInfo: BrandInfo = {
-  name: 'CulinaPreOrder',
-  logoUrl: '',
-  logoShape: 'square',
-  phone: '123-456-7890',
-  adminEmail: 'admin@example.com',
-  showAddressInAbout: true,
-  showPhoneInAbout: true,
-  address: {
-    label: 'Main Branch',
-    doorNumber: '123',
-    apartmentName: 'Foodie Building',
-    area: 'Flavor Town',
-    city: 'Metropolis',
-    state: 'Culinary State',
-    pincode: '12345',
-  },
-  about:
-    'CulinaPreOrder was born from a passion for exquisite food and a desire to make fine dining accessible. We believe in quality ingredients, handcrafted recipes, and the convenience of pre-ordering, allowing you to enjoy gourmet meals without the wait.',
-  businessHours: {
-    status: 'open',
-    message: 'We are temporarily closed. Please check back later!',
-  },
-  youtubeUrl: '',
-  instagramUrl: '',
-  allowOrderUpdates: true,
-  theme: {
-    primaryColor: '222.2 47.4% 11.2%',
-    backgroundColor: '0 0% 100%',
-    accentColor: '210 40% 96.1%',
-    cardColor: '0 0% 100%',
-    cardOpacity: 1,
-    borderRadius: 0.5,
-    backgroundImageUrl: '',
-  },
-  blockedCustomerEmails: [],
-  deliveryAreas: [
-    { id: 'da-1', pincode: '12345', areaName: 'Flavor Town', cost: 50 },
-    { id: 'da-2', pincode: '23456', areaName: 'Paradise Island', cost: 75 },
-    { id: 'da-3', pincode: '34567', areaName: 'Confectionville', cost: 60 },
-  ],
-};
+const SHEET_NAME = 'Brand';
+const HEADERS = ['name', 'logoUrl', 'logoShape', 'phone', 'adminEmail', 'showAddressInAbout', 'showPhoneInAbout', 'address', 'about', 'businessHours', 'youtubeUrl', 'instagramUrl', 'allowOrderUpdates', 'theme', 'blockedCustomerEmails', 'deliveryAreas'];
 
+function parseBrandInfo(row: any): BrandInfo {
+    return {
+        ...row,
+        showAddressInAbout: row.showAddressInAbout === 'TRUE',
+        showPhoneInAbout: row.showPhoneInAbout === 'TRUE',
+        allowOrderUpdates: row.allowOrderUpdates === 'TRUE',
+        address: typeof row.address === 'string' ? JSON.parse(row.address) : row.address,
+        businessHours: typeof row.businessHours === 'string' ? JSON.parse(row.businessHours) : row.businessHours,
+        theme: typeof row.theme === 'string' ? JSON.parse(row.theme) : row.theme,
+        blockedCustomerEmails: typeof row.blockedCustomerEmails === 'string' ? JSON.parse(row.blockedCustomerEmails) : [],
+        deliveryAreas: typeof row.deliveryAreas === 'string' ? JSON.parse(row.deliveryAreas) : [],
+    };
+}
 
-// GET - Fetches the current brand information, seeding it if it doesn't exist
 export async function GET() {
-  if (!db) {
-    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
-  }
   try {
-    const brandRef = doc(db, 'brand', 'info');
-    let brandDoc = await getDoc(brandRef);
-
-    if (!brandDoc.exists()) {
-      await setDoc(brandRef, initialBrandInfo);
-      brandDoc = await getDoc(brandRef);
+    const data = await getSheetData(`${SHEET_NAME}!A2:P2`);
+    if (!data.length) {
+      return NextResponse.json({ success: false, message: 'Brand information not found in spreadsheet.' }, { status: 404 });
     }
-    
-    return NextResponse.json({ success: true, brandInfo: brandDoc.data() });
+    const brandInfo = parseBrandInfo(data[0]);
+    return NextResponse.json({ success: true, brandInfo });
   } catch (error) {
     console.error("Error in GET /api/brand:", error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
 
-// PUT - Updates the brand information
 export async function PUT(request: Request) {
-    if (!db) {
-      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
-    }
     try {
         const newBrandInfo: BrandInfo = await request.json();
         
-        const brandRef = doc(db, 'brand', 'info');
-        await setDoc(brandRef, newBrandInfo, { merge: true });
+        const updatedRow = objectToRow(HEADERS, newBrandInfo);
+        await updateSheetData(`${SHEET_NAME}!A2`, updatedRow);
 
         return NextResponse.json({ success: true, brandInfo: newBrandInfo });
     } catch (error) {
         console.error("Error in PUT /api/brand:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }

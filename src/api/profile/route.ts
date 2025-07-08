@@ -1,13 +1,22 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getSheetData, findRowIndex, updateSheetData, objectToRow } from '@/lib/google-sheets';
+import type { User } from '@/lib/types';
 
-// PUT - Updates a user's profile info
+const SHEET_NAME = 'Users';
+const HEADERS = ['id', 'name', 'email', 'phone', 'addresses', 'createdAt', 'updatedAt', 'deletedAt'];
+
+async function getUser(userId: string): Promise<{user: User, rowIndex: number} | null> {
+    const rowIndex = await findRowIndex(SHEET_NAME, userId);
+    if (rowIndex === -1) return null;
+    const data = await getSheetData(`${SHEET_NAME}!A${rowIndex}:H${rowIndex}`);
+    if (!data.length) return null;
+    
+    const user = { ...data[0], addresses: typeof data[0].addresses === 'string' ? JSON.parse(data[0].addresses) : [] };
+    return { user, rowIndex };
+}
+
 export async function PUT(request: Request) {
-  if (!db) {
-    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
-  }
   try {
     const body = await request.json();
     const { userId, ...profileData } = body;
@@ -16,49 +25,49 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
     
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, { ...profileData, updatedAt: new Date().toISOString() });
+    const userData = await getUser(userId);
+    if (!userData) {
+        return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
+    }
     
-    const updatedUserDoc = await getDoc(userRef);
-    const updatedUser = { id: updatedUserDoc.id, ...updatedUserDoc.data() };
+    const { user, rowIndex } = userData;
+
+    const updatedUser = { ...user, ...profileData, updatedAt: new Date().toISOString() };
+    const updatedRow = objectToRow(HEADERS, updatedUser);
+
+    await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
 
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {
     console.error("Error in PUT /api/profile:", error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
 
-// DELETE - Deletes a user account (soft delete)
 export async function DELETE(request: Request) {
-    if (!db) {
-      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
-    }
     try {
         const { userId } = await request.json();
         if (!userId) {
             return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
         }
         
-        const userRef = doc(db, 'users', userId);
-        const userDoc = await getDoc(userRef);
-
-        if (!userDoc.exists()) {
+        const userData = await getUser(userId);
+        if (!userData) {
              return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
+        const { user, rowIndex } = userData;
         
-        if (userDoc.data().email === 'admin@example.com') {
+        if (user.email === 'admin@example.com') {
             return NextResponse.json({ success: false, message: 'Admin account cannot be deleted.' }, { status: 403 });
         }
         
-        // This is a hard delete now with Firestore. In a real app, you might want a soft delete flag.
-        // But for prototype consistency with Auth user deletion, we do a hard delete of the profile.
-        // The client-side logic in useAuth handles deleting the actual Firebase Auth user.
-        await deleteDoc(userRef);
+        const updatedUser = { ...user, deletedAt: new Date().toISOString() };
+        const updatedRow = objectToRow(HEADERS, updatedUser);
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
         
         return NextResponse.json({ success: true, userId });
     } catch (error) {
         console.error("Error in DELETE /api/profile:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }

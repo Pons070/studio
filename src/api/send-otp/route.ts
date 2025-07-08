@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { otpStore } from '@/lib/otp-store';
-import { users } from '@/lib/user-store';
+import { getSheetData } from '@/lib/google-sheets';
 
 export async function POST(request: Request) {
   try {
@@ -11,18 +11,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Invalid phone number provided.' }, { status: 400 });
     }
 
-    // Check if user exists to tell the UI if it should ask for a name
-    const existingUser = users.find(u => u.phone === phoneNumber);
+    const usersData = await getSheetData('Users!A:H');
+    const existingUser = usersData.find(u => u.phone === phoneNumber && !u.deletedAt);
     const isNewUser = !existingUser;
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[phoneNumber] = otp;
 
+    // In a real app, you would send this OTP via an SMS service (e.g., Twilio).
+    // For this prototype, we log it to the console and return it in the response for easy testing.
     console.log(`OTP for ${phoneNumber}: ${otp}`);
 
     return NextResponse.json({ success: true, message: 'OTP sent successfully!', otp, isNewUser });
   } catch (error) {
     console.error('Error in /api/send-otp:', error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }

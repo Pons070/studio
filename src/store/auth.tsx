@@ -5,67 +5,72 @@ import { createContext, useContext, useState, ReactNode, useCallback, useEffect 
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
 import type { Address, User } from '@/lib/types';
-import { auth, db } from '@/lib/firebase';
-import { 
-  onAuthStateChanged, 
-  RecaptchaVerifier, 
-  signInWithPhoneNumber, 
-  ConfirmationResult,
-  User as FirebaseUser,
-  signOut
-} from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
-
-declare global {
-  interface Window {
-    recaptchaVerifier?: RecaptchaVerifier;
-    confirmationResult?: ConfirmationResult;
-  }
-}
 
 type OtpRequestResult = {
   success: boolean;
   isNewUser: boolean;
+  otp?: string;
 };
 
 type AuthContextType = {
   isAuthenticated: boolean;
   currentUser: User | null;
-  firebaseUser: FirebaseUser | null;
-  users: User[];
+  users: User[]; // For admin view
   requestOtp: (phone: string) => Promise<OtpRequestResult>;
-  verifyOtpAndLogin: (otp: string, name?: string) => Promise<boolean>;
-  logout: (options?: { idle: boolean }) => void;
+  verifyOtpAndLogin: (phone: string, otp: string, name?: string) => Promise<boolean>;
+  logout: () => void;
   updateUser: (data: Partial<Omit<User, 'id' | 'password' | 'addresses'>>) => Promise<void>;
   addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => Promise<void>;
   updateAddress: (address: Address) => Promise<void>;
   deleteAddress: (addressId: string) => Promise<void>;
   setDefaultAddress: (addressId: string) => Promise<void>;
   deleteUser: () => Promise<void>;
-  deleteUserById: (userId: string) => Promise<void>;
+  deleteUserById: (userId: string) => Promise<void>; // Admin action
   isLoading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'culina-preorder-user';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [users, setUsers] = useState<User[]>([]); // For admin
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
 
-  // Fetch all users for the admin dashboard
-  const fetchAllUsers = useCallback(async () => {
-    if (currentUser?.email === 'admin@example.com' && db) {
-      try {
-          const usersSnapshot = await getDocs(collection(db, "users"));
-          const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-          setUsers(allUsers.filter(u => u.id !== currentUser.id));
-      } catch (error) {
-          console.error("Failed to fetch all users for admin view", error);
+  useEffect(() => {
+    try {
+      const storedUser = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
       }
+    } catch (error) {
+      console.error("Failed to load user from localStorage", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  useEffect(() => {
+    if (currentUser) {
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(currentUser));
+    } else {
+      window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+  }, [currentUser]);
+
+  const fetchAllUsers = useCallback(async () => {
+    if (currentUser?.email !== 'admin@example.com') return;
+    try {
+        const response = await fetch('/api/admin/users');
+        const data = await response.json();
+        if (data.success) {
+            setUsers(data.users);
+        }
+    } catch (error) {
+        console.error("Failed to fetch users", error);
     }
   }, [currentUser]);
 
@@ -73,288 +78,164 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchAllUsers();
   }, [fetchAllUsers]);
 
-  // Handle auth state changes
-  useEffect(() => {
-    if (!auth) {
-      setIsLoading(false);
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setIsLoading(true);
-      setFirebaseUser(user);
-      if (user && db) {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setCurrentUser({ id: userDoc.id, ...userDoc.data() } as User);
-        } else {
-          // This can happen if user exists in Auth but not Firestore (e.g., interrupted signup).
-          // They will be prompted to enter their name on the login screen again.
-          setCurrentUser(null);
-        }
-      } else {
-        setCurrentUser(null);
-      }
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-  
-  const setupRecaptcha = useCallback(() => {
-    if (!auth) return null;
-    if (typeof window !== 'undefined' && !document.getElementById('recaptcha-container')) {
-        // This should not happen if the login page is rendered correctly
-        return null;
-    }
-    
-    // Clean up old verifier if it exists
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-    }
-    
-    const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      'size': 'invisible',
-      'callback': (response: any) => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
-        console.log("reCAPTCHA solved");
-      }
-    });
-
-    window.recaptchaVerifier = verifier;
-    return verifier;
-  }, []);
-
   const requestOtp = useCallback(async (phone: string): Promise<OtpRequestResult> => {
-    if (!auth || !db) {
-        toast({ title: 'Error', description: 'Firebase is not configured.', variant: 'destructive' });
-        return { success: false, isNewUser: false };
-    }
     try {
-      const q = query(collection(db, "users"), where("phone", "==", phone));
-      const querySnapshot = await getDocs(q);
-      const isNewUser = querySnapshot.empty;
-
-      const recaptchaVerifier = setupRecaptcha();
-      if (!recaptchaVerifier) throw new Error("Recaptcha container not found.");
-
-      const confirmationResult = await signInWithPhoneNumber(auth, phone, recaptchaVerifier);
-      window.confirmationResult = confirmationResult;
-
-      toast({ title: 'OTP Sent', description: 'A verification code has been sent to your phone.' });
-      return { success: true, isNewUser };
+      const response = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to send OTP.');
+      }
+      toast({ title: 'OTP Sent', description: `For testing, your OTP is: ${data.otp}` });
+      return { success: true, isNewUser: data.isNewUser };
     } catch (error) {
-      console.error("OTP Error", error);
-      toast({ title: 'Error', description: 'Failed to send OTP. Please refresh and try again.', variant: 'destructive' });
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
       return { success: false, isNewUser: false };
     }
-  }, [toast, setupRecaptcha]);
-  
-  const verifyOtpAndLogin = useCallback(async (otp: string, name?: string): Promise<boolean> => {
-    if (!window.confirmationResult) {
-      toast({ title: 'Error', description: 'No OTP request found. Please try again.', variant: 'destructive' });
-      return false;
-    }
-    if (!db) {
-        toast({ title: 'Error', description: 'Firebase is not configured.', variant: 'destructive' });
-        return false;
-    }
-    
-    try {
-      const result = await window.confirmationResult.confirm(otp);
-      const user = result.user;
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      let appUser: User;
-      
-      if (!userDoc.exists()) {
-        if (!name || !user.phoneNumber) {
-          toast({ title: "Registration Failed", description: "Name is required for new users.", variant: "destructive" });
-          await user.delete();
-          return false;
-        }
-        appUser = {
-          id: user.uid,
-          name,
-          email: `${user.phoneNumber}@example.com`,
-          phone: user.phoneNumber,
-          addresses: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        await setDoc(userDocRef, appUser);
-      } else {
-        appUser = { id: userDoc.id, ...userDoc.data() } as User;
-      }
-      
-      setCurrentUser(appUser);
-      toast({ title: `Welcome, ${appUser.name}!`, variant: "success" });
-      return true;
+  }, [toast]);
 
+  const verifyOtpAndLogin = useCallback(async (phone: string, otp: string, name?: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: phone, otp, name }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'OTP verification failed.');
+      }
+      setCurrentUser(data.user);
+      toast({ title: `Welcome, ${data.user.name}!`, variant: "success" });
+      return true;
     } catch (error) {
-      console.error("OTP verification error", error);
-      toast({ title: "Login Failed", description: "The OTP is incorrect or has expired.", variant: "destructive" });
+      toast({ title: 'Login Failed', description: (error as Error).message, variant: 'destructive' });
       return false;
     }
   }, [toast]);
-  
-  const logout = useCallback(async (options?: { idle: boolean }) => {
-    if (!auth) return;
-    try {
-      await signOut(auth);
-      setCurrentUser(null);
-      setFirebaseUser(null);
-      router.push('/login');
-      if (options?.idle) {
-        toast({ title: "Session Expired", description: "You have been logged out due to inactivity." });
-      } else {
-        toast({ title: "Logged Out", description: "You have been successfully logged out." });
-      }
-    } catch (error) {
-       toast({ title: "Logout Failed", description: "Could not log out. Please try again.", variant: "destructive" });
-    }
+
+  const logout = useCallback(async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    setCurrentUser(null);
+    router.push('/login');
+    toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
   }, [router, toast]);
 
-  // Idle timer logic
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    const events: (keyof WindowEventMap)[] = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart', 'visibilitychange'];
-    const resetTimer = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        if (firebaseUser) logout({ idle: true });
-      }, 15 * 60 * 1000); // 15 minutes
-    };
-    if (firebaseUser) {
-        events.forEach(event => window.addEventListener(event, resetTimer, { passive: true }));
-        resetTimer();
-    }
-    return () => {
-        clearTimeout(timeoutId);
-        events.forEach(event => window.removeEventListener(event, resetTimer));
-    };
-  }, [firebaseUser, logout]);
-
   const updateUser = useCallback(async (data: Partial<Omit<User, 'id' | 'password' | 'addresses'>>) => {
-    if (!currentUser || !db) return;
-    const userDocRef = doc(db, 'users', currentUser.id);
+    if (!currentUser) return;
     try {
-        await updateDoc(userDocRef, { ...data, updatedAt: new Date().toISOString() });
-        const updatedUser = { ...currentUser, ...data, updatedAt: new Date().toISOString() };
-        setCurrentUser(updatedUser);
-        toast({ title: "Profile Updated" });
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, ...data }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message);
+      setCurrentUser(result.user);
+      toast({ title: "Profile Updated" });
     } catch (error) {
-        toast({ title: 'Error', description: 'Failed to update profile.', variant: 'destructive' });
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
     }
   }, [currentUser, toast]);
 
-  const addAddress = useCallback(async (addressData: Omit<Address, 'id' | 'isDefault'>) => {
-    if (!currentUser || !db) return;
-    const userDocRef = doc(db, 'users', currentUser.id);
-    const newAddress: Address = {
-        ...addressData,
-        id: `ADDR-${Date.now()}`,
-        isDefault: !currentUser.addresses || currentUser.addresses.length === 0
-    };
+  const addAddress = useCallback(async (address: Omit<Address, 'id' | 'isDefault'>) => {
+    if (!currentUser) return;
     try {
-        await updateDoc(userDocRef, { addresses: arrayUnion(newAddress) });
-        const updatedUser = { ...currentUser, addresses: [...(currentUser.addresses || []), newAddress] };
-        setCurrentUser(updatedUser);
-        toast({ title: "Address Added" });
+      const response = await fetch('/api/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, ...address }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message);
+      setCurrentUser(result.user);
+      toast({ title: "Address Added" });
     } catch (error) {
-        toast({ title: 'Error', description: 'Failed to add address.', variant: 'destructive' });
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
     }
   }, [currentUser, toast]);
 
-  const updateAddress = useCallback(async (addressData: Address) => {
-      if (!currentUser || !addressData.id || !db) return;
-      const userDocRef = doc(db, 'users', currentUser.id);
-      const currentAddresses = currentUser.addresses || [];
-      const updatedAddresses = currentAddresses.map(a => a.id === addressData.id ? addressData : a);
-      try {
-          await updateDoc(userDocRef, { addresses: updatedAddresses });
-          const updatedUser = { ...currentUser, addresses: updatedAddresses };
-          setCurrentUser(updatedUser);
-          toast({ title: "Address Updated" });
-      } catch (error) {
-          toast({ title: 'Error', description: 'Failed to update address.', variant: 'destructive' });
-      }
+  const updateAddress = useCallback(async (address: Address) => {
+    if (!currentUser) return;
+    try {
+      const response = await fetch('/api/addresses', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, ...address }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message);
+      setCurrentUser(result.user);
+      toast({ title: "Address Updated" });
+    } catch (error) {
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
+    }
   }, [currentUser, toast]);
-  
+
   const deleteAddress = useCallback(async (addressId: string) => {
-      if (!currentUser || !db) return;
-      const userDocRef = doc(db, 'users', currentUser.id);
-      const addressToDelete = (currentUser.addresses || []).find(a => a.id === addressId);
-      if (!addressToDelete) return;
-      
-      const batch = writeBatch(db);
-      
-      try {
-          // Temporarily remove the address from the array to determine new default
-          let updatedAddresses = (currentUser.addresses || []).filter(a => a.id !== addressId);
-          if (addressToDelete.isDefault && updatedAddresses.length > 0 && !updatedAddresses.some(a=>a.isDefault)) {
-              updatedAddresses[0].isDefault = true;
-          }
-          
-          batch.update(userDocRef, { addresses: updatedAddresses });
-          await batch.commit();
-
-          const updatedUser = { ...currentUser, addresses: updatedAddresses };
-          setCurrentUser(updatedUser);
-          toast({ title: "Address Deleted" });
-      } catch (error) {
-          console.error(error);
-          toast({ title: 'Error', description: 'Failed to delete address.', variant: 'destructive' });
-      }
+    if (!currentUser) return;
+    try {
+      const response = await fetch('/api/addresses', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, addressId }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message);
+      setCurrentUser(result.user);
+      toast({ title: "Address Deleted" });
+    } catch (error) {
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
+    }
   }, [currentUser, toast]);
 
   const setDefaultAddress = useCallback(async (addressId: string) => {
-      if (!currentUser || !db) return;
-      const userDocRef = doc(db, 'users', currentUser.id);
-      const updatedAddresses = (currentUser.addresses || []).map(addr => ({ ...addr, isDefault: addr.id === addressId }));
-      try {
-          await updateDoc(userDocRef, { addresses: updatedAddresses });
-          const updatedUser = { ...currentUser, addresses: updatedAddresses };
-          setCurrentUser(updatedUser);
-          toast({ title: "Default Address Updated" });
-      } catch (error) {
-          toast({ title: "Error", description: 'Failed to set default address.', variant: "destructive" });
-      }
-  }, [currentUser, toast]);
-  
+    if (!currentUser?.addresses) return;
+    const addressToUpdate = currentUser.addresses.find(a => a.id === addressId);
+    if (addressToUpdate) {
+      await updateAddress({ ...addressToUpdate, isDefault: true });
+    }
+  }, [currentUser, updateAddress]);
+
   const deleteUser = useCallback(async () => {
-    if (!currentUser || !firebaseUser || !db || !auth) return;
+    if (!currentUser) return;
     try {
-        await deleteDoc(doc(db, "users", currentUser.id));
-        await firebaseUser.delete();
-        toast({ title: "Account Deleted", variant: "destructive" });
+      const response = await fetch('/api/profile', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message);
+      logout();
+      toast({ title: "Account Deleted", variant: "destructive" });
     } catch (error) {
-        toast({ title: 'Error', description: 'Failed to delete account. Please log out and log back in to try again.', variant: 'destructive' });
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
     }
-  }, [currentUser, firebaseUser, toast]);
-
+  }, [currentUser, logout, toast]);
+  
   const deleteUserById = useCallback(async (userId: string) => {
-    if (!db) {
-        toast({ title: "Error", description: "Firebase is not configured.", variant: "destructive" });
-        return;
-    }
     try {
-      if (currentUser?.id === userId) throw new Error("You cannot delete your own account.");
-      await deleteDoc(doc(db, "users", userId));
-      // In a real app, you'd trigger a Firebase Function to delete the associated Auth user.
-      // For this prototype, we are only deleting the Firestore record.
-      setUsers(prev => prev.filter(u => u.id !== userId));
-      toast({ title: "Customer Deleted" });
+        const response = await fetch('/api/admin/users', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message);
+        setUsers(prev => prev.filter(u => u.id !== userId));
+        toast({ title: "Customer Deleted" });
     } catch (error) {
-       toast({ title: "Error", description: (error as Error).message || "Failed to delete user.", variant: "destructive" });
+       toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
     }
-  }, [currentUser, toast]);
-
-  const isAuthenticated = !!firebaseUser && !!currentUser;
+  }, [toast]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentUser, firebaseUser, users, requestOtp, verifyOtpAndLogin, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById, isLoading }}>
-      {!isLoading && children}
+    <AuthContext.Provider value={{ isAuthenticated: !!currentUser, currentUser, users, requestOtp, verifyOtpAndLogin, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById, isLoading }}>
+      {children}
     </AuthContext.Provider>
   );
 }

@@ -1,103 +1,110 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { getSheetData, appendSheetData, updateSheetData, findRowIndex, objectToRow } from '@/lib/google-sheets';
 import type { Review } from '@/lib/types';
 
-// NOTE: Seeding reviews is complex as they are tied to specific orders and customers.
-// In this new Firestore-based system, reviews will be added through the app's UI.
-// An empty collection will be returned initially.
+const SHEET_NAME = 'Reviews';
+const ORDERS_SHEET_NAME = 'Orders';
+const HEADERS = ['id', 'orderId', 'customerName', 'rating', 'comment', 'date', 'adminReply', 'isPublished'];
 
-// GET - Fetches all reviews
+function parseReview(row: any): Review {
+    return {
+        ...row,
+        rating: parseInt(row.rating, 10),
+        isPublished: row.isPublished === 'TRUE',
+    };
+}
+
 export async function GET() {
-  if (!db) {
-    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
-  }
   try {
-    const reviewsCollection = collection(db, 'reviews');
-    const snapshot = await getDocs(reviewsCollection);
-    const reviews = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const data = await getSheetData(`${SHEET_NAME}!A:H`);
+    const reviews = data.map(parseReview);
     return NextResponse.json({ success: true, reviews });
   } catch (error) {
     console.error("Error in GET /api/reviews:", error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
 
-// POST - Creates a new review
 export async function POST(request: Request) {
-  if (!db) {
-    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
-  }
   try {
     const body = await request.json();
     if (!body.orderId || !body.rating || !body.comment || !body.customerName) {
         return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
     }
 
-    const reviewData = {
+    const reviewData: Partial<Review> = {
       ...body,
+      id: `REV-${Date.now()}`,
       date: new Date().toISOString().split('T')[0],
-      isPublished: false, // Reviews should be moderated first
+      isPublished: false,
     };
     
-    const docRef = await addDoc(collection(db, 'reviews'), reviewData);
-    const newReview: Review = { ...reviewData, id: docRef.id };
+    const newRow = objectToRow(HEADERS, reviewData);
+    await appendSheetData(SHEET_NAME, newRow);
     
     // Also update the related order with the new reviewId
-    await updateDoc(doc(db, 'orders', body.orderId), { reviewId: newReview.id });
+    const orderRowIndex = await findRowIndex(ORDERS_SHEET_NAME, body.orderId);
+    if (orderRowIndex !== -1) {
+        await updateSheetData(`${ORDERS_SHEET_NAME}!K${orderRowIndex}`, [[reviewData.id]]);
+    }
 
-    return NextResponse.json({ success: true, review: newReview });
+    return NextResponse.json({ success: true, review: reviewData as Review });
   } catch (error) {
     console.error("Error in POST /api/reviews:", error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
   }
 }
 
-// PUT - Updates an existing review (e.g., publish status, admin reply)
 export async function PUT(request: Request) {
-    if (!db) {
-      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
-    }
     try {
         const body: Review = await request.json();
         if (!body.id) {
             return NextResponse.json({ success: false, message: 'Review ID is required.' }, { status: 400 });
         }
         
-        const { id, ...reviewData } = body;
-        const reviewRef = doc(db, 'reviews', id);
-        await updateDoc(reviewRef, reviewData);
+        const rowIndex = await findRowIndex(SHEET_NAME, body.id);
+        if (rowIndex === -1) {
+            return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
+        }
+
+        const updatedRow = objectToRow(HEADERS, body);
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
         
         return NextResponse.json({ success: true, review: body });
     } catch (error) {
         console.error("Error in PUT /api/reviews:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }
 
-// DELETE - Deletes a review
 export async function DELETE(request: Request) {
-    if (!db) {
-      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
-    }
     try {
         const { id, orderId } = await request.json();
         if (!id) {
             return NextResponse.json({ success: false, message: 'Review ID is required.' }, { status: 400 });
         }
         
-        const reviewRef = doc(db, 'reviews', id);
-        const orderRef = doc(db, 'orders', orderId);
+        const rowIndex = await findRowIndex(SHEET_NAME, id);
+        if (rowIndex === -1) {
+            return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
+        }
 
-        const batch = writeBatch(db);
-        batch.delete(reviewRef);
-        batch.update(orderRef, { reviewId: null }); // Unlink review from order
-        await batch.commit();
+        // Clear the review row
+        const emptyRow = Array(HEADERS.length).fill('');
+        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, emptyRow);
+
+        // Unlink review from order
+        if (orderId) {
+            const orderRowIndex = await findRowIndex(ORDERS_SHEET_NAME, orderId);
+            if (orderRowIndex !== -1) {
+                await updateSheetData(`${ORDERS_SHEET_NAME}!K${orderRowIndex}`, [['']]);
+            }
+        }
         
         return NextResponse.json({ success: true, id });
     } catch (error) {
         console.error("Error in DELETE /api/reviews:", error);
-        return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
+        return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
     }
 }
