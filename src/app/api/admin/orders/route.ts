@@ -1,9 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import { orders } from '@/lib/order-store';
+import { getOrders } from '@/lib/order-store';
 
 // GET - Fetches all orders for the admin dashboard
 export async function GET() {
   // In a real app, you would add authentication to ensure only admins can access this.
-  return NextResponse.json({ success: true, orders: orders });
+  return NextResponse.json({ success: true, orders: getOrders() });
 }

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import type { Order } from '@/lib/types';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 import { format } from 'date-fns';
-import { orders } from '@/lib/order-store';
+import { addOrderToStore } from '@/lib/order-store';
 import { brandInfo } from '@/lib/brand-store';
 
 export async function POST(request: Request) {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     };
 
     // Add to our in-memory store
-    orders.unshift(newOrder);
+    addOrderToStore(newOrder);
 
     // Fire-and-forget notifications
     Promise.all([

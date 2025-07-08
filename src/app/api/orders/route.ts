@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { orders } from '@/lib/order-store';
+import { getOrders, updateOrderInStore } from '@/lib/order-store';
 import type { Order } from '@/lib/types';
 
 // GET - Fetches orders for a specific user
@@ -12,7 +12,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
   }
   
-  const userOrders = orders.filter(o => o.customerId === userId);
+  const allOrders = getOrders();
+  const userOrders = allOrders.filter(o => o.customerId === userId);
   return NextResponse.json({ success: true, orders: userOrders });
 }
 
@@ -27,15 +28,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Order ID is required for an update.' }, { status: 400 });
         }
         
-        let updatedOrder: Order | undefined;
-        const orderIndex = orders.findIndex(o => o.id === orderId);
-
-        if (orderIndex === -1) {
-            return NextResponse.json({ success: false, message: 'Order not found.' }, { status: 404 });
-        }
-
-        updatedOrder = { ...orders[orderIndex], ...updates };
-        orders[orderIndex] = updatedOrder;
+        const updatedOrder = updateOrderInStore(orderId, updates);
 
         if (!updatedOrder) {
             return NextResponse.json({ success: false, message: 'Order not found.' }, { status: 404 });
