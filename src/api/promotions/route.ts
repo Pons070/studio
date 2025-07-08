@@ -3,6 +3,28 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import type { Promotion } from '@/lib/types';
+import { z } from 'zod';
+
+// Schema for creating promotions (ID is not needed)
+const CreatePromotionSchema = z.object({
+  title: z.string().min(1, { message: 'Title is required.' }),
+  description: z.string(),
+  targetAudience: z.enum(['all', 'new', 'existing']),
+  isActive: z.boolean(),
+  couponCode: z.string().min(1, { message: 'Coupon code is required.' }),
+  discountType: z.enum(['percentage', 'flat']),
+  discountValue: z.number().gte(0, { message: 'Discount value cannot be negative.' }),
+  minOrderValue: z.number().gte(0, { message: 'Minimum order value cannot be negative.' }).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  activeDays: z.array(z.number().int().min(0).max(6)).optional(),
+});
+
+// Schema for updating promotions (ID is required)
+const UpdatePromotionSchema = CreatePromotionSchema.extend({
+    id: z.string().min(1, { message: 'Promotion ID is required.' })
+});
+
 
 const initialPromotions: Omit<Promotion, 'id'>[] = [
   { title: '🎉 Welcome Offer for New Customers!', description: 'Get 15% off your first order with us. We are so happy to have you!', targetAudience: 'new', isActive: true, couponCode: 'WELCOME15', discountType: 'percentage', discountValue: 15 },
@@ -50,12 +72,16 @@ export async function POST(request: Request) {
   }
   try {
     const body = await request.json();
-    if (!body.title || !body.couponCode || !body.discountType) {
-        return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
+    const validationResult = CreatePromotionSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return NextResponse.json({ success: false, message: 'Invalid data provided.', errors: validationResult.error.flatten().fieldErrors }, { status: 400 });
     }
+
+    const validatedData = validationResult.data;
     
-    const docRef = await addDoc(collection(db, 'promotions'), body);
-    const newPromotion: Promotion = { ...body, id: docRef.id };
+    const docRef = await addDoc(collection(db, 'promotions'), validatedData);
+    const newPromotion: Promotion = { ...validatedData, id: docRef.id };
     
     return NextResponse.json({ success: true, promotion: newPromotion });
   } catch (error) {
@@ -70,16 +96,18 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
     }
     try {
-        const body: Promotion = await request.json();
-        if (!body.id) {
-            return NextResponse.json({ success: false, message: 'Promotion ID is required.' }, { status: 400 });
+        const body = await request.json();
+        const validationResult = UpdatePromotionSchema.safeParse(body);
+
+        if (!validationResult.success) {
+            return NextResponse.json({ success: false, message: 'Invalid data provided.', errors: validationResult.error.flatten().fieldErrors }, { status: 400 });
         }
         
-        const { id, ...promoData } = body;
+        const { id, ...promoData } = validationResult.data;
         const promoRef = doc(db, 'promotions', id);
         await updateDoc(promoRef, promoData);
         
-        return NextResponse.json({ success: true, promotion: body });
+        return NextResponse.json({ success: true, promotion: validationResult.data });
     } catch (error) {
         console.error("Error in PUT /api/promotions:", error);
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
