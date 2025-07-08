@@ -46,26 +46,30 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [fetchBrandInfo]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !brandInfo?.theme) return;
+    // This effect synchronizes the brand theme with the CSS variables on the root element.
+    if (typeof window === 'undefined' || !brandInfo?.theme) {
+      return;
+    }
 
     const theme = brandInfo.theme;
     const root = document.documentElement;
 
-    const setStyle = (prop: string, value: string | number | undefined | null) => {
-      if (value !== undefined && value !== null) {
-        root.style.setProperty(prop, value.toString());
+    const applyStyle = (property: string, value: string | null | undefined) => {
+      if (value && value.trim() !== 'none') {
+        root.style.setProperty(property, value);
+      } else {
+        root.style.removeProperty(property);
       }
     };
     
-    // Set theme properties
-    setStyle('--primary', theme.primaryColor);
-    setStyle('--background', theme.backgroundColor);
-    setStyle('--accent', theme.accentColor);
-    setStyle('--card', theme.cardColor);
-    setStyle('--card-alpha', theme.cardOpacity);
-    setStyle('--radius', theme.borderRadius ? `${theme.borderRadius}rem` : null);
-    setStyle('--background-image', theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : 'none');
-    
+    applyStyle('--primary', theme.primaryColor);
+    applyStyle('--background', theme.backgroundColor);
+    applyStyle('--accent', theme.accentColor);
+    applyStyle('--card', theme.cardColor);
+    applyStyle('--card-alpha', theme.cardOpacity?.toString());
+    applyStyle('--radius', theme.borderRadius ? `${theme.borderRadius}rem` : null);
+    applyStyle('--background-image', theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : 'none');
+
   }, [brandInfo?.theme]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
