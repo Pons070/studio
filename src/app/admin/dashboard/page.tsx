@@ -1363,19 +1363,19 @@ function DeliveryAreaDialog({ isOpen, onOpenChange, onSave, area }: { isOpen: bo
 
 function BrandManagement() {
   const { brandInfo, updateBrandInfo } = useBrand();
-  const [name, setName] = useState(brandInfo.name);
-  const [logoUrl, setLogoUrl] = useState(brandInfo.logoUrl);
-  const [phone, setPhone] = useState(brandInfo.phone);
-  const [address, setAddress] = useState<Address>(brandInfo.address || initialAddressState);
-  const [about, setAbout] = useState(brandInfo.about || '');
-  const [youtubeUrl, setYoutubeUrl] = useState(brandInfo.youtubeUrl || '');
-  const [instagramUrl, setInstagramUrl] = useState(brandInfo.instagramUrl || '');
-  const [businessStatus, setBusinessStatus] = useState(brandInfo.businessHours.status);
-  const [closureMessage, setClosureMessage] = useState(brandInfo.businessHours.message);
-  const [allowOrderUpdates, setAllowOrderUpdates] = useState(brandInfo.allowOrderUpdates ?? true);
-  const [theme, setTheme] = useState<ThemeSettings>(brandInfo.theme || initialThemeState);
+  const [name, setName] = useState(brandInfo?.name || '');
+  const [logoUrl, setLogoUrl] = useState(brandInfo?.logoUrl || '');
+  const [phone, setPhone] = useState(brandInfo?.phone || '');
+  const [address, setAddress] = useState<Address>(brandInfo?.address || initialAddressState);
+  const [about, setAbout] = useState(brandInfo?.about || '');
+  const [youtubeUrl, setYoutubeUrl] = useState(brandInfo?.youtubeUrl || '');
+  const [instagramUrl, setInstagramUrl] = useState(brandInfo?.instagramUrl || '');
+  const [businessStatus, setBusinessStatus] = useState(brandInfo?.businessHours?.status || 'open');
+  const [closureMessage, setClosureMessage] = useState(brandInfo?.businessHours?.message || '');
+  const [allowOrderUpdates, setAllowOrderUpdates] = useState(brandInfo?.allowOrderUpdates ?? true);
+  const [theme, setTheme] = useState<ThemeSettings>(brandInfo?.theme || initialThemeState);
   const [isSaving, setIsSaving] = useState(false);
-  const [logoShape, setLogoShape] = useState(brandInfo.logoShape || 'square');
+  const [logoShape, setLogoShape] = useState(brandInfo?.logoShape || 'square');
   const [isCropDialogOpen, setCropDialogOpen] = useState(false);
   const [imgSrcToCrop, setImgSrcToCrop] = useState('');
 
@@ -1412,18 +1412,20 @@ function BrandManagement() {
   };
 
   useEffect(() => {
-    setName(brandInfo.name);
-    setLogoUrl(brandInfo.logoUrl);
-    setPhone(brandInfo.phone);
-    setAddress(brandInfo.address || initialAddressState);
-    setAbout(brandInfo.about || '');
-    setYoutubeUrl(brandInfo.youtubeUrl || '');
-    setInstagramUrl(brandInfo.instagramUrl || '');
-    setBusinessStatus(brandInfo.businessHours.status);
-    setClosureMessage(brandInfo.businessHours.message);
-    setAllowOrderUpdates(brandInfo.allowOrderUpdates ?? true);
-    setTheme(brandInfo.theme || initialThemeState);
-    setLogoShape(brandInfo.logoShape || 'square');
+    if (brandInfo) {
+      setName(brandInfo.name);
+      setLogoUrl(brandInfo.logoUrl);
+      setPhone(brandInfo.phone);
+      setAddress(brandInfo.address || initialAddressState);
+      setAbout(brandInfo.about || '');
+      setYoutubeUrl(brandInfo.youtubeUrl || '');
+      setInstagramUrl(brandInfo.instagramUrl || '');
+      setBusinessStatus(brandInfo.businessHours.status);
+      setClosureMessage(brandInfo.businessHours.message);
+      setAllowOrderUpdates(brandInfo.allowOrderUpdates ?? true);
+      setTheme(brandInfo.theme || initialThemeState);
+      setLogoShape(brandInfo.logoShape || 'square');
+    }
   }, [brandInfo]);
   
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1460,8 +1462,10 @@ function BrandManagement() {
   };
 
   const handleSave = () => {
+    if (!brandInfo) return;
     setIsSaving(true);
     updateBrandInfo({
+      ...brandInfo,
       name,
       logoUrl,
       logoShape,
@@ -1476,12 +1480,12 @@ function BrandManagement() {
       },
       allowOrderUpdates,
       theme,
-      deliveryAreas: brandInfo.deliveryAreas, // Make sure to pass existing areas
     });
     setTimeout(() => setIsSaving(false), 500);
   }
 
-  const isDirty = name !== brandInfo.name ||
+  const isDirty = brandInfo ? (
+    name !== brandInfo.name ||
     logoUrl !== brandInfo.logoUrl ||
     logoShape !== (brandInfo.logoShape || 'square') ||
     phone !== brandInfo.phone ||
@@ -1492,7 +1496,8 @@ function BrandManagement() {
     businessStatus !== brandInfo.businessHours.status ||
     (businessStatus === 'closed' && closureMessage !== brandInfo.businessHours.message) ||
     allowOrderUpdates !== (brandInfo.allowOrderUpdates ?? true) ||
-    JSON.stringify(theme) !== JSON.stringify(brandInfo.theme || initialThemeState);
+    JSON.stringify(theme) !== JSON.stringify(brandInfo.theme || initialThemeState)
+  ) : false;
 
   return (
     <>
@@ -1801,7 +1806,7 @@ function DeliveryManagement() {
                   </TableRow>
               </TableHeader>
               <TableBody>
-                  {(brandInfo.deliveryAreas || []).map(area => (
+                  {(brandInfo?.deliveryAreas || []).map(area => (
                       <TableRow key={area.id}>
                           <TableCell>{area.pincode}</TableCell>
                           <TableCell>{area.areaName}</TableCell>
@@ -2377,7 +2382,7 @@ function CustomerManagement() {
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const { toast } = useToast();
 
-  const blockedEmails = brandInfo.blockedCustomerEmails || [];
+  const blockedEmails = brandInfo?.blockedCustomerEmails || [];
 
   const customersWithOrderCount = users.map(user => ({
     ...user,
@@ -3444,6 +3449,4 @@ export default function AdminDashboardPage() {
       </div>
   );
 }
-    
-
     

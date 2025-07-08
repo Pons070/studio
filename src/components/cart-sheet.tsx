@@ -22,7 +22,7 @@ import { Separator } from './ui/separator';
 export function CartSheet({ children }: { children: React.ReactNode }) {
   const { items, removeItem, updateQuantity, totalPrice } = useCart();
   const { brandInfo } = useBrand();
-  const isClosed = brandInfo.businessHours.status === 'closed';
+  const isClosed = brandInfo?.businessHours?.status === 'closed';
 
   return (
     <Sheet>
