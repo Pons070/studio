@@ -7,7 +7,7 @@ import { Utensils, Instagram, Youtube } from "lucide-react";
 import { useBrand } from "@/store/brand";
 import Image from "next/image";
 import type { Address } from "@/lib/types";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -23,11 +23,6 @@ export function Footer() {
   const { brandInfo } = useBrand();
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [currentYear, setCurrentYear] = useState('');
-
-  useEffect(() => {
-    setCurrentYear(new Date().getFullYear().toString());
-  }, []);
 
   const handleSecretAdminTrigger = useCallback((e: React.MouseEvent) => {
     const newCount = clickCount + 1;
@@ -135,8 +130,8 @@ export function Footer() {
         </div>
         <div className="mt-8 pt-6 border-t text-center">
             <p className="text-xs text-muted-foreground">
-              <span onClick={handleSecretAdminTrigger} className="cursor-pointer">
-                © {currentYear}
+              <span onClick={handleSecretAdminTrigger} className="cursor-pointer" suppressHydrationWarning>
+                © {new Date().getFullYear()}
               </span>
               {' '}Poiesis Technologies. All rights reserved.
             </p>
