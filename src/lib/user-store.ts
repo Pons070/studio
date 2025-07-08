@@ -1,5 +1,5 @@
 
-import type { User } from './types';
+import type { User, Address } from './types';
 
 // This ensures the store persists across hot reloads in development,
 // making our in-memory "database" more consistent.
@@ -7,7 +7,7 @@ declare global {
   var usersStore: User[] | undefined;
 }
 
-const aliceAddress: User['addresses'] extends (infer U)[] ? U : never = {
+const aliceAddress: Address = {
     doorNumber: '4A',
     apartmentName: 'Wonderland Apts',
     area: 'Rabbit Hole District',
@@ -18,7 +18,7 @@ const aliceAddress: User['addresses'] extends (infer U)[] ? U : never = {
     longitude: -118.2437,
 };
 
-const dianaAddress: User['addresses'] extends (infer U)[] ? U : never = {
+const dianaAddress: Address = {
     doorNumber: '100',
     apartmentName: 'Olympus Towers',
     area: 'Themyscira Plaza',
@@ -27,7 +27,7 @@ const dianaAddress: User['addresses'] extends (infer U)[] ? U : never = {
     pincode: '23456'
 };
 
-const charlieAddress: User['addresses'] extends (infer U)[] ? U : never = {
+const charlieAddress: Address = {
     doorNumber: '22B',
     apartmentName: 'Chocolate Factory',
     area: 'Sweet Street',
@@ -38,7 +38,7 @@ const charlieAddress: User['addresses'] extends (infer U)[] ? U : never = {
     longitude: -74.0060,
 };
 
-const eveAddress: User['addresses'] extends (infer U)[] ? U : never = {
+const eveAddress: Address = {
     doorNumber: '1',
     apartmentName: 'Garden House',
     area: 'Eden Estates',
@@ -47,7 +47,7 @@ const eveAddress: User['addresses'] extends (infer U)[] ? U : never = {
     pincode: '45678'
 };
 
-const bobAddress: User['addresses'] extends (infer U)[] ? U : never = {
+const bobAddress: Address = {
     doorNumber: 'B2',
     apartmentName: 'Builder Complex',
     area: 'Construct Lane',
@@ -56,7 +56,7 @@ const bobAddress: User['addresses'] extends (infer U)[] ? U : never = {
     pincode: '56789'
 };
 
-const frankAddress: User['addresses'] extends (infer U)[] ? U : never = {
+const frankAddress: Address = {
     doorNumber: 'C-3',
     apartmentName: 'Castle Apartments',
     area: 'Kingdom Valley',
@@ -133,14 +133,8 @@ const initialUsers: User[] = [
   }
 ];
 
-
-if (!globalThis.usersStore) {
-  globalThis.usersStore = initialUsers;
-}
-
 // Centralized functions to interact with the user store
 // This avoids issues with module caching in Next.js dev server.
-
 const getStore = (): User[] => {
     if (!globalThis.usersStore) {
         globalThis.usersStore = initialUsers;
