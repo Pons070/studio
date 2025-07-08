@@ -22,6 +22,7 @@ import { useCart } from '@/store/cart';
 import { Badge } from './ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatedUtensils } from './animated-utensils';
+import { ThemeToggle } from './theme-toggle';
 
 export function Header() {
   const pathname = usePathname();
@@ -83,9 +84,9 @@ export function Header() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
               <CartSheet>
-                <Button variant="outline" size="icon" className="relative transition-transform duration-300 ease-in-out hover:rotate-12">
+                <Button variant="outline" size="icon" className="relative">
                     <ShoppingCart className="h-6 w-6" />
                     {itemCount > 0 && (
                         <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 rounded-full flex items-center justify-center text-xs">
@@ -94,6 +95,7 @@ export function Header() {
                     )}
                 </Button>
               </CartSheet>
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="rounded-full">
