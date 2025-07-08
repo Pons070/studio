@@ -1,6 +1,6 @@
 
 import type { Order } from '@/lib/types';
-import { users } from './user-store';
+import { findUserBy } from './user-store';
 import { menuItems } from './menu-store';
 
 declare global {
@@ -8,7 +8,7 @@ declare global {
 }
 
 const createInitialOrders = (): Order[] => {
-    const findUser = (name: string) => users.find(u => u.name === name);
+    const findUser = (name: string) => findUserBy(u => u.name === name);
     const findMenuItem = (name: string) => menuItems.find(m => m.name === name);
 
     const alice = findUser('Alice');

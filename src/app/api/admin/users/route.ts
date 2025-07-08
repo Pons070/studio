@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { users } from '@/lib/user-store';
+import { findUserById, deleteUserPermanently } from '@/lib/user-store';
 
 // DELETE - Deletes a user account by an admin
 export async function DELETE(request: Request) {
@@ -10,17 +10,17 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID is required for deletion.' }, { status: 400 });
         }
         
-        const userIndex = users.findIndex(u => u.id === userId);
-        if (userIndex === -1) {
+        const user = findUserById(userId);
+        if (!user) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
 
         // Prevent admin from deleting themselves
-        if (users[userIndex].email === 'admin@example.com') {
+        if (user.email === 'admin@example.com') {
              return NextResponse.json({ success: false, message: 'Cannot delete the primary admin account.' }, { status: 403 });
         }
         
-        users.splice(userIndex, 1);
+        deleteUserPermanently(userId);
         
         return NextResponse.json({ success: true, userId });
     } catch (error) {

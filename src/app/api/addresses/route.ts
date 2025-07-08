@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import type { Address } from '@/lib/types';
-import { users } from '@/lib/user-store';
+import { findUserById, updateUser } from '@/lib/user-store';
 
 export async function POST(request: Request) {
   try {
@@ -12,12 +12,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
 
-    const userIndex = users.findIndex(u => u.id === userId);
-    if (userIndex === -1) {
+    const user = findUserById(userId);
+    if (!user) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
-    
-    const user = users[userIndex];
     
     const newAddress: Address = {
       ...addressData,
@@ -35,8 +33,7 @@ export async function POST(request: Request) {
 
     user.addresses.push(newAddress);
     
-    // Explicitly update the user in the global store array
-    users[userIndex] = user;
+    updateUser(user);
 
     return NextResponse.json({ success: true, user: user });
   } catch (error) {
@@ -54,13 +51,11 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required for an update.' }, { status: 400 });
         }
         
-        const userIndex = users.findIndex(u => u.id === userId);
-        if (userIndex === -1) {
+        const user = findUserById(userId);
+        if (!user) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
 
-        const user = users[userIndex];
-        
         if (!user.addresses) {
             user.addresses = [];
         }
@@ -72,8 +67,7 @@ export async function PUT(request: Request) {
 
         user.addresses[addressIndex] = { ...user.addresses[addressIndex], ...addressData };
 
-        // Explicitly update the user in the global store array
-        users[userIndex] = user;
+        updateUser(user);
 
         return NextResponse.json({ success: true, user: user });
     } catch (error) {
@@ -89,34 +83,29 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required for deletion.' }, { status: 400 });
         }
 
-        const userIndex = users.findIndex(u => u.id === userId);
-        if (userIndex === -1) {
+        const user = findUserById(userId);
+        if (!user) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
-        
-        const user = users[userIndex];
 
         if (!user.addresses) {
              return NextResponse.json({ success: false, message: 'Address to delete not found.' }, { status: 404 });
         }
         
         const addressToDelete = user.addresses.find(a => a.id === addressId);
-        const wasDefault = addressToDelete?.isDefault;
-
-        const initialLength = user.addresses.length;
-        user.addresses = user.addresses.filter(a => a.id !== addressId);
-        
-        if (user.addresses.length === initialLength) {
+        if (!addressToDelete) {
              return NextResponse.json({ success: false, message: 'Address to delete not found.' }, { status: 404 });
         }
+        const wasDefault = addressToDelete?.isDefault;
+        
+        user.addresses = user.addresses.filter(a => a.id !== addressId);
         
         // If the deleted address was the default, make the first one the new default
         if (wasDefault && user.addresses.length > 0) {
             user.addresses[0].isDefault = true;
         }
-
-        // Explicitly update the user in the global store array
-        users[userIndex] = user;
+        
+        updateUser(user);
 
         return NextResponse.json({ success: true, user: user });
     } catch (error) {

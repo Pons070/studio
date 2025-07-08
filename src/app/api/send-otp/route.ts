@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { otpStore } from '@/lib/otp-store';
-import { users } from '@/lib/user-store';
+import { findUserByPhone } from '@/lib/user-store';
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user exists to tell the UI if it should ask for a name
-    const existingUser = users.find(u => u.phone === phoneNumber);
+    const existingUser = findUserByPhone(phoneNumber);
     const isNewUser = !existingUser;
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
