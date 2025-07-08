@@ -1,10 +1,13 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 // GET - Fetches orders for a specific user
 export async function GET(request: Request) {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId');
 
@@ -25,6 +28,9 @@ export async function GET(request: Request) {
 
 // PUT - Updates an existing order
 export async function PUT(request: Request) {
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const body = await request.json();
         const { orderId, ...updates } = body;

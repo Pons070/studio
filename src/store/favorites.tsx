@@ -16,145 +16,81 @@ type FavoritesContextType = {
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
-const FAVORITES_STORAGE_KEY_PREFIX = 'culina-preorder-favorites';
-
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favoriteItemIds, setFavoriteItemIds] = useState<string[]>([]);
   const [favoriteOrderIds, setFavoriteOrderIds] = useState<string[]>([]);
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
 
-  const getStorageKey = useCallback(() => {
-    if (!currentUser) return null;
-    return `${FAVORITES_STORAGE_KEY_PREFIX}-${currentUser.id}`;
-  }, [currentUser]);
-  
   useEffect(() => {
-    const storageKey = getStorageKey();
-    if (storageKey) {
-        // First, try loading from localStorage for speed
-        try {
-            const item = window.localStorage.getItem(storageKey);
-            if (item) {
-            const { itemIds, orderIds } = JSON.parse(item);
-            setFavoriteItemIds(itemIds || []);
-            setFavoriteOrderIds(orderIds || []);
-            }
-        } catch (error) {
-            console.error("Failed to load favorites from localStorage", error);
+    async function loadFavorites() {
+        if (!isAuthenticated || !currentUser) {
+            setFavoriteItemIds([]);
+            setFavoriteOrderIds([]);
+            return;
         }
         
-        // Then, simulate fetching from API to demonstrate pattern
-        if (currentUser?.id) {
-            fetch(`/api/favorites?userId=${currentUser.id}`)
-                .then(res => res.json())
-                .then(data => {
-                if(data.success) {
-                    // In a real app, you might merge client and server state here.
-                    // For this prototype, we do nothing with the response as localStorage is king.
-                    console.log("Simulated fetch for favorites complete.");
-                }
-                })
-                .catch(err => console.error("Could not fetch favorites", err));
-        }
-
-    } else {
-        // Clear favorites when user logs out
-        setFavoriteItemIds([]);
-        setFavoriteOrderIds([]);
-    }
-  }, [currentUser, getStorageKey]);
-
-  const persistFavorites = useCallback((itemIds: string[], orderIds: string[]) => {
-    const storageKey = getStorageKey();
-    if (storageKey) {
         try {
-            window.localStorage.setItem(storageKey, JSON.stringify({ itemIds, orderIds }));
+            const response = await fetch(`/api/favorites?userId=${currentUser.id}`);
+            const data = await response.json();
+            if (data.success) {
+                setFavoriteItemIds(data.favorites.itemIds || []);
+                setFavoriteOrderIds(data.favorites.orderIds || []);
+            }
         } catch (error) {
-            console.error("Failed to save favorites to localStorage", error);
+            console.error("Failed to load favorites", error);
         }
     }
-  }, [getStorageKey]);
+    
+    if (!isAuthLoading) {
+        loadFavorites();
+    }
+  }, [currentUser, isAuthenticated, isAuthLoading]);
 
-  const toggleFavoriteItem = useCallback(async (itemId: string) => {
+  const toggleFavorite = useCallback(async (id: string, type: 'item' | 'order') => {
     if (!isAuthenticated || !currentUser) {
         toast({ title: "Please log in to add favorites.", variant: "destructive" });
         return;
     }
-    const isFavorite = favoriteItemIds.includes(itemId);
+
+    const isFavorite = type === 'item' ? favoriteItemIds.includes(id) : favoriteOrderIds.includes(id);
     
-    try {
-        const response = await fetch('/api/favorites', {
-            method: isFavorite ? 'DELETE' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUser.id, type: 'item', id: itemId }),
-        });
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            toast({ title: "Error", description: result.message || "Failed to update favorites.", variant: "destructive" });
-            return;
-        }
-
-        let newFavoriteItemIds;
-        if (isFavorite) {
-          newFavoriteItemIds = favoriteItemIds.filter(id => id !== itemId);
-          toast({ title: "Removed from Favorites" });
-        } else {
-          newFavoriteItemIds = [...favoriteItemIds, itemId];
-          toast({ title: "Added to Favorites" });
-        }
-        setFavoriteItemIds(newFavoriteItemIds);
-        persistFavorites(newFavoriteItemIds, favoriteOrderIds);
-
-    } catch (error) {
-        toast({ title: 'Network Error', description: 'Could not connect to the server to update favorites.', variant: 'destructive' });
+    // Optimistic UI update
+    if (type === 'item') {
+        setFavoriteItemIds(prev => isFavorite ? prev.filter(i => i !== id) : [...prev, id]);
+    } else {
+        setFavoriteOrderIds(prev => isFavorite ? prev.filter(o => o !== id) : [...prev, id]);
     }
-  }, [favoriteItemIds, favoriteOrderIds, persistFavorites, toast, isAuthenticated, currentUser]);
-
-  const toggleFavoriteOrder = useCallback(async (orderId: string) => {
-     if (!isAuthenticated || !currentUser) {
-        toast({ title: "Please log in to add favorites.", variant: "destructive" });
-        return;
-    }
-    const isFavorite = favoriteOrderIds.includes(orderId);
 
     try {
         const response = await fetch('/api/favorites', {
             method: isFavorite ? 'DELETE' : 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: currentUser.id, type: 'order', id: orderId }),
+            body: JSON.stringify({ userId: currentUser.id, type, id }),
         });
-        const result = await response.json();
 
-        if (!response.ok || !result.success) {
-            toast({ title: "Error", description: result.message || "Failed to update favorites.", variant: "destructive" });
-            return;
+        if (!response.ok) {
+            throw new Error('Failed to update favorites');
         }
         
-        let newFavoriteOrderIds;
-        if (isFavorite) {
-          newFavoriteOrderIds = favoriteOrderIds.filter(id => id !== orderId);
-          toast({ title: "Removed from Favorite Orders" });
-        } else {
-          newFavoriteOrderIds = [...favoriteOrderIds, orderId];
-          toast({ title: "Added to Favorite Orders" });
-        }
-        setFavoriteOrderIds(newFavoriteOrderIds);
-        persistFavorites(favoriteItemIds, newFavoriteOrderIds);
+        toast({ title: isFavorite ? "Removed from Favorites" : "Added to Favorites" });
 
     } catch (error) {
-        toast({ title: 'Network Error', description: 'Could not connect to the server to update favorites.', variant: 'destructive' });
+        toast({ title: 'Error', description: 'Failed to update favorites.', variant: 'destructive' });
+        // Revert optimistic UI update on failure
+        if (type === 'item') {
+            setFavoriteItemIds(favoriteItemIds);
+        } else {
+            setFavoriteOrderIds(favoriteOrderIds);
+        }
     }
-  }, [favoriteOrderIds, favoriteItemIds, persistFavorites, toast, isAuthenticated, currentUser]);
+  }, [isAuthenticated, currentUser, toast, favoriteItemIds, favoriteOrderIds]);
 
-  const isItemFavorite = useCallback((itemId: string) => {
-    return favoriteItemIds.includes(itemId);
-  }, [favoriteItemIds]);
-  
-  const isOrderFavorite = useCallback((orderId: string) => {
-    return favoriteOrderIds.includes(orderId);
-  }, [favoriteOrderIds]);
+  const toggleFavoriteItem = (itemId: string) => toggleFavorite(itemId, 'item');
+  const toggleFavoriteOrder = (orderId: string) => toggleFavorite(orderId, 'order');
+
+  const isItemFavorite = useCallback((itemId: string) => favoriteItemIds.includes(itemId), [favoriteItemIds]);
+  const isOrderFavorite = useCallback((orderId: string) => favoriteOrderIds.includes(orderId), [favoriteOrderIds]);
 
   return (
     <FavoritesContext.Provider value={{ favoriteItemIds, favoriteOrderIds, toggleFavoriteItem, isItemFavorite, toggleFavoriteOrder, isOrderFavorite }}>

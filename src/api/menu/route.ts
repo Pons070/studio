@@ -17,6 +17,7 @@ const initialMenuItems: Omit<MenuItem, 'id'>[] = [
 ];
 
 async function seedMenuItems() {
+    if (!db) return;
     const menuCollection = collection(db, 'menuItems');
     const batch = writeBatch(db);
     initialMenuItems.forEach(item => {
@@ -28,6 +29,9 @@ async function seedMenuItems() {
 
 // GET - Fetches all menu items, seeding if necessary
 export async function GET() {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   try {
     const menuCollection = collection(db, 'menuItems');
     let menuSnapshot = await getDocs(menuCollection);
@@ -48,6 +52,9 @@ export async function GET() {
 
 // POST - Creates a new menu item
 export async function POST(request: Request) {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   try {
     const body = await request.json();
     if (!body.name || !body.price || !body.category) {
@@ -74,6 +81,9 @@ export async function POST(request: Request) {
 
 // PUT - Updates an existing menu item
 export async function PUT(request: Request) {
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const body: MenuItem = await request.json();
         if (!body.id) {
@@ -93,6 +103,9 @@ export async function PUT(request: Request) {
 
 // DELETE - Deletes a menu item
 export async function DELETE(request: Request) {
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const { id } = await request.json();
         if (!id) {

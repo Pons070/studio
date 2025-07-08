@@ -4,6 +4,9 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 async function getFavoritesDoc(userId: string) {
+    if (!db) {
+        throw new Error("Firestore is not initialized. Check your Firebase configuration.");
+    }
     const favRef = doc(db, `users/${userId}/favorites/main`);
     const favDoc = await getDoc(favRef);
     return { favRef, favDoc };
@@ -11,6 +14,9 @@ async function getFavoritesDoc(userId: string) {
 
 // GET - Fetches favorites for a user
 export async function GET(request: Request) {
+    if (!db) {
+        return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -34,6 +40,9 @@ export async function GET(request: Request) {
 
 // POST - Adds a favorite
 export async function POST(request: Request) {
+    if (!db) {
+        return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const { userId, type, id } = await request.json();
         if (!userId || !type || !id) {
@@ -58,6 +67,9 @@ export async function POST(request: Request) {
 
 // DELETE - Removes a favorite
 export async function DELETE(request: Request) {
+    if (!db) {
+        return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const { userId, type, id } = await request.json();
          if (!userId || !type || !id) {

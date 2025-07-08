@@ -11,6 +11,7 @@ const initialPromotions: Omit<Promotion, 'id'>[] = [
 ];
 
 async function seedPromotions() {
+    if (!db) return;
     const promotionsCollection = collection(db, 'promotions');
     const batch = writeBatch(db);
     initialPromotions.forEach(item => {
@@ -22,6 +23,9 @@ async function seedPromotions() {
 
 // GET - Fetches all promotions, seeding if necessary
 export async function GET() {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   try {
     const promotionsCollection = collection(db, 'promotions');
     let snapshot = await getDocs(promotionsCollection);
@@ -41,6 +45,9 @@ export async function GET() {
 
 // POST - Creates a new promotion
 export async function POST(request: Request) {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   try {
     const body = await request.json();
     if (!body.title || !body.couponCode || !body.discountType) {
@@ -59,6 +66,9 @@ export async function POST(request: Request) {
 
 // PUT - Updates an existing promotion
 export async function PUT(request: Request) {
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const body: Promotion = await request.json();
         if (!body.id) {
@@ -78,6 +88,9 @@ export async function PUT(request: Request) {
 
 // DELETE - Deletes a promotion
 export async function DELETE(request: Request) {
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const { id } = await request.json();
         if (!id) {

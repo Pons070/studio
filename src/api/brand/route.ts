@@ -51,6 +51,9 @@ const initialBrandInfo: BrandInfo = {
 
 // GET - Fetches the current brand information, seeding it if it doesn't exist
 export async function GET() {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   try {
     const brandRef = doc(db, 'brand', 'info');
     let brandDoc = await getDoc(brandRef);
@@ -69,6 +72,9 @@ export async function GET() {
 
 // PUT - Updates the brand information
 export async function PUT(request: Request) {
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const newBrandInfo: BrandInfo = await request.json();
         

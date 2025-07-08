@@ -10,6 +10,9 @@ import type { Review } from '@/lib/types';
 
 // GET - Fetches all reviews
 export async function GET() {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   try {
     const reviewsCollection = collection(db, 'reviews');
     const snapshot = await getDocs(reviewsCollection);
@@ -23,6 +26,9 @@ export async function GET() {
 
 // POST - Creates a new review
 export async function POST(request: Request) {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   try {
     const body = await request.json();
     if (!body.orderId || !body.rating || !body.comment || !body.customerName) {
@@ -50,6 +56,9 @@ export async function POST(request: Request) {
 
 // PUT - Updates an existing review (e.g., publish status, admin reply)
 export async function PUT(request: Request) {
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const body: Review = await request.json();
         if (!body.id) {
@@ -69,6 +78,9 @@ export async function PUT(request: Request) {
 
 // DELETE - Deletes a review
 export async function DELETE(request: Request) {
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+    }
     try {
         const { id, orderId } = await request.json();
         if (!id) {

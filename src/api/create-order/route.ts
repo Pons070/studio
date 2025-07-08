@@ -7,6 +7,9 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
 
 export async function POST(request: Request) {
+  if (!db) {
+    return NextResponse.json({ success: false, message: 'Firebase not configured.' }, { status: 500 });
+  }
   try {
     const body = await request.json();
     const { customerEmail, ...orderInput } = body;
