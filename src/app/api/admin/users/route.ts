@@ -1,15 +1,12 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetData, updateSheetData, findRowIndex, objectToRow } from '@/lib/google-sheets';
-import type { User } from '@/lib/types';
-
-const SHEET_NAME = 'Users';
-const HEADERS = ['id', 'name', 'email', 'phone', 'addresses', 'createdAt', 'updatedAt', 'deletedAt'];
+import { getUsers, updateUser, findUserById } from '@/lib/user-store';
 
 export async function GET() {
     try {
-        const data = await getSheetData(`${SHEET_NAME}!A:H`);
-        const customers = data.filter((row: any) => row.email !== 'admin@example.com' && !row.deletedAt);
+        const users = getUsers();
+        // Filter out admin and soft-deleted users
+        const customers = users.filter(user => user.email !== 'admin@example.com' && !user.deletedAt);
         return NextResponse.json({ success: true, users: customers });
     } catch (error) {
         console.error("Error in GET /api/admin/users:", error);
@@ -24,23 +21,18 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
         }
         
-        const rowIndex = await findRowIndex(SHEET_NAME, userId);
-        if (rowIndex === -1) {
-            return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
-        }
-
-        const data = await getSheetData(`${SHEET_NAME}!A${rowIndex}:H${rowIndex}`);
-        if (!data.length) {
+        const user = findUserById(userId);
+        if (!user) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
         
-        if (data[0].email === 'admin@example.com') {
+        if (user.email === 'admin@example.com') {
              return NextResponse.json({ success: false, message: 'Cannot delete the primary admin account.' }, { status: 403 });
         }
         
-        const updatedUser = { ...data[0], deletedAt: new Date().toISOString() };
-        const updatedRow = objectToRow(HEADERS, updatedUser);
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
+        // Soft delete the user
+        const updatedUser = { ...user, deletedAt: new Date().toISOString() };
+        updateUser(updatedUser);
         
         return NextResponse.json({ success: true, userId });
     } catch (error) {

@@ -1,25 +1,12 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetData, appendSheetData, updateSheetData, findRowIndex, objectToRow } from '@/lib/google-sheets';
+import { getPromotions, addPromotionToStore, updatePromotionInStore, deletePromotionFromStore } from '@/lib/promotion-store';
 import type { Promotion } from '@/lib/types';
 import { z } from 'zod';
 
-const SHEET_NAME = 'Promotions';
-const HEADERS = ['id', 'title', 'description', 'targetAudience', 'isActive', 'couponCode', 'discountType', 'discountValue', 'minOrderValue', 'startDate', 'endDate', 'activeDays'];
-
-function parsePromotion(row: any): Promotion {
-    return {
-        ...row,
-        isActive: row.isActive === 'TRUE',
-        discountValue: parseFloat(row.discountValue),
-        minOrderValue: row.minOrderValue ? parseFloat(row.minOrderValue) : undefined,
-        activeDays: typeof row.activeDays === 'string' ? JSON.parse(row.activeDays) : row.activeDays,
-    };
-}
-
 const CreatePromotionSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),
-  description: z.string().optional(),
+  description: z.string(),
   targetAudience: z.enum(['all', 'new', 'existing']),
   isActive: z.boolean(),
   couponCode: z.string().min(1, { message: 'Coupon code is required.' }),
@@ -35,10 +22,10 @@ const UpdatePromotionSchema = CreatePromotionSchema.extend({
     id: z.string().min(1, { message: 'Promotion ID is required.' })
 });
 
+
 export async function GET() {
   try {
-    const data = await getSheetData(`${SHEET_NAME}!A:L`);
-    const promotions = data.map(parsePromotion);
+    const promotions = getPromotions();
     return NextResponse.json({ success: true, promotions });
   } catch (error) {
     console.error("Error in GET /api/promotions:", error);
@@ -53,16 +40,15 @@ export async function POST(request: Request) {
     if (!validationResult.success) {
       return NextResponse.json({ success: false, message: 'Invalid data provided.', errors: validationResult.error.flatten().fieldErrors }, { status: 400 });
     }
-    
-    const newPromoData: Partial<Promotion> = {
+
+    const newPromo: Promotion = {
         ...validationResult.data,
         id: `PROMO-${Date.now()}`,
     };
 
-    const newRow = objectToRow(HEADERS, newPromoData);
-    await appendSheetData(SHEET_NAME, newRow);
+    addPromotionToStore(newPromo);
     
-    return NextResponse.json({ success: true, promotion: newPromoData as Promotion });
+    return NextResponse.json({ success: true, promotion: newPromo });
   } catch (error) {
     console.error("Error in POST /api/promotions:", error);
     return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
@@ -78,16 +64,12 @@ export async function PUT(request: Request) {
         }
 
         const promoData = validationResult.data;
-        
-        const rowIndex = await findRowIndex(SHEET_NAME, promoData.id);
-        if (rowIndex === -1) {
+        const updatedPromo = updatePromotionInStore(promoData);
+        if (!updatedPromo) {
             return NextResponse.json({ success: false, message: 'Promotion not found.' }, { status: 404 });
         }
-
-        const updatedRow = objectToRow(HEADERS, promoData);
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, updatedRow);
         
-        return NextResponse.json({ success: true, promotion: promoData });
+        return NextResponse.json({ success: true, promotion: updatedPromo });
     } catch (error) {
         console.error("Error in PUT /api/promotions:", error);
         return NextResponse.json({ success: false, message: (error as Error).message }, { status: 500 });
@@ -101,13 +83,10 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Promotion ID is required.' }, { status: 400 });
         }
         
-        const rowIndex = await findRowIndex(SHEET_NAME, id);
-        if (rowIndex === -1) {
+        const deleted = deletePromotionFromStore(id);
+        if (!deleted) {
             return NextResponse.json({ success: false, message: 'Promotion not found.' }, { status: 404 });
         }
-
-        const emptyRow = Array(HEADERS.length).fill('');
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, emptyRow);
 
         return NextResponse.json({ success: true, id });
     } catch (error) {

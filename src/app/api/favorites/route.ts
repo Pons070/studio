@@ -1,20 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getSheetData, findRowIndex, updateSheetData, appendSheetData } from '@/lib/google-sheets';
-
-const SHEET_NAME = 'Favorites';
-
-async function getFavorites(userId: string) {
-    const data = await getSheetData(`${SHEET_NAME}!A:C`);
-    const favs = data.find((row: any) => row.userId === userId);
-    if (favs) {
-        return {
-            itemIds: favs.itemIds ? JSON.parse(favs.itemIds) : [],
-            orderIds: favs.orderIds ? JSON.parse(favs.orderIds) : [],
-        };
-    }
-    return { itemIds: [], orderIds: [] };
-}
+import { getFavorites, toggleFavorite } from '@/lib/favorites-store';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -25,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     try {
-        const favorites = await getFavorites(userId);
+        const favorites = getFavorites(userId);
         return NextResponse.json({ success: true, favorites });
     } catch (error) {
         console.error("Error in GET /api/favorites:", error);
@@ -40,19 +26,7 @@ export async function POST(request: Request) {
              return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
         }
 
-        const rowIndex = await findRowIndex(SHEET_NAME, userId);
-        const currentFavorites = await getFavorites(userId);
-        const fieldToUpdate = type === 'item' ? 'itemIds' : 'orderIds';
-        const updatedIds = [...new Set([...currentFavorites[fieldToUpdate], id])];
-        currentFavorites[fieldToUpdate] = updatedIds;
-
-        const rowData = [userId, JSON.stringify(currentFavorites.itemIds), JSON.stringify(currentFavorites.orderIds)];
-
-        if (rowIndex !== -1) {
-            await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, rowData);
-        } else {
-            await appendSheetData(SHEET_NAME, rowData);
-        }
+        toggleFavorite(userId, type, id, true); // forceAdd = true
         
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -68,17 +42,7 @@ export async function DELETE(request: Request) {
              return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
         }
         
-        const rowIndex = await findRowIndex(SHEET_NAME, userId);
-        if (rowIndex === -1) {
-            return NextResponse.json({ success: true }); // Nothing to delete
-        }
-        
-        const currentFavorites = await getFavorites(userId);
-        const fieldToUpdate = type === 'item' ? 'itemIds' : 'orderIds';
-        currentFavorites[fieldToUpdate] = currentFavorites[fieldToUpdate].filter((favId: string) => favId !== id);
-
-        const rowData = [userId, JSON.stringify(currentFavorites.itemIds), JSON.stringify(currentFavorites.orderIds)];
-        await updateSheetData(`${SHEET_NAME}!A${rowIndex}`, rowData);
+        toggleFavorite(userId, type, id, false); // forceAdd = false (so it removes)
         
         return NextResponse.json({ success: true });
     } catch (error) {

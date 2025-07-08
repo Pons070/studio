@@ -1,11 +1,8 @@
 
 import { NextResponse } from 'next/server';
 import { otpStore } from '@/lib/otp-store';
-import { getSheetData, appendSheetData, objectToRow } from '@/lib/google-sheets';
+import { findUserByPhone, addUser } from '@/lib/user-store';
 import type { User } from '@/lib/types';
-
-const SHEET_NAME = 'Users';
-const HEADERS = ['id', 'name', 'email', 'phone', 'addresses', 'createdAt', 'updatedAt', 'deletedAt'];
 
 export async function POST(request: Request) {
   try {
@@ -15,33 +12,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Phone number and OTP are required.' }, { status: 400 });
     }
 
+    // This is a mock verification. In a real app, you would have a more secure system.
     if (otpStore[phoneNumber] && otpStore[phoneNumber] === otp) {
+      // OTP is correct, clear it
       delete otpStore[phoneNumber];
 
-      const usersData = await getSheetData(`${SHEET_NAME}!A:H`);
-      let user = usersData.find(u => u.phone === phoneNumber && !u.deletedAt);
+      let user = findUserByPhone(phoneNumber);
 
       if (!user) {
+        // This is a new user, create an account
         if (!name) {
           return NextResponse.json({ success: false, message: 'Name is required for new user signup.' }, { status: 400 });
         }
         const newUser: User = {
           id: `user-${Date.now()}`,
           name,
-          email: `${phoneNumber}@example.com`,
+          email: `${phoneNumber}@example.com`, // Create a dummy email
           phone: phoneNumber,
           addresses: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        const newRow = objectToRow(HEADERS, newUser);
-        await appendSheetData(SHEET_NAME, newRow);
+        addUser(newUser);
         user = newUser;
       }
       
+      // Return the user object on successful login/signup
       return NextResponse.json({ success: true, message: 'OTP verified successfully!', user });
 
     } else {
+      // Invalid OTP
       return NextResponse.json({ success: false, message: 'Invalid OTP or phone number.' }, { status: 401 });
     }
   } catch (error) {

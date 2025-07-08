@@ -1,13 +1,10 @@
 
 import { NextResponse } from 'next/server';
+import { addOrderToStore } from '@/lib/order-store';
 import type { Order } from '@/lib/types';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
+import { getBrandInfo } from '@/lib/brand-store';
 import { format } from 'date-fns';
-import { appendSheetData, objectToRow, getSheetData } from '@/lib/google-sheets';
-
-const BRAND_SHEET_NAME = 'Brand';
-const ORDERS_SHEET_NAME = 'Orders';
-const HEADERS = ['id', 'customerId', 'customerName', 'address', 'orderDate', 'pickupDate', 'pickupTime', 'status', 'total', 'items', 'reviewId', 'cancellationDate', 'cancellationReason', 'cancelledBy', 'cancellationAction', 'cookingNotes', 'updateRequests', 'appliedCoupon', 'discountAmount', 'deliveryFee'];
 
 export async function POST(request: Request) {
   try {
@@ -18,8 +15,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required order information.' }, { status: 400 });
     }
     
-    const brandData = await getSheetData(`${BRAND_SHEET_NAME}!E2:E2`);
-    const adminEmail = brandData.length ? brandData[0].adminEmail : 'admin@example.com';
+    const brandInfo = getBrandInfo();
+    const adminEmail = brandInfo.adminEmail;
     
     const newOrder: Order = {
       ...orderInput,
@@ -28,9 +25,9 @@ export async function POST(request: Request) {
       status: 'Pending',
     };
     
-    const newRow = objectToRow(HEADERS, newOrder);
-    await appendSheetData(ORDERS_SHEET_NAME, newRow);
+    addOrderToStore(newOrder);
 
+    // Send notifications without waiting for them to complete
     Promise.all([
       sendOrderNotification({
         order: newOrder,
@@ -45,6 +42,7 @@ export async function POST(request: Request) {
         adminEmail: adminEmail,
       }),
     ]).catch(error => {
+      // Log errors but don't block the response to the user
       console.error("Failed to send one or more order notifications from API:", error);
     });
 

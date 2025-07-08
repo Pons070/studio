@@ -1,10 +1,9 @@
 
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import type { BrandInfo, DeliveryArea } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
-import { useTheme } from 'next-themes';
 
 type BrandContextType = {
   brandInfo: BrandInfo | null;
@@ -23,7 +22,6 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const [brandInfo, setBrandInfo] = useState<BrandInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { theme: activeTheme, systemTheme } = useTheme();
 
   const fetchBrandInfo = useCallback(async () => {
     setIsLoading(true);
@@ -47,42 +45,23 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     fetchBrandInfo();
   }, [fetchBrandInfo]);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (brandInfo?.theme) {
-      const theme = brandInfo.theme;
-      const effectiveTheme = activeTheme === 'system' ? systemTheme : activeTheme;
+  const brandStyles = useMemo(() => {
+    if (!brandInfo?.theme) return null;
 
-      if (effectiveTheme === 'light') {
-        if (theme.primaryColor) root.style.setProperty('--primary', theme.primaryColor);
-        if (theme.backgroundColor) root.style.setProperty('--background', theme.backgroundColor);
-        if (theme.accentColor) root.style.setProperty('--accent', theme.accentColor);
-        if (theme.cardColor) root.style.setProperty('--card', theme.cardColor);
-      } else {
-        root.style.removeProperty('--primary');
-        root.style.removeProperty('--background');
-        root.style.removeProperty('--accent');
-        root.style.removeProperty('--card');
+    const theme = brandInfo.theme;
+    const css = `
+      :root {
+        ${theme.primaryColor ? `--primary: ${theme.primaryColor};` : ''}
+        ${theme.backgroundColor ? `--background: ${theme.backgroundColor};` : ''}
+        ${theme.accentColor ? `--accent: ${theme.accentColor};` : ''}
+        ${theme.cardColor ? `--card: ${theme.cardColor};` : ''}
+        ${theme.cardOpacity !== undefined ? `--card-alpha: ${theme.cardOpacity};` : ''}
+        ${theme.borderRadius !== undefined ? `--radius: ${theme.borderRadius}rem;` : ''}
+        ${theme.backgroundImageUrl ? `--background-image: url(${theme.backgroundImageUrl});` : '--background-image: none;'}
       }
-
-      if (theme.cardOpacity !== undefined) root.style.setProperty('--card-alpha', String(theme.cardOpacity));
-      if (theme.borderRadius !== undefined) root.style.setProperty('--radius', `${theme.borderRadius}rem`);
-
-      if (theme.backgroundImageUrl) {
-        root.style.setProperty('--background-image', `url(${theme.backgroundImageUrl})`);
-      } else {
-        root.style.setProperty('--background-image', 'none');
-      }
-    } else {
-      root.style.removeProperty('--primary');
-      root.style.removeProperty('--background');
-      root.style.removeProperty('--accent');
-      root.style.removeProperty('--card');
-      root.style.removeProperty('--card-alpha');
-      root.style.removeProperty('--radius');
-      root.style.setProperty('--background-image', 'none');
-    }
-  }, [brandInfo?.theme, activeTheme, systemTheme]);
+    `;
+    return <style>{css}</style>;
+  }, [brandInfo?.theme]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
     try {
@@ -161,9 +140,9 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     }
   }, [brandInfo, updateBrandInfoOnServer, toast]);
 
-
   return (
     <BrandContext.Provider value={{ brandInfo: brandInfo!, isLoading, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
+      {brandStyles}
       {children}
     </BrandContext.Provider>
   );
