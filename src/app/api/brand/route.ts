@@ -1,11 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { brandInfo, setBrandInfo } from '@/lib/brand-store';
+import { getBrandInfo, setBrandInfo } from '@/lib/brand-store';
 import type { BrandInfo } from '@/lib/types';
 
 // GET - Fetches the current brand information
 export async function GET() {
-  return NextResponse.json({ success: true, brandInfo: brandInfo });
+  return NextResponse.json({ success: true, brandInfo: getBrandInfo() });
 }
 
 // PUT - Updates the brand information

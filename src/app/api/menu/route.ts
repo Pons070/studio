@@ -1,11 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { menuItems } from '@/lib/menu-store';
+import { getMenuItems, addMenuItemToStore, updateMenuItemInStore, deleteMenuItemFromStore } from '@/lib/menu-store';
 import type { MenuItem } from '@/lib/types';
 
 // GET - Fetches all menu items
 export async function GET() {
-  return NextResponse.json({ success: true, menuItems });
+  return NextResponse.json({ success: true, menuItems: getMenuItems() });
 }
 
 // POST - Creates a new menu item
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       imageUrl: body.imageUrl || 'https://placehold.co/600x400.png',
     };
 
-    menuItems.unshift(newItem);
+    addMenuItemToStore(newItem);
 
     return NextResponse.json({ success: true, menuItem: newItem });
   } catch (error) {
@@ -44,14 +44,12 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Menu item ID is required for an update.' }, { status: 400 });
         }
         
-        const index = menuItems.findIndex(item => item.id === body.id);
-        if (index === -1) {
+        const updatedItem = updateMenuItemInStore(body);
+        if (!updatedItem) {
             return NextResponse.json({ success: false, message: 'Menu item not found.' }, { status: 404 });
         }
-
-        menuItems[index] = body;
         
-        return NextResponse.json({ success: true, menuItem: body });
+        return NextResponse.json({ success: true, menuItem: updatedItem });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
     }
@@ -65,12 +63,10 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Menu item ID is required for deletion.' }, { status: 400 });
         }
         
-        const index = menuItems.findIndex(item => item.id === id);
-        if (index === -1) {
+        const wasDeleted = deleteMenuItemFromStore(id);
+        if (!wasDeleted) {
             return NextResponse.json({ success: false, message: 'Menu item not found.' }, { status: 404 });
         }
-        
-        menuItems.splice(index, 1);
         
         return NextResponse.json({ success: true, id });
     } catch (error) {

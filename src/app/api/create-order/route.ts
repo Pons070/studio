@@ -4,7 +4,7 @@ import type { Order } from '@/lib/types';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 import { format } from 'date-fns';
 import { addOrderToStore } from '@/lib/order-store';
-import { brandInfo } from '@/lib/brand-store';
+import { getBrandInfo } from '@/lib/brand-store';
 
 export async function POST(request: Request) {
   try {
@@ -18,6 +18,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required order information.' }, { status: 400 });
     }
     
+    const brandInfo = getBrandInfo();
     const adminEmail = brandInfo.adminEmail || 'admin@example.com';
 
     const newOrder: Order = {

@@ -1,13 +1,14 @@
 
 import type { Order } from '@/lib/types';
 import { findUserBy } from './user-store';
-import { menuItems } from './menu-store';
+import { getMenuItems } from './menu-store';
 
 declare global {
   var ordersStore: Order[] | undefined;
 }
 
 const lazyCreateInitialOrders = (): Order[] => {
+    const menuItems = getMenuItems();
     const findUser = (name: string) => findUserBy(u => u.name === name);
     const findMenuItem = (name: string) => menuItems.find(m => m.name === name);
 
@@ -134,7 +135,6 @@ const lazyCreateInitialOrders = (): Order[] => {
 // Centralized store access
 const getStore = (): Order[] => {
     if (!globalThis.ordersStore) {
-        console.log("Initializing order store...");
         globalThis.ordersStore = lazyCreateInitialOrders();
     }
     return globalThis.ordersStore;

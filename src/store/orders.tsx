@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import type { Order, CartItem, Address, UpdateRequest } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './auth';
+import { useBrand } from './brand';
 import { format } from 'date-fns';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
 
@@ -26,6 +27,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currentUser } = useAuth();
+  const { brandInfo } = useBrand();
   const pathname = usePathname();
   const isAdminPath = pathname.startsWith('/admin');
 
@@ -117,17 +119,17 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         const updatedOrder: Order = result.order;
         setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
         
-        if (status === 'Cancelled' && customerEmail) {
+        if (status === 'Cancelled' && customerEmail && brandInfo) {
             await sendOrderNotification({
                 order: updatedOrder, notificationType: 'customerCancellation',
-                customerEmail: customerEmail, adminEmail: 'sangkar111@gmail.com'
+                customerEmail: customerEmail, adminEmail: brandInfo.adminEmail
             });
         }
         toast({ title: "Order Status Updated" });
     } catch (error) {
         toast({ title: 'Update Failed', description: (error as Error).message, variant: 'destructive' });
     }
-}, [toast]);
+}, [toast, brandInfo]);
 
   const addReviewToOrder = useCallback(async (orderId: string, reviewId: string) => {
     try {
@@ -150,11 +152,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         const response = await fetch('/api/orders', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, reviewId: undefined }),
+            body: JSON.stringify({ orderId, reviewId: null }), // Explicitly set to null
         });
-        if (!response.ok) throw new Error('Failed to unlink review');
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || 'Failed to unlink review');
         
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, reviewId: undefined } : o));
+        setOrders(prev => prev.map(o => (o.id === orderId ? result.order : o)));
     } catch (error) {
         console.error("Failed to unlink review from order:", (error as Error).message);
     }

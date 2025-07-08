@@ -1,11 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { promotions } from '@/lib/promotion-store';
+import { getPromotions, addPromotionToStore, updatePromotionInStore, deletePromotionFromStore } from '@/lib/promotion-store';
 import type { Promotion } from '@/lib/types';
 
 // GET - Fetches all promotions
 export async function GET() {
-  return NextResponse.json({ success: true, promotions: promotions });
+  return NextResponse.json({ success: true, promotions: getPromotions() });
 }
 
 // POST - Creates a new promotion
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       id: `PROMO-${Date.now()}`,
     };
     
-    promotions.unshift(newPromotion);
+    addPromotionToStore(newPromotion);
 
     return NextResponse.json({ success: true, promotion: newPromotion });
   } catch (error) {
@@ -40,14 +40,12 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Promotion ID is required for an update.' }, { status: 400 });
         }
         
-        const index = promotions.findIndex(p => p.id === body.id);
-        if (index === -1) {
+        const updatedPromotion = updatePromotionInStore(body);
+        if (!updatedPromotion) {
             return NextResponse.json({ success: false, message: 'Promotion not found.' }, { status: 404 });
         }
         
-        promotions[index] = body;
-        
-        return NextResponse.json({ success: true, promotion: body });
+        return NextResponse.json({ success: true, promotion: updatedPromotion });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
     }
@@ -61,13 +59,11 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Promotion ID is required for deletion.' }, { status: 400 });
         }
         
-        const index = promotions.findIndex(p => p.id === id);
-        if (index === -1) {
+        const wasDeleted = deletePromotionFromStore(id);
+        if (!wasDeleted) {
             return NextResponse.json({ success: false, message: 'Promotion not found.' }, { status: 404 });
         }
 
-        promotions.splice(index, 1);
-        
         return NextResponse.json({ success: true, id });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });

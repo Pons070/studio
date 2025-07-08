@@ -1,11 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { reviews } from '@/lib/review-store';
+import { getReviews, addReviewToStore, updateReviewInStore, deleteReviewFromStore } from '@/lib/review-store';
 import type { Review } from '@/lib/types';
 
 // GET - Fetches all reviews
 export async function GET() {
-  return NextResponse.json({ success: true, reviews: reviews });
+  return NextResponse.json({ success: true, reviews: getReviews() });
 }
 
 // POST - Creates a new review
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       isPublished: false, // Reviews should be moderated first
     };
     
-    reviews.unshift(newReview);
+    addReviewToStore(newReview);
 
     return NextResponse.json({ success: true, review: newReview });
   } catch (error) {
@@ -42,14 +42,12 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Review ID is required for an update.' }, { status: 400 });
         }
         
-        const index = reviews.findIndex(r => r.id === body.id);
-        if (index === -1) {
+        const updatedReview = updateReviewInStore(body);
+        if (!updatedReview) {
             return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
         }
         
-        reviews[index] = body;
-        
-        return NextResponse.json({ success: true, review: body });
+        return NextResponse.json({ success: true, review: updatedReview });
     } catch (error) {
         return NextResponse.json({ success: false, message: 'An internal server error occurred.' }, { status: 500 });
     }
@@ -63,12 +61,10 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Review ID is required for deletion.' }, { status: 400 });
         }
         
-        const index = reviews.findIndex(r => r.id === id);
-        if (index === -1) {
+        const wasDeleted = deleteReviewFromStore(id);
+        if (!wasDeleted) {
              return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
         }
-        
-        reviews.splice(index, 1);
         
         return NextResponse.json({ success: true, id });
     } catch (error) {
