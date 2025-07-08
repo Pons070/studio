@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, X, Truck, PlusCircle, Edit, Minus, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle, User, Trash2, Home, Building, FileText, TicketPercent, X, Truck, PlusCircle, Edit, Minus, Plus, CheckCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -65,6 +66,7 @@ export default function CheckoutPage() {
   const [isAddressDialogOpen, setAddressDialogOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isSuccessDialogOpen, setSuccessDialogOpen] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
 
@@ -82,6 +84,22 @@ export default function CheckoutPage() {
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (showConfetti) {
+        const timer = setTimeout(() => setShowConfetti(false), 5000); // Let it fall for 5 seconds
+        return () => clearTimeout(timer);
+    }
+  }, [showConfetti]);
+
+  useEffect(() => {
+    if (isSuccessDialogOpen) {
+      const timer = setTimeout(() => {
+        setSuccessDialogOpen(false);
+      }, 2000); // Auto-close after 2 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccessDialogOpen]);
 
   useEffect(() => {
     if (currentUser?.addresses && currentUser.addresses.length > 0) {
@@ -154,8 +172,8 @@ export default function CheckoutPage() {
 
     setDiscount(calculatedDiscount);
     setAppliedPromotion(promotion);
-    toast({ title: 'Coupon Applied!', description: promotion.title });
     setShowConfetti(true);
+    setSuccessDialogOpen(true);
   }
 
   const handleRemoveCoupon = () => {
@@ -380,10 +398,18 @@ export default function CheckoutPage() {
         <Confetti
           width={windowSize.width}
           height={windowSize.height}
-          recycle={false}
-          onConfettiComplete={() => setShowConfetti(false)}
+          recycle={true}
+          numberOfPieces={200}
         />
       )}
+      <Dialog open={isSuccessDialogOpen} onOpenChange={setSuccessDialogOpen}>
+        <DialogContent className="sm:max-w-md" hideCloseButton>
+            <div className="flex flex-col items-center justify-center text-center p-8 space-y-4">
+                <CheckCircle className="h-20 w-20 text-success animate-in zoom-in-50 duration-500" />
+                <DialogTitle className="text-2xl font-bold text-success">Coupon Applied Successfully!</DialogTitle>
+            </div>
+        </DialogContent>
+      </Dialog>
       <div>
         <h1 className="text-4xl font-headline font-bold text-center mb-10 text-white">Checkout</h1>
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
