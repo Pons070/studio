@@ -1,10 +1,11 @@
 
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { CartItem, MenuItem } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import { useAuth } from './auth';
 
 type CartContextType = {
   items: CartItem[];
@@ -19,31 +20,47 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'culina-preorder-cart';
+const LOCAL_STORAGE_KEY_PREFIX = 'culina-preorder-cart';
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+  const { currentUser } = useAuth();
 
+  const getCartStorageKey = useCallback(() => {
+    if (currentUser) {
+      return `${LOCAL_STORAGE_KEY_PREFIX}-${currentUser.id}`;
+    }
+    return `${LOCAL_STORAGE_KEY_PREFIX}-guest`;
+  }, [currentUser]);
+  
+  // Load cart from localStorage when the user changes (login/logout)
   useEffect(() => {
     try {
-      const item = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+      const storageKey = getCartStorageKey();
+      const item = window.localStorage.getItem(storageKey);
       if (item) {
         setItems(JSON.parse(item));
+      } else {
+        // If there's no cart for this user, clear the current items
+        setItems([]);
       }
     } catch (error) {
       console.error("Failed to load cart from localStorage", error);
+      setItems([]);
     }
-  }, []);
-
+  }, [currentUser, getCartStorageKey]);
+  
+  // Save cart to localStorage whenever items or the user changes
   useEffect(() => {
     try {
-      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+      const storageKey = getCartStorageKey();
+      window.localStorage.setItem(storageKey, JSON.stringify(items));
     } catch (error) {
       console.error("Failed to save cart to localStorage", error);
     }
-  }, [items]);
+  }, [items, getCartStorageKey]);
 
   const addItem = (itemToAdd: MenuItem) => {
     setItems(prevItems => {
