@@ -1,12 +1,21 @@
 
-import { initialFavorites } from './mock-data';
-
 type UserFavorites = {
     itemIds: string[];
     orderIds: string[];
 };
 
 type FavoritesStore = Record<string, UserFavorites>;
+
+const initialFavorites = {
+  "user-alice": {
+    itemIds: ["3", "6"],
+    orderIds: ["ORD-001"]
+  },
+  "user-diana": {
+    itemIds: ["5"],
+    orderIds: []
+  }
+};
 
 const favoritesStore: FavoritesStore = { ...initialFavorites };
 

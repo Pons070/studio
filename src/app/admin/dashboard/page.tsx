@@ -82,7 +82,7 @@ function ConversationThread({ requests }: { requests: UpdateRequest[] }) {
 
   return (
     <div className="space-y-4">
-      <h4 className="font-medium">Conversation</h4>
+      <h4 className="font-medium font-headline">Conversation</h4>
       <ScrollArea className="h-48 w-full rounded-md border p-4">
         <div className="space-y-4">
           {requests.map((req) => (
@@ -113,7 +113,7 @@ function AdminReplyForm({ orderId }: { orderId: string }) {
 
     return (
         <div className="space-y-2 pt-4 border-t">
-            <h4 className="font-medium">Reply to Customer</h4>
+            <h4 className="font-medium font-headline">Reply to Customer</h4>
             <div className="flex gap-2">
                 <Textarea
                     value={reply}
@@ -233,7 +233,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                         <>
                             <Separator />
                             <div>
-                                <h4 className="font-medium">Cooking Notes</h4>
+                                <h4 className="font-medium font-headline">Cooking Notes</h4>
                                 <p className="text-sm text-muted-foreground italic p-2 bg-muted/50 rounded-md">"{order.cookingNotes}"</p>
                             </div>
                         </>
@@ -241,7 +241,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
 
                     <Separator />
                      <div className="space-y-2">
-                        <h4 className="font-medium">Delivery Address</h4>
+                        <h4 className="font-medium font-headline">Delivery Address</h4>
                         <div className="text-sm text-muted-foreground">
                             <p>{order.address.doorNumber}, {order.address.apartmentName}{order.address.floorNumber && `, ${order.address.floorNumber}`}</p>
                             <p>{order.address.area}</p>
@@ -254,7 +254,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                     </div>
                     <Separator />
 
-                    <h4 className="font-medium">Items in this order</h4>
+                    <h4 className="font-medium font-headline">Items in this order</h4>
                     <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
                         {order.items.map(item => (
                             <div key={item.id} className="flex justify-between items-center">
@@ -283,7 +283,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, reviews, onCancelOrde
                         <>
                             <Separator />
                             <div>
-                                <h4 className="font-medium mb-2">Customer Review</h4>
+                                <h4 className="font-medium mb-2 font-headline">Customer Review</h4>
                                 <div className="space-y-3 text-sm p-4 bg-muted/50 rounded-lg border">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
@@ -1639,7 +1639,7 @@ function BrandManagement() {
         <Separator />
         
         <div className="space-y-4">
-            <h3 className="text-base font-medium">Address</h3>
+            <h3 className="text-base font-medium font-headline">Address</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                   <Label htmlFor="doorNumber">Door Number</Label>
@@ -1690,7 +1690,7 @@ function BrandManagement() {
         <Separator />
         
         <div className="space-y-4">
-            <h3 className="text-base font-medium">Logo & Branding</h3>
+            <h3 className="text-base font-medium font-headline">Logo & Branding</h3>
             <div className="flex items-start gap-6">
                  <div className="space-y-2 flex-1">
                     <Label htmlFor="logo">Logo</Label>
@@ -1728,7 +1728,7 @@ function BrandManagement() {
         <Separator className="my-6" />
 
         <div className="space-y-6">
-          <h3 className="text-lg font-medium">Business & Page Settings</h3>
+          <h3 className="text-lg font-medium font-headline">Business & Page Settings</h3>
           <div className="space-y-4">
             <div className="flex items-start space-x-4 rounded-lg border p-4">
                 <Switch
@@ -1794,7 +1794,7 @@ function BrandManagement() {
         <Separator className="my-6" />
         
         <div className="space-y-6">
-          <h3 className="text-lg font-medium flex items-center gap-2"><Palette /> Theme & Appearance</h3>
+          <h3 className="text-lg font-medium flex items-center gap-2 font-headline"><Palette /> Theme & Appearance</h3>
           <p className="text-sm text-muted-foreground">
             Customize the look and feel of your storefront. Choose a color palette, select fonts, and more.
           </p>
@@ -1830,7 +1830,7 @@ function BrandManagement() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label className="flex items-center gap-2"><Gift /> Festive Themes</Label>
+              <Label className="flex items-center gap-2 font-headline"><Gift /> Festive Themes</Label>
               <p className="text-sm text-muted-foreground -mt-1">
                 Apply a special theme for festive occasions with one click.
               </p>
@@ -1863,7 +1863,7 @@ function BrandManagement() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <h4 className="font-medium">Section Background</h4>
+              <h4 className="font-medium font-headline">Section Background</h4>
               <p className="text-sm text-muted-foreground">Customize the background color and transparency of cards and sections.</p>
             </div>
 
@@ -2433,7 +2433,7 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggl
                 <ScrollArea className="max-h-[70vh] pr-6">
                     <div className="space-y-6 py-4">
                         <div className="space-y-2">
-                           <h4 className="font-medium">Contact Information</h4>
+                           <h4 className="font-medium font-headline">Contact Information</h4>
                            <p className="text-sm"><strong>Email:</strong> {customer.email}</p>
                            <p className="text-sm"><strong>Phone:</strong> {customer.phone || 'Not Provided'}</p>
                            <p className="text-sm">
@@ -2442,7 +2442,7 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggl
                         </div>
                         <Separator />
                          <div className="space-y-2">
-                            <h4 className="font-medium">Saved Addresses</h4>
+                            <h4 className="font-medium font-headline">Saved Addresses</h4>
                             {customer.addresses && customer.addresses.length > 0 ? (
                                 <div className="space-y-3">
                                     {customer.addresses.map((addr, index) => (
@@ -2456,7 +2456,7 @@ function CustomerDetailsDialog({ customer, orders, isOpen, onOpenChange, onToggl
                         </div>
                         <Separator />
                         <div className="space-y-2">
-                           <h4 className="font-medium">Order History ({orders.length})</h4>
+                           <h4 className="font-medium font-headline">Order History ({orders.length})</h4>
                             {orders.length > 0 ? (
                                 <Table>
                                     <TableHeader>
@@ -3347,19 +3347,19 @@ function AnalyticsAndReports() {
             ) : insights && (
                 <div className="space-y-6">
                     <div>
-                        <h3 className="font-semibold flex items-center gap-2"><Activity /> Executive Summary</h3>
+                        <h3 className="font-semibold flex items-center gap-2 font-headline"><Activity /> Executive Summary</h3>
                         <p className="text-muted-foreground mt-2">{insights.executiveSummary}</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                             <h3 className="font-semibold flex items-center gap-2"><CheckCircle /> Strengths</h3>
+                             <h3 className="font-semibold flex items-center gap-2 font-headline"><CheckCircle /> Strengths</h3>
                              <ul className="list-disc list-inside text-muted-foreground space-y-1">
                                 {insights.strengths.map((s, i) => <li key={i}>{s}</li>)}
                              </ul>
                         </div>
                          <div className="space-y-2">
-                             <h3 className="font-semibold flex items-center gap-2"><TrendingUp /> Opportunities</h3>
+                             <h3 className="font-semibold flex items-center gap-2 font-headline"><TrendingUp /> Opportunities</h3>
                              <ul className="list-disc list-inside text-muted-foreground space-y-1">
                                 {insights.opportunities.map((o, i) => <li key={i}>{o}</li>)}
                              </ul>
@@ -3367,7 +3367,7 @@ function AnalyticsAndReports() {
                     </div>
                     
                     <div>
-                        <h3 className="font-semibold flex items-center gap-2 mb-2"><Terminal /> Recommendations</h3>
+                        <h3 className="font-semibold flex items-center gap-2 mb-2 font-headline"><Terminal /> Recommendations</h3>
                         <div className="space-y-4">
                             {insights.recommendations.map((rec, i) => (
                                 <Card key={i} className="bg-muted/50">
@@ -3429,6 +3429,8 @@ export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState('dashboard');
   const router = useRouter();
   const { orders } = useOrders();
+  const { currentUser } = useAuth();
+
 
   const [orderToShowInInquiryPopup, setOrderToShowInInquiryPopup] = useState<Order | null>(null);
   const [newOrderInPopup, setNewOrderInPopup] = useState<Order | null>(null);
@@ -3523,6 +3525,19 @@ export default function AdminDashboardPage() {
   };
 
   const activeItem = navItems.find(item => item.id === activeView);
+
+  if (!currentUser || currentUser.email !== 'admin@example.com') {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
+            <Shield className="h-16 w-16 text-destructive mb-4" />
+            <h1 className="text-3xl font-bold font-headline">Access Denied</h1>
+            <p className="text-muted-foreground mt-2">You do not have permission to view this page.</p>
+            <Button asChild className="mt-6">
+                <Link href="/">Go to Homepage</Link>
+            </Button>
+        </div>
+    );
+  }
 
   if (activeView === 'dashboard') {
     return (
