@@ -10,7 +10,6 @@ import { AuthProvider } from '@/store/auth';
 import { FavoritesProvider } from '@/store/favorites';
 import { PromotionProvider } from '@/store/promotions';
 import { PromotionBanner } from '@/components/promotion-banner';
-import { ThemeProvider } from '@/components/theme-provider';
 import { BrandProvider } from '@/store/brand';
 import { ReviewProvider } from '@/store/reviews';
 import { getBrandInfo } from '@/lib/brand-store';
@@ -26,7 +25,7 @@ export default async function RootLayout({
   const brandInfo = await getBrandInfo();
   
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         <title>{brandInfo.name} - Delicious Meals, Ordered Ahead</title>
         <meta name="description" content="Your favorite restaurant for pre-ordering delicious meals. Order online for pickup or delivery." />
@@ -36,12 +35,6 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Open+Sans:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
           <BrandProvider initialBrandInfo={brandInfo}>
             <ThemeInjector />
             <AuthProvider>
@@ -68,7 +61,6 @@ export default async function RootLayout({
               </MenuProvider>
             </AuthProvider>
           </BrandProvider>
-        </ThemeProvider>
       </body>
     </html>
   );

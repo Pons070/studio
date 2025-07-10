@@ -20,7 +20,6 @@ import { CartSheet } from './cart-sheet';
 import { useCart } from '@/store/cart';
 import { Badge } from './ui/badge';
 import { AnimatedUtensils } from './animated-utensils';
-import { ThemeToggle } from './theme-toggle';
 import { useBrand } from '@/store/brand';
 
 export function Header() {
@@ -70,7 +69,6 @@ export function Header() {
                     )}
                 </Button>
               </CartSheet>
-            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="rounded-full">
