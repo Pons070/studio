@@ -12,12 +12,6 @@ const Card = React.forwardRef<
       "rounded-lg border bg-card text-card-foreground shadow-sm",
       className
     )}
-    style={
-      {
-        '--tw-bg-opacity': 'var(--dynamic-card-opacity, 1)',
-        backgroundColor: 'hsl(var(--dynamic-card) / var(--dynamic-card-opacity, 1))'
-      } as React.CSSProperties
-    }
     {...props}
   />
 ))

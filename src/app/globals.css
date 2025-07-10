@@ -32,28 +32,6 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-
-    /* DYNAMIC PROPERTIES */
-    --dynamic-background: var(--background);
-    --dynamic-foreground: var(--foreground);
-    --dynamic-card: var(--card);
-    --dynamic-card-foreground: var(--card-foreground);
-    --dynamic-popover: var(--popover);
-    --dynamic-popover-foreground: var(--popover-foreground);
-    --dynamic-primary: var(--primary);
-    --dynamic-primary-foreground: var(--primary-foreground);
-    --dynamic-secondary: var(--secondary);
-    --dynamic-secondary-foreground: var(--secondary-foreground);
-    --dynamic-muted: var(--muted);
-    --dynamic-muted-foreground: var(--muted-foreground);
-    --dynamic-accent: var(--accent);
-    --dynamic-accent-foreground: var(--accent-foreground);
-    --dynamic-border: var(--border);
-    --dynamic-input: var(--input);
-    --dynamic-ring: var(--ring);
-    --dynamic-radius: var(--radius);
-    --dynamic-card-opacity: 1;
-    --dynamic-background-image: none;
   }
 
   .dark {
@@ -86,9 +64,16 @@
     @apply border-border;
   }
   body {
-    background-color: hsl(var(--dynamic-background));
-    color: hsl(var(--dynamic-foreground));
-    background-image: var(--dynamic-background-image);
-    border-radius: var(--dynamic-radius);
+    @apply bg-background text-foreground;
+    background-image: var(--background-image);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
   }
+}
+
+@layer components {
+    .bg-card {
+        background-color: hsl(var(--card) / var(--card-opacity, 1));
+    }
 }

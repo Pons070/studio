@@ -9,6 +9,7 @@ import type { Address, BrandInfo } from "@/lib/types";
 import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
+import { useBrand } from "@/store/brand";
 
 const formatAddress = (address?: Address) => {
     if (!address) return '';
@@ -16,7 +17,8 @@ const formatAddress = (address?: Address) => {
     return `${doorNumber} ${apartmentName}\n${area}, ${city}\n${state} ${pincode}`;
 };
 
-export function Footer({ brandInfo }: { brandInfo: BrandInfo | null }) {
+export function Footer() {
+  const { brandInfo, isLoading } = useBrand();
   const pathname = usePathname();
   const router = useRouter();
   const [clickCount, setClickCount] = useState(0);
@@ -44,7 +46,7 @@ export function Footer({ brandInfo }: { brandInfo: BrandInfo | null }) {
     return null;
   }
   
-  if (!brandInfo) {
+  if (isLoading || !brandInfo) {
       return (
         <footer className="bg-card border-t mt-12">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

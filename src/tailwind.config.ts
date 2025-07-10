@@ -9,6 +9,13 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       fontFamily: {
         body: ['Alegreya', 'sans-serif'],
@@ -16,31 +23,18 @@ export default {
         code: ['monospace'],
       },
       colors: {
-        background: 'hsl(var(--dynamic-background) / <alpha-value>)',
-        foreground: 'hsl(var(--dynamic-foreground) / <alpha-value>)',
-        card: {
-          DEFAULT: 'hsl(var(--dynamic-card) / <alpha-value>)',
-          foreground: 'hsl(var(--dynamic-card-foreground) / <alpha-value>)',
-        },
-        popover: {
-          DEFAULT: 'hsl(var(--dynamic-popover) / <alpha-value>)',
-          foreground: 'hsl(var(--dynamic-popover-foreground) / <alpha-value>)',
-        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: 'hsl(var(--dynamic-primary) / <alpha-value>)',
-          foreground: 'hsl(var(--dynamic-primary-foreground) / <alpha-value>)',
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--dynamic-secondary) / <alpha-value>)',
-          foreground: 'hsl(var(--dynamic-secondary-foreground) / <alpha-value>)',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--dynamic-muted) / <alpha-value>)',
-          foreground: 'hsl(var(--dynamic-muted-foreground) / <alpha-value>)',
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--dynamic-accent) / <alpha-value>)',
-          foreground: 'hsl(var(--dynamic-accent-foreground) / <alpha-value>)',
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
@@ -50,9 +44,22 @@ export default {
           DEFAULT: 'hsl(var(--success))',
           foreground: 'hsl(var(--success-foreground))',
         },
-        border: 'hsl(var(--dynamic-border) / <alpha-value>)',
-        input: 'hsl(var(--dynamic-input) / <alpha-value>)',
-        ring: 'hsl(var(--dynamic-ring) / <alpha-value>)',
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -62,9 +69,9 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--dynamic-radius)',
-        md: 'calc(var(--dynamic-radius) - 2px)',
-        sm: 'calc(var(--dynamic-radius) - 4px)',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       keyframes: {
         'accordion-down': {

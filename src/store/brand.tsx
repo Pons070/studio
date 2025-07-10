@@ -18,12 +18,13 @@ type BrandContextType = {
 
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
-export function BrandProvider({ children }: { children: ReactNode }) {
-  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function BrandProvider({ children, initialBrandInfo }: { children: ReactNode, initialBrandInfo: BrandInfo | null }) {
+  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(initialBrandInfo);
+  const [isLoading, setIsLoading] = useState(!initialBrandInfo);
   const { toast } = useToast();
 
   const fetchBrandInfo = useCallback(async () => {
+    // This function can be used to re-fetch if needed, but we rely on initial prop for first load
     setIsLoading(true);
     try {
       const response = await fetch('/api/brand');
@@ -49,8 +50,11 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [toast]);
   
   useEffect(() => {
-    fetchBrandInfo();
-  }, [fetchBrandInfo]);
+    // If no initial info is provided (e.g., error on server), try fetching on client
+    if (!initialBrandInfo) {
+      fetchBrandInfo();
+    }
+  }, [initialBrandInfo, fetchBrandInfo]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
     try {
@@ -76,6 +80,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     const success = await updateBrandInfoOnServer(newInfo);
     if (success) {
         toast({ title: "Brand Information Updated" });
+        // Trigger a hard reload to apply new styles from the server layout
+        window.location.reload();
     }
   }, [updateBrandInfoOnServer, toast]);
 

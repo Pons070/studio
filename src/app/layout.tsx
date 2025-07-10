@@ -14,6 +14,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { BrandProvider } from '@/store/brand';
 import { ReviewProvider } from '@/store/reviews';
 import { getBrandInfo } from '@/lib/brand-store';
+import type { ThemeSettings } from '@/lib/types';
+
 
 export default async function RootLayout({
   children,
@@ -28,20 +30,20 @@ export default async function RootLayout({
       <head>
         <title>{brandInfo.name} - Delicious Meals, Ordered Ahead</title>
         <meta name="description" content="Your favorite restaurant for pre-ordering delicious meals. Order online for pickup or delivery." />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href={brandInfo.logoUrl || "/favicon.ico"} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Open+Sans:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
+      <body>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-          dynamicTheme={brandInfo.theme}
+          theme={brandInfo.theme}
         >
-          <BrandProvider>
+          <BrandProvider initialBrandInfo={brandInfo}>
             <AuthProvider>
               <MenuProvider>
                 <PromotionProvider>
@@ -55,7 +57,7 @@ export default async function RootLayout({
                             <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                               {children}
                             </main>
-                            <Footer brandInfo={brandInfo} />
+                            <Footer />
                           </div>
                           <Toaster />
                         </FavoritesProvider>
