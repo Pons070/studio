@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type BrandContextType = {
   brandInfo: BrandInfo | null;
+  isLoading: boolean;
   updateBrandInfo: (newInfo: BrandInfo) => Promise<void>;
   blockCustomer: (email: string) => Promise<void>;
   unblockCustomer: (email: string) => Promise<void>;
@@ -19,26 +20,30 @@ const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
 export function BrandProvider({ children }: { children: ReactNode }) {
   const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchBrandInfo = useCallback(async () => {
-    // This provider will now only handle updates.
-    // Initial data is fetched on the server in Server Components.
-    // However, we'll fetch once here for client components that need it, like the header.
-    if (!brandInfo) {
-      try {
-        const response = await fetch('/api/brand');
-        if (!response.ok) {
-          throw new Error('Failed to fetch brand information');
-        }
-        const data = await response.json();
-        setBrandInfoState(data.brandInfo);
-      } catch (error) {
-        console.error(error);
-        toast({ title: "Error", description: "Could not load brand information.", variant: "destructive" });
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/brand');
+      if (!response.ok) {
+        throw new Error('Failed to fetch brand information');
       }
+      const data = await response.json();
+      if (data.success) {
+        setBrandInfoState(data.brandInfo);
+      } else {
+        throw new Error(data.message || 'Failed to fetch brand info');
+      }
+    } catch (error) {
+      console.error(error);
+      setBrandInfoState(null); // Set to null on error
+      toast({ title: "Error", description: "Could not load brand information.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-  }, [toast, brandInfo]);
+  }, [toast]);
 
   useEffect(() => {
     fetchBrandInfo();
@@ -154,7 +159,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [brandInfo, updateBrandInfoOnServer, toast]);
 
   return (
-    <BrandContext.Provider value={{ brandInfo, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
+    <BrandContext.Provider value={{ brandInfo, isLoading, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
       {children}
     </BrandContext.Provider>
   );

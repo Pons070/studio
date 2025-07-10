@@ -20,7 +20,7 @@ const formatAddress = (address: Address) => {
 export function Footer() {
   const pathname = usePathname();
   const router = useRouter();
-  const { brandInfo } = useBrand();
+  const { brandInfo, isLoading } = useBrand();
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -46,7 +46,7 @@ export function Footer() {
     return null;
   }
   
-  if (!brandInfo) {
+  if (isLoading) {
     return (
       <footer className="bg-card border-t mt-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -78,6 +78,10 @@ export function Footer() {
         </div>
       </footer>
     );
+  }
+
+  if (!brandInfo) {
+    return null; // Don't render footer if brand info failed to load
   }
 
   return (
