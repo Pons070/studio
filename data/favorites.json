@@ -1,2 +1,11 @@
 
-{}
+{
+  "user-alice": {
+    "itemIds": ["3", "6"],
+    "orderIds": ["ORD-001"]
+  },
+  "user-diana": {
+    "itemIds": ["5"],
+    "orderIds": []
+  }
+}
