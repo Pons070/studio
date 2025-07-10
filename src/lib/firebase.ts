@@ -58,3 +58,4 @@ async function seedDatabase() {
 seedDatabase().catch(console.error);
 
 export const firestore = db;
+

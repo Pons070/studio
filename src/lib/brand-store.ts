@@ -25,3 +25,4 @@ export async function setBrandInfo(newBrandInfo: BrandInfo): Promise<void> {
     console.error("Error setting brand info:", error);
   }
 }
+
