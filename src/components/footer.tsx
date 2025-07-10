@@ -133,7 +133,7 @@ export function Footer() {
               <span onClick={handleSecretAdminTrigger} className="cursor-pointer" suppressHydrationWarning={true}>
                 © {new Date().getFullYear()}
               </span>
-              {' '}Poiesis Technologies. All rights reserved.
+              {' '}CulinaPreOrder. All rights reserved.
             </p>
         </div>
       </div>

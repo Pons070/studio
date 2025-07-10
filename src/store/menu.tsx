@@ -21,12 +21,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const fetchMenu = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const response = await fetch('/api/menu');
       if (!response.ok) throw new Error("Failed to fetch menu");
       const data = await response.json();
-      setMenuItems(data.menuItems);
+      setMenuItems(data.menuItems || []);
     } catch (error) {
       toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
     } finally {
@@ -46,7 +46,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify(itemData),
         });
         if (!response.ok) throw new Error('Failed to add item');
-        fetchMenu();
+        await fetchMenu();
         toast({ title: "Menu Item Added", description: `${itemData.name} has been added to the menu.` });
     } catch (error) {
         toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
@@ -61,7 +61,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify(itemData),
         });
         if (!response.ok) throw new Error('Failed to update item');
-        fetchMenu();
+        await fetchMenu();
         toast({ title: "Menu Item Updated", description: `${itemData.name} has been updated.` });
     } catch (error) {
         toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
@@ -76,7 +76,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ id: itemId }),
         });
         if (!response.ok) throw new Error('Failed to delete item');
-        fetchMenu();
+        await fetchMenu();
         toast({ title: "Menu Item Deleted", description: `The item has been removed from the menu.` });
     } catch (error) {
         toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
@@ -97,4 +97,3 @@ export function useMenu() {
   }
   return context;
 }
-

@@ -43,8 +43,8 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <BrandProvider>
-            <AuthProvider>
+          <AuthProvider>
+            <BrandProvider>
               <MenuProvider>
                 <PromotionProvider>
                   <OrderProvider>
@@ -66,8 +66,8 @@ export default function RootLayout({
                   </OrderProvider>
                 </PromotionProvider>
               </MenuProvider>
-            </AuthProvider>
-          </BrandProvider>
+            </BrandProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

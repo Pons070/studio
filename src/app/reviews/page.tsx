@@ -1,12 +1,11 @@
 
-"use client";
-
-import { useReviews } from '@/store/reviews';
-import { useBrand } from '@/store/brand';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Star, Quote } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
+import { getReviews } from '@/lib/review-store';
+import { getBrandInfo } from '@/lib/brand-store';
+import type { Review, BrandInfo } from '@/lib/types';
+
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -24,42 +23,13 @@ function StarDisplay({ rating }: { rating: number }) {
   );
 }
 
-export default function ReviewsPage() {
-  const { reviews, isLoading: areReviewsLoading } = useReviews();
-  const { brandInfo, isLoading: isBrandLoading } = useBrand();
-  
-  const isLoading = areReviewsLoading || isBrandLoading;
+export const dynamic = 'force-dynamic';
+
+async function ReviewsPage() {
+  const reviews: Review[] = await getReviews();
+  const brandInfo: BrandInfo | null = await getBrandInfo();
   
   const publishedReviews = reviews.filter(r => r.isPublished);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-12">
-        <div className="text-center">
-          <Skeleton className="h-12 w-3/4 mx-auto mb-2" />
-          <Skeleton className="h-6 w-1/2 mx-auto" />
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="flex flex-col justify-between">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <Skeleton className="h-6 w-24" />
-                  <div className="flex items-center">
-                    <Skeleton className="h-5 w-24" />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   if (!brandInfo) {
     return (
@@ -113,3 +83,5 @@ export default function ReviewsPage() {
     </div>
   );
 }
+
+export default ReviewsPage;

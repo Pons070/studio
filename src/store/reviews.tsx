@@ -22,7 +22,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
-  const { addReviewToOrder: linkReviewToOrder, removeReviewIdFromOrder } = useOrders();
+  const { addReviewToOrder: linkReviewToOrder } = useOrders();
   const { toast } = useToast();
 
   const fetchReviews = useCallback(async () => {
@@ -59,7 +59,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
       const { review: newReview } = await response.json();
       
       linkReviewToOrder(orderId, newReview.id);
-      fetchReviews();
+      await fetchReviews();
       
       toast({
         title: "Review Submitted!",
@@ -81,7 +81,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...reviewToUpdate, adminReply: reply }),
       });
-      fetchReviews();
+      await fetchReviews();
       toast({ title: "Reply Sent" });
     } catch (error) {
        toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
@@ -98,7 +98,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...reviewToUpdate, isPublished: !reviewToUpdate.isPublished }),
       });
-      fetchReviews();
+      await fetchReviews();
       toast({ title: "Review Updated" });
     } catch (error) {
        toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
@@ -112,7 +112,7 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: reviewId, orderId }),
       });
-      fetchReviews();
+      await fetchReviews();
       toast({ title: "Review Deleted", variant: "destructive" });
     } catch (error) {
        toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
@@ -133,4 +133,3 @@ export function useReviews() {
   }
   return context;
 }
-
