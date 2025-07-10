@@ -15,6 +15,7 @@ const Card = React.forwardRef<
     style={
       {
         '--tw-bg-opacity': 'var(--dynamic-card-opacity, 1)',
+        backgroundColor: 'hsl(var(--dynamic-card) / var(--dynamic-card-opacity, 1))'
       } as React.CSSProperties
     }
     {...props}

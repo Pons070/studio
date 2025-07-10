@@ -16,31 +16,31 @@ export default {
         code: ['monospace'],
       },
       colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        background: 'hsl(var(--dynamic-background) / <alpha-value>)',
+        foreground: 'hsl(var(--dynamic-foreground) / <alpha-value>)',
         card: {
-          DEFAULT: 'hsl(var(--card) / var(--card-alpha, 1))',
-          foreground: 'hsl(var(--card-foreground))',
+          DEFAULT: 'hsl(var(--dynamic-card) / <alpha-value>)',
+          foreground: 'hsl(var(--dynamic-card-foreground) / <alpha-value>)',
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+          DEFAULT: 'hsl(var(--dynamic-popover) / <alpha-value>)',
+          foreground: 'hsl(var(--dynamic-popover-foreground) / <alpha-value>)',
         },
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: 'hsl(var(--dynamic-primary) / <alpha-value>)',
+          foreground: 'hsl(var(--dynamic-primary-foreground) / <alpha-value>)',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: 'hsl(var(--dynamic-secondary) / <alpha-value>)',
+          foreground: 'hsl(var(--dynamic-secondary-foreground) / <alpha-value>)',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: 'hsl(var(--dynamic-muted) / <alpha-value>)',
+          foreground: 'hsl(var(--dynamic-muted-foreground) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: 'hsl(var(--dynamic-accent) / <alpha-value>)',
+          foreground: 'hsl(var(--dynamic-accent-foreground) / <alpha-value>)',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
@@ -50,9 +50,9 @@ export default {
           DEFAULT: 'hsl(var(--success))',
           foreground: 'hsl(var(--success-foreground))',
         },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        border: 'hsl(var(--dynamic-border) / <alpha-value>)',
+        input: 'hsl(var(--dynamic-input) / <alpha-value>)',
+        ring: 'hsl(var(--dynamic-ring) / <alpha-value>)',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -62,9 +62,9 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        lg: 'var(--dynamic-radius)',
+        md: 'calc(var(--dynamic-radius) - 2px)',
+        sm: 'calc(var(--dynamic-radius) - 4px)',
       },
       keyframes: {
         'accordion-down': {
