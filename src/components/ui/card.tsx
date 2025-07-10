@@ -9,9 +9,14 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "rounded-lg border bg-card/var(--card-alpha, 1) text-card-foreground shadow-sm",
       className
     )}
+    style={
+      {
+        '--card-alpha': 'var(--dynamic-card-opacity, 1)',
+      } as React.CSSProperties
+    }
     {...props}
   />
 ))

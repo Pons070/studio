@@ -10,32 +10,26 @@ type CustomThemeProviderProps = ThemeProviderProps & {
   dynamicTheme?: ThemeSettings;
 };
 
-
 export function ThemeProvider({ children, dynamicTheme, ...props }: CustomThemeProviderProps) {
     React.useEffect(() => {
     if (dynamicTheme) {
-      const theme = dynamicTheme;
-      const themeStyle = `
-        :root {
-          ${theme.primaryColor ? `--primary: ${theme.primaryColor};` : ''}
-          ${theme.primaryForegroundColor ? `--primary-foreground: ${theme.primaryForegroundColor};` : ''}
-          ${theme.backgroundColor ? `--background: ${theme.backgroundColor};` : ''}
-          ${theme.accentColor ? `--accent: ${theme.accentColor};` : ''}
-          ${theme.accentForegroundColor ? `--accent-foreground: ${theme.accentForegroundColor};` : ''}
-          ${theme.cardColor ? `--card: hsl(${theme.cardColor});` : ''}
-          ${theme.cardOpacity ? `--card-alpha: ${theme.cardOpacity};` : ''}
-          ${theme.borderRadius ? `--radius: ${theme.borderRadius}rem;` : ''}
-          ${theme.backgroundImageUrl ? `--background-image: url(${theme.backgroundImageUrl});` : '--background-image: none;'}
-        }
-      `;
+      const root = document.documentElement;
+      root.classList.add('theme-dynamic');
       
-      let styleElement = document.getElementById('dynamic-theme-styles');
-      if (!styleElement) {
-        styleElement = document.createElement('style');
-        styleElement.id = 'dynamic-theme-styles';
-        document.head.appendChild(styleElement);
-      }
-      styleElement.innerHTML = themeStyle;
+      const theme = dynamicTheme;
+      root.style.setProperty('--dynamic-primary', theme.primaryColor || '');
+      root.style.setProperty('--dynamic-primary-foreground', theme.primaryForegroundColor || '');
+      root.style.setProperty('--dynamic-background', theme.backgroundColor || '');
+      root.style.setProperty('--dynamic-accent', theme.accentColor || '');
+      root.style.setProperty('--dynamic-accent-foreground', theme.accentForegroundColor || '');
+      root.style.setProperty('--dynamic-card', `hsl(${theme.cardColor || '0 0% 100%'})`);
+      root.style.setProperty('--dynamic-radius', `${theme.borderRadius || 0.5}rem`);
+      root.style.setProperty('--dynamic-background-image', theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : 'none');
+      
+      // We set card with opacity directly on the element in globals.css now.
+      // Card Alpha is handled by the `bg-card` class with opacity modifier.
+    } else {
+        document.documentElement.classList.remove('theme-dynamic');
     }
   }, [dynamicTheme]);
 
