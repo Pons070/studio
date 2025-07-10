@@ -9,6 +9,7 @@ import { useAuth } from './auth';
 import { useBrand } from './brand';
 import { format } from 'date-fns';
 import { sendOrderNotification } from '@/ai/flows/order-notification-flow';
+import { addOrderToStore, getOrders, updateOrderInStore } from '@/lib/order-store';
 
 type OrderContextType = {
   orders: Order[];
@@ -23,49 +24,39 @@ type OrderContextType = {
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export function OrderProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
   const { currentUser } = useAuth();
   const { brandInfo } = useBrand();
+  const { toast } = useToast();
   const pathname = usePathname();
   const isAdminPath = pathname.startsWith('/admin');
 
-  useEffect(() => {
-    async function fetchOrders() {
-      if (!currentUser && !isAdminPath) {
-        setOrders([]);
-        setIsLoading(false);
-        return;
-      }
-      setIsLoading(true);
-      
-      const endpoint = isAdminPath ? '/api/admin/orders' : `/api/orders?userId=${currentUser?.id}`;
-      
-      try {
-        // Admins need a current user to be logged in, even if the API doesn't use the ID.
-        // For customer paths, we definitely need a user.
-        if (!currentUser) {
-            setIsLoading(false);
-            return;
-        }
+  // Load orders directly and filter based on user
+  const allOrders = getOrders();
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (isAdminPath) return allOrders;
+    if (currentUser) return allOrders.filter(o => o.customerId === currentUser.id);
+    return [];
+  });
 
-        const response = await fetch(endpoint);
-        const data = await response.json();
-        if (data.success) {
-          setOrders(data.orders);
-        } else {
-          toast({ title: "Error", description: "Could not fetch orders.", variant: "destructive" });
-        }
-      } catch (error) {
-        console.error("Failed to fetch orders:", error);
-        toast({ title: "Network Error", description: "Failed to connect to the server for orders.", variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
+  useEffect(() => {
+    if (isAdminPath) {
+      setOrders(getOrders());
+    } else if (currentUser) {
+      setOrders(getOrders().filter(o => o.customerId === currentUser.id));
+    } else {
+      setOrders([]);
     }
-    fetchOrders();
-  }, [currentUser, toast, isAdminPath]);
+  }, [currentUser, isAdminPath]);
+
+  const refreshOrders = useCallback(() => {
+    if (isAdminPath) {
+      setOrders(getOrders());
+    } else if (currentUser) {
+      setOrders(getOrders().filter(o => o.customerId === currentUser.id));
+    } else {
+      setOrders([]);
+    }
+  }, [isAdminPath, currentUser]);
 
   const addOrder = useCallback(async (items: CartItem[], total: number, pickupDate: Date, pickupTime: string, deliveryAddress: Address, cookingNotes?: string, appliedCoupon?: string, discountAmount?: number, deliveryFee?: number) => {
     if (!currentUser) {
@@ -73,30 +64,50 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       return undefined;
     }
     
-    const orderInput = {
-        customerId: currentUser.id, customerName: currentUser.name, customerEmail: currentUser.email,
-        address: deliveryAddress, pickupDate: format(pickupDate, 'yyyy-MM-dd'), pickupTime, total, items,
-        cookingNotes: cookingNotes || undefined, updateRequests: [], appliedCoupon, discountAmount, deliveryFee,
+    const newOrder: Order = {
+        id: `ORD-${Date.now()}`,
+        customerId: currentUser.id,
+        customerName: currentUser.name,
+        address: deliveryAddress,
+        orderDate: format(new Date(), 'yyyy-MM-dd'),
+        pickupDate: format(pickupDate, 'yyyy-MM-dd'),
+        pickupTime,
+        status: 'Pending',
+        total,
+        items,
+        cookingNotes: cookingNotes || undefined,
+        updateRequests: [],
+        appliedCoupon,
+        discountAmount,
+        deliveryFee,
     };
 
-    try {
-        const response = await fetch('/api/create-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderInput),
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.message);
+    addOrderToStore(newOrder);
+    refreshOrders();
 
-        const newOrder: Order = result.order;
-        setOrders(prev => [newOrder, ...prev]);
-        toast({ title: "Pre-Order Placed!", variant: "success" });
-        return newOrder;
-    } catch (error) {
-        toast({ title: 'Order Failed', description: (error as Error).message, variant: 'destructive' });
-        return undefined;
-    }
-  }, [toast, currentUser]);
+    toast({ title: "Pre-Order Placed!", variant: "success" });
+
+    // Send notifications without waiting for them to complete
+    Promise.all([
+      sendOrderNotification({
+        order: newOrder,
+        notificationType: 'customerConfirmation',
+        customerEmail: currentUser.email,
+        adminEmail: brandInfo?.adminEmail || 'admin@example.com',
+      }),
+      sendOrderNotification({
+        order: newOrder,
+        notificationType: 'adminNotification',
+        customerEmail: currentUser.email,
+        adminEmail: brandInfo?.adminEmail || 'admin@example.com',
+      }),
+    ]).catch(error => {
+      // Log errors but don't block the response to the user
+      console.error("Failed to send one or more order notifications:", error);
+    });
+
+    return newOrder;
+  }, [toast, currentUser, brandInfo, refreshOrders]);
 
   const updateOrderStatus = useCallback(async (orderId: string, status: Order['status'], cancelledBy?: 'admin' | 'customer', reason?: string, customerEmail?: string, cancellationAction?: 'refund' | 'donate') => {
     const updates: Partial<Order> = { status };
@@ -107,64 +118,34 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         updates.cancellationAction = cancellationAction;
     }
     
-    try {
-        const response = await fetch('/api/orders', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, ...updates }),
+    const updatedOrder = updateOrderInStore(orderId, updates);
+    refreshOrders();
+    
+    if (updatedOrder && status === 'Cancelled' && customerEmail && brandInfo) {
+        await sendOrderNotification({
+            order: updatedOrder, notificationType: 'customerCancellation',
+            customerEmail: customerEmail, adminEmail: brandInfo.adminEmail
         });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.message);
-
-        const updatedOrder: Order = result.order;
-        setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
-        
-        if (status === 'Cancelled' && customerEmail && brandInfo) {
-            await sendOrderNotification({
-                order: updatedOrder, notificationType: 'customerCancellation',
-                customerEmail: customerEmail, adminEmail: brandInfo.adminEmail
-            });
-        }
-        toast({ title: "Order Status Updated" });
-    } catch (error) {
-        toast({ title: 'Update Failed', description: (error as Error).message, variant: 'destructive' });
     }
-}, [toast, brandInfo]);
+    toast({ title: "Order Status Updated" });
+}, [toast, brandInfo, refreshOrders]);
 
-  const addReviewToOrder = useCallback(async (orderId: string, reviewId: string) => {
-    try {
-        const response = await fetch('/api/orders', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, reviewId }),
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.message);
-        
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, reviewId } : o));
-    } catch (error) {
-        toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
+  const addReviewToOrder = useCallback((orderId: string, reviewId: string) => {
+    updateOrderInStore(orderId, { reviewId });
+    refreshOrders();
+  }, [refreshOrders]);
+
+  const removeReviewIdFromOrder = useCallback((orderId: string) => {
+    const currentOrder = orders.find(o => o.id === orderId);
+    if(currentOrder) {
+      const { reviewId, ...rest } = currentOrder;
+      updateOrderInStore(orderId, rest);
+      refreshOrders();
     }
-  }, [toast]);
+  }, [orders, refreshOrders]);
 
-  const removeReviewIdFromOrder = useCallback(async (orderId: string) => {
-     try {
-        const response = await fetch('/api/orders', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, reviewId: null }), // Explicitly set to null
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.message || 'Failed to unlink review');
-        
-        setOrders(prev => prev.map(o => (o.id === orderId ? result.order : o)));
-    } catch (error) {
-        console.error("Failed to unlink review from order:", (error as Error).message);
-    }
-  }, []);
-
-  const addUpdateRequest = useCallback(async (orderId: string, message: string, from: 'customer' | 'admin') => {
-    const orderToUpdate = orders.find(o => o.id === orderId);
+  const addUpdateRequest = useCallback((orderId: string, message: string, from: 'customer' | 'admin') => {
+    const orderToUpdate = getOrders().find(o => o.id === orderId);
     if (!orderToUpdate || !message.trim()) return;
 
     const newRequest: UpdateRequest = {
@@ -172,24 +153,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
     const updatedRequests = [...(orderToUpdate.updateRequests || []), newRequest];
 
-    try {
-        const response = await fetch('/api/orders', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, updateRequests: updatedRequests }),
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.message);
-
-        setOrders(prev => prev.map(o => (o.id === orderId ? result.order : o)));
-        toast({ title: "Message Sent!" });
-    } catch (error) {
-        toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
-    }
-  }, [orders, toast]);
+    updateOrderInStore(orderId, { updateRequests: updatedRequests });
+    refreshOrders();
+    toast({ title: "Message Sent!" });
+  }, [refreshOrders, toast]);
 
   return (
-    <OrderContext.Provider value={{ orders, isLoading, addOrder, updateOrderStatus, addReviewToOrder, removeReviewIdFromOrder, addUpdateRequest }}>
+    <OrderContext.Provider value={{ orders, isLoading: false, addOrder, updateOrderStatus, addReviewToOrder, removeReviewIdFromOrder, addUpdateRequest }}>
       {children}
     </OrderContext.Provider>
   );

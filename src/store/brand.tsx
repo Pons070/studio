@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { BrandInfo, DeliveryArea } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+import { getBrandInfo, setBrandInfo } from '@/lib/brand-store';
 
 type BrandContextType = {
   brandInfo: BrandInfo | null;
@@ -19,31 +20,8 @@ type BrandContextType = {
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
 export function BrandProvider({ children }: { children: ReactNode }) {
-  const [brandInfo, setBrandInfo] = useState<BrandInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(getBrandInfo());
   const { toast } = useToast();
-
-  const fetchBrandInfo = useCallback(async () => {
-    setIsLoading(true);
-    try {
-        const response = await fetch('/api/brand');
-        const data = await response.json();
-        if (data.success) {
-            setBrandInfo(data.brandInfo);
-        } else {
-            toast({ title: 'Error', description: 'Could not fetch brand information.', variant: 'destructive' });
-        }
-    } catch (error) {
-        console.error("Failed to fetch brand info", error);
-        toast({ title: 'Network Error', description: 'Could not connect to the server.', variant: 'destructive' });
-    } finally {
-        setIsLoading(false);
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchBrandInfo();
-  }, [fetchBrandInfo]);
 
   useEffect(() => {
     // This effect synchronizes the brand theme with the CSS variables by injecting a <style> tag.
@@ -90,18 +68,9 @@ export function BrandProvider({ children }: { children: ReactNode }) {
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
     try {
-        const response = await fetch('/api/brand', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedInfo)
-        });
-        const data = await response.json();
-        if (data.success) {
-            setBrandInfo(data.brandInfo);
-            return true;
-        } else {
-            throw new Error(data.message || 'Failed to update brand info.');
-        }
+        setBrandInfo(updatedInfo);
+        setBrandInfoState(updatedInfo);
+        return true;
     } catch (error) {
         console.error("Failed to update brand info on server", error);
         toast({ title: 'Update Failed', description: (error as Error).message, variant: 'destructive' });
@@ -166,7 +135,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [brandInfo, updateBrandInfoOnServer, toast]);
 
   return (
-    <BrandContext.Provider value={{ brandInfo: brandInfo!, isLoading, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
+    <BrandContext.Provider value={{ brandInfo, isLoading: false, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
       {children}
     </BrandContext.Provider>
   );
