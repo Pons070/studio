@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge, badgeVariants } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent, Gift, Truck, Eye, Phone } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, PlusCircle, Trash2, Edit, Star, MessageSquare, Building, AlertTriangle, Search, Megaphone, Calendar as CalendarIcon, MapPin, Send, Palette, Check, Users, Shield, ClipboardList, Utensils, LogOut, Home, BarChart2, DollarSign, Package, Lightbulb, CheckCircle, TrendingUp, List, Terminal, Activity, FileText, Ban, Printer, Download, TicketPercent, Gift, Truck, Eye, Phone, FileJson } from 'lucide-react';
 import type { Order, MenuItem, Review, BrandInfo, Address, UpdateRequest, Promotion, ThemeSettings, User, DeliveryArea } from '@/lib/types';
 import {
   Dialog,
@@ -3424,6 +3424,73 @@ function AnalyticsAndReports() {
   );
 }
 
+function DataFileViewer() {
+    const [activeTab, setActiveTab] = useState('brand.json');
+    const [fileContent, setFileContent] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    const fileNames = ['brand.json', 'menu.json', 'orders.json', 'users.json', 'reviews.json', 'promotions.json', 'favorites.json'];
+
+    useEffect(() => {
+        const fetchFileContent = async () => {
+            setIsLoading(true);
+            setError('');
+            try {
+                const response = await fetch(`/api/admin/data-files?fileName=${activeTab}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ${activeTab}`);
+                }
+                const data = await response.json();
+                if (data.success) {
+                    setFileContent(JSON.stringify(data.content, null, 2));
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (err) {
+                setError((err as Error).message);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchFileContent();
+    }, [activeTab]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline">Data File Viewer</CardTitle>
+                <CardDescription>View the raw JSON data that powers your application.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList>
+                        {fileNames.map(name => (
+                            <TabsTrigger key={name} value={name}>{name}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <TabsContent value={activeTab} className="mt-4">
+                        <Card className="bg-muted font-code text-sm">
+                            <CardContent className="p-4">
+                                {isLoading ? (
+                                    <Skeleton className="h-64 w-full" />
+                                ) : error ? (
+                                    <p className="text-destructive">{error}</p>
+                                ) : (
+                                    <ScrollArea className="h-96">
+                                      <pre><code>{fileContent}</code></pre>
+                                    </ScrollArea>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+        </Card>
+    );
+}
+
 
 export default function AdminDashboardPage() {
   const [activeView, setActiveView] = useState('dashboard');
@@ -3508,6 +3575,7 @@ export default function AdminDashboardPage() {
     { id: 'brand', label: 'Manage Brand', description: "Customize your store's appearance.", icon: Palette },
     { id: 'customers', label: 'Manage Customers', description: "View and manage user accounts.", icon: Users },
     { id: 'analytics', label: 'Analytics', description: "Gain insights into your business performance.", icon: BarChart2 },
+    { id: 'data', label: 'Data Viewer', description: "Inspect the raw JSON data files.", icon: FileJson },
   ];
 
   const renderContent = () => {
@@ -3520,6 +3588,7 @@ export default function AdminDashboardPage() {
       case 'brand': return <BrandManagement />;
       case 'customers': return <CustomerManagement />;
       case 'analytics': return <AnalyticsAndReports />;
+      case 'data': return <DataFileViewer />;
       default: return null;
     }
   };
