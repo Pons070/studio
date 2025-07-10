@@ -9,19 +9,14 @@ import { FloatingRecommendButton } from '@/components/floating-recommend-button'
 import { getMenuItems } from '@/lib/menu-store';
 import { getBrandInfo } from '@/lib/brand-store';
 import { getReviews } from '@/lib/review-store';
-import type { BrandInfo, MenuItem, Review } from '@/lib/types';
 import { HomePageClient } from '@/components/home-page-client';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HomePage() {
-  const brandInfo: BrandInfo | null = await getBrandInfo();
-  const menuItems: MenuItem[] = await getMenuItems();
-  const reviews: Review[] = await getReviews();
-
-  if (!brandInfo) {
-    return <div className="text-center py-10">Could not load restaurant information. Please try again later.</div>;
-  }
+export default function HomePage() {
+  const brandInfo = getBrandInfo();
+  const menuItems = getMenuItems();
+  const reviews = getReviews();
   
   const featuredItems = menuItems.filter(item => item.isFeatured).slice(0, 3);
   const featuredReviews = reviews.filter(r => r.isPublished).slice(0, 6);

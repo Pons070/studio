@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { BrandInfo, DeliveryArea } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+import { getBrandInfo as getBrandInfoInitial } from '@/lib/brand-store';
 
 type BrandContextType = {
   brandInfo: BrandInfo | null;
@@ -19,73 +20,12 @@ type BrandContextType = {
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
 export function BrandProvider({ children }: { children: ReactNode }) {
-  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(() => getBrandInfoInitial());
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const fetchBrandInfo = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/brand');
-      if (!response.ok) {
-        throw new Error('Failed to fetch brand information');
-      }
-      const data = await response.json();
-      if (data.success) {
-        setBrandInfoState(data.brandInfo);
-      } else {
-        throw new Error(data.message || 'Failed to fetch brand info');
-      }
-    } catch (error) {
-      console.error(error);
-      setBrandInfoState(null); // Set to null on error
-      toast({ title: "Error", description: "Could not load brand information.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchBrandInfo();
-  }, [fetchBrandInfo]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const styleId = 'dynamic-theme-styles';
-    let styleTag = document.getElementById(styleId) as HTMLStyleElement | null;
-
-    if (!styleTag) {
-      styleTag = document.createElement('style');
-      styleTag.id = styleId;
-      document.head.appendChild(styleTag);
-    }
-    
-    const theme = brandInfo?.theme;
-
-    if (!theme) {
-        styleTag.innerHTML = '';
-        return;
-    }
-
-    const css = `
-      :root {
-        ${theme.primaryColor ? `--primary: ${theme.primaryColor};` : ''}
-        ${theme.backgroundColor ? `--background: ${theme.backgroundColor};` : ''}
-        ${theme.accentColor ? `--accent: ${theme.accentColor};` : ''}
-        ${theme.cardColor ? `--card: ${theme.cardColor};` : ''}
-        ${theme.cardOpacity !== undefined ? `--card-alpha: ${theme.cardOpacity};` : ''}
-        ${theme.borderRadius !== undefined ? `--radius: ${theme.borderRadius}rem;` : ''}
-        ${theme.backgroundImageUrl ? `--background-image: url(${theme.backgroundImageUrl});` : '--background-image: none;'}
-      }
-    `;
-    styleTag.innerHTML = css;
-    
-  }, [brandInfo?.theme]);
-
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
+    setIsLoading(true);
     try {
         const response = await fetch('/api/brand', {
             method: 'PUT',
@@ -94,10 +34,12 @@ export function BrandProvider({ children }: { children: ReactNode }) {
         });
         if (!response.ok) throw new Error('Failed to update brand info on server');
         setBrandInfoState(updatedInfo);
+        setIsLoading(false);
         return true;
     } catch (error) {
         console.error("Failed to update brand info on server", error);
         toast({ title: 'Update Failed', description: (error as Error).message, variant: 'destructive' });
+        setIsLoading(false);
         return false;
     }
   }, [toast]);

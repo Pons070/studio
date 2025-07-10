@@ -2,20 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Quote, Building, Phone } from 'lucide-react';
 import { getBrandInfo } from '@/lib/brand-store';
-import type { BrandInfo } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-async function AboutPage() {
-  const brandInfo: BrandInfo | null = await getBrandInfo();
-
-  if (!brandInfo) {
-    return (
-        <div className="text-center py-10">
-            <p className="text-muted-foreground">Could not load brand information.</p>
-        </div>
-    );
-  }
+export default function AboutPage() {
+  const brandInfo = getBrandInfo();
 
   return (
     <div className="space-y-12">
@@ -77,5 +68,3 @@ async function AboutPage() {
     </div>
   );
 }
-
-export default AboutPage;

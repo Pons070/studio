@@ -4,12 +4,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Utensils, Instagram, Youtube } from "lucide-react";
-import { useBrand } from "@/store/brand";
 import Image from "next/image";
 import type { Address } from "@/lib/types";
 import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { getBrandInfo } from "@/lib/brand-store";
 
 const formatAddress = (address: Address) => {
     if (!address) return '';
@@ -20,7 +19,7 @@ const formatAddress = (address: Address) => {
 export function Footer() {
   const pathname = usePathname();
   const router = useRouter();
-  const { brandInfo, isLoading } = useBrand();
+  const brandInfo = getBrandInfo();
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -44,44 +43,6 @@ export function Footer() {
 
   if (pathname.startsWith('/admin')) {
     return null;
-  }
-  
-  if (isLoading) {
-    return (
-      <footer className="bg-card border-t mt-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="flex flex-col items-center md:items-start md:col-span-1">
-                 <Skeleton className="h-8 w-48" />
-              </div>
-              <div className="space-y-2">
-                 <Skeleton className="h-5 w-20" />
-                 <Skeleton className="h-4 w-full" />
-                 <Skeleton className="h-4 w-3/4" />
-              </div>
-               <div className="space-y-2">
-                 <Skeleton className="h-5 w-20" />
-                 <Skeleton className="h-4 w-24" />
-                 <Skeleton className="h-4 w-20" />
-              </div>
-               <div className="space-y-2 text-center md:text-right">
-                 <Skeleton className="h-5 w-24 ml-auto" />
-                 <div className="flex gap-4 justify-center md:justify-end">
-                    <Skeleton className="h-5 w-5" />
-                    <Skeleton className="h-5 w-5" />
-                 </div>
-              </div>
-            </div>
-             <div className="mt-8 pt-6 border-t text-center">
-                <Skeleton className="h-4 w-64 mx-auto" />
-             </div>
-        </div>
-      </footer>
-    );
-  }
-
-  if (!brandInfo) {
-    return null; // Don't render footer if brand info failed to load
   }
 
   return (

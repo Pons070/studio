@@ -4,9 +4,6 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMenu } from "@/store/menu";
-import { useCart } from "@/store/cart";
-import { useBrand } from "@/store/brand";
 import { PlusCircle, Utensils, Soup, Cookie, GlassWater, Star, Search } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +12,9 @@ import { useAuth } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { FloatingCheckoutButton } from '@/components/floating-checkout-button';
+import { useMenu } from '@/store/menu';
+import { useBrand } from '@/store/brand';
+import { useCart } from '@/store/cart';
 import { Skeleton } from "@/components/ui/skeleton";
 
 const categoryIcons = {
@@ -56,7 +56,7 @@ export default function MenuPage() {
 
         {categories.map((category) => (
           <section key={category}>
-            <Skeleton className="h-12 w-64 mb-6" />
+            <h2 className="text-3xl font-headline font-semibold mb-6 flex items-center p-3 rounded-lg"><Skeleton className="h-8 w-48" /></h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
                 <Card key={i} className="flex flex-col">
@@ -78,14 +78,6 @@ export default function MenuPage() {
           </section>
         ))}
       </div>
-    );
-  }
-
-  if (!brandInfo) {
-    return (
-        <div className="text-center py-10">
-            <p className="text-muted-foreground">Could not load restaurant information.</p>
-        </div>
     );
   }
 

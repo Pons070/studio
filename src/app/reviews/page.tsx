@@ -4,8 +4,7 @@ import { Star, Quote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getReviews } from '@/lib/review-store';
 import { getBrandInfo } from '@/lib/brand-store';
-import type { Review, BrandInfo } from '@/lib/types';
-
+import type { Review } from '@/lib/types';
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -25,19 +24,11 @@ function StarDisplay({ rating }: { rating: number }) {
 
 export const dynamic = 'force-dynamic';
 
-async function ReviewsPage() {
-  const reviews: Review[] = await getReviews();
-  const brandInfo: BrandInfo | null = await getBrandInfo();
+export default function ReviewsPage() {
+  const reviews = getReviews();
+  const brandInfo = getBrandInfo();
   
   const publishedReviews = reviews.filter(r => r.isPublished);
-
-  if (!brandInfo) {
-    return (
-        <div className="text-center py-10">
-            <p className="text-muted-foreground">Could not load brand information.</p>
-        </div>
-    );
-  }
 
   return (
     <div className="space-y-12">
@@ -83,5 +74,3 @@ async function ReviewsPage() {
     </div>
   );
 }
-
-export default ReviewsPage;
