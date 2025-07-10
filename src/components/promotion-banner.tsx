@@ -72,7 +72,7 @@ export function PromotionBanner() {
   );
 
   return (
-    <div className="bg-primary text-primary-foreground">
+    <div className="bg-accent text-accent-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative flex h-10 items-center justify-between">
                 <div className="flex flex-1 items-center gap-4 overflow-hidden">
@@ -84,7 +84,7 @@ export function PromotionBanner() {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 shrink-0 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10"
+                    className="h-7 w-7 shrink-0 text-accent-foreground/80 hover:text-accent-foreground hover:bg-white/10"
                     onClick={() => setIsVisible(false)}
                 >
                     <X className="h-4 w-4" />

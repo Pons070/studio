@@ -5,10 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Utensils, Instagram, Youtube } from "lucide-react";
 import Image from "next/image";
-import type { Address } from "@/lib/types";
+import type { Address, BrandInfo } from "@/lib/types";
 import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { useBrand } from "@/store/brand";
 import { Skeleton } from "./ui/skeleton";
 
 const formatAddress = (address?: Address) => {
@@ -17,10 +16,9 @@ const formatAddress = (address?: Address) => {
     return `${doorNumber} ${apartmentName}\n${area}, ${city}\n${state} ${pincode}`;
 };
 
-export function Footer() {
+export function Footer({ brandInfo }: { brandInfo: BrandInfo | null }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { brandInfo, isLoading } = useBrand();
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -46,7 +44,7 @@ export function Footer() {
     return null;
   }
   
-  if (isLoading || !brandInfo) {
+  if (!brandInfo) {
       return (
         <footer className="bg-card border-t mt-12">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -73,18 +71,18 @@ export function Footer() {
               ) : (
                 <Utensils className="h-6 w-6 text-primary" />
               )}
-              <span className="text-lg font-headline font-bold text-foreground">{brandInfo.name}</span>
+              <span className="text-lg font-headline font-bold text-card-foreground">{brandInfo.name}</span>
             </Link>
           </div>
 
           <div className="text-muted-foreground text-sm space-y-2">
-             <h4 className="font-semibold text-foreground mb-2">Contact</h4>
+             <h4 className="font-semibold text-card-foreground mb-2">Contact</h4>
              <p className="whitespace-pre-line">{formatAddress(brandInfo.address)}</p>
              <p>{brandInfo.phone}</p>
           </div>
           
           <div className="text-muted-foreground text-sm space-y-2">
-             <h4 className="font-semibold text-foreground mb-2">Explore</h4>
+             <h4 className="font-semibold text-card-foreground mb-2">Explore</h4>
              <ul className="space-y-1">
                 <li><Link href="/about" className="hover:text-primary hover:underline">About Us</Link></li>
                 <li><Link href="/menu" className="hover:text-primary hover:underline">Menu</Link></li>
@@ -94,7 +92,7 @@ export function Footer() {
           </div>
 
           <div className="text-muted-foreground text-sm space-y-2 text-center md:text-right">
-             <h4 className="font-semibold text-foreground mb-2">Follow Us</h4>
+             <h4 className="font-semibold text-card-foreground mb-2">Follow Us</h4>
             <div className="flex gap-4 justify-center md:justify-end">
               {brandInfo.instagramUrl && (
                 <Link href={brandInfo.instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:text-primary">

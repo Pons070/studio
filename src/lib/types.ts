@@ -97,8 +97,10 @@ export type Review = {
 
 export type ThemeSettings = {
   primaryColor: string;
+  primaryForegroundColor?: string;
   backgroundColor: string;
   accentColor: string;
+  accentForegroundColor?: string;
   cardColor: string;
   cardOpacity: number;
   borderRadius: number;
@@ -122,7 +124,7 @@ export type BrandInfo = {
   youtubeUrl?: string;
   instagramUrl?: string;
   allowOrderUpdates?: boolean;
-  theme?: ThemeSettings;
+  theme: ThemeSettings;
   blockedCustomerEmails?: string[];
   deliveryAreas?: DeliveryArea[];
 };
@@ -141,4 +143,3 @@ export type Promotion = {
   endDate?: string;
   activeDays?: number[]; // 0 = Sun, 1 = Mon, ..., 6 = Sat
 };
-
