@@ -5,10 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Utensils, Instagram, Youtube } from "lucide-react";
 import Image from "next/image";
-import type { Address } from "@/lib/types";
+import type { Address, BrandInfo } from "@/lib/types";
 import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { getBrandInfo } from "@/lib/brand-store";
 
 const formatAddress = (address: Address) => {
     if (!address) return '';
@@ -16,10 +15,9 @@ const formatAddress = (address: Address) => {
     return `${doorNumber} ${apartmentName}\n${area}, ${city}\n${state} ${pincode}`;
 };
 
-export function Footer() {
+export function Footer({ brandInfo }: { brandInfo: BrandInfo }) {
   const pathname = usePathname();
   const router = useRouter();
-  const brandInfo = getBrandInfo();
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 

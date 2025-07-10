@@ -21,16 +21,16 @@ import { useCart } from '@/store/cart';
 import { Badge } from './ui/badge';
 import { AnimatedUtensils } from './animated-utensils';
 import { ThemeToggle } from './theme-toggle';
-import { getBrandInfo } from '@/lib/brand-store';
+import { useBrand } from '@/store/brand';
 
 export function Header() {
   const pathname = usePathname();
-  const brandInfo = getBrandInfo();
+  const { brandInfo } = useBrand();
   const { isAuthenticated, currentUser, logout } = useAuth();
   const { items } = useCart();
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  if (pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/admin') || !brandInfo) {
     return null;
   }
 

@@ -14,6 +14,7 @@ import { PromotionBanner } from '@/components/promotion-banner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { getBrandInfo } from '@/lib/brand-store';
 import { BrandProvider } from '@/store/brand';
+import { ReviewProvider } from '@/store/reviews';
 
 function setInitialTheme() {
   const brandInfo = getBrandInfo();
@@ -25,7 +26,7 @@ function setInitialTheme() {
       ${theme.primaryColor ? `--primary: ${theme.primaryColor};` : ''}
       ${theme.backgroundColor ? `--background: ${theme.backgroundColor};` : ''}
       ${theme.accentColor ? `--accent: ${theme.accentColor};` : ''}
-      ${theme.cardColor ? `--card: ${theme.cardColor};` : ''}
+      ${theme.cardColor ? `--card: hsl(${theme.cardColor});` : ''}
       ${theme.cardOpacity !== undefined ? `--card-alpha: ${theme.cardOpacity};` : ''}
       ${theme.borderRadius !== undefined ? `--radius: ${theme.borderRadius}rem;` : ''}
       ${theme.backgroundImageUrl ? `--background-image: url(${theme.backgroundImageUrl});` : '--background-image: none;'}
@@ -47,6 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialThemeStyles = setInitialTheme();
+  const brandInfo = getBrandInfo();
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -68,19 +70,21 @@ export default function RootLayout({
               <MenuProvider>
                 <PromotionProvider>
                   <OrderProvider>
-                    <CartProvider>
-                      <FavoritesProvider>
-                        <div className="flex flex-col min-h-screen">
-                          <Header />
-                          <PromotionBanner />
-                          <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                            {children}
-                          </main>
-                          <Footer />
-                        </div>
-                        <Toaster />
-                      </FavoritesProvider>
-                    </CartProvider>
+                    <ReviewProvider>
+                      <CartProvider>
+                        <FavoritesProvider>
+                          <div className="flex flex-col min-h-screen">
+                            <Header />
+                            <PromotionBanner />
+                            <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                              {children}
+                            </main>
+                            <Footer brandInfo={brandInfo} />
+                          </div>
+                          <Toaster />
+                        </FavoritesProvider>
+                      </CartProvider>
+                    </ReviewProvider>
                   </OrderProvider>
                 </PromotionProvider>
               </MenuProvider>

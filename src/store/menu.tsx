@@ -4,7 +4,6 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { MenuItem } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
-import { getMenuItems as getMenuItemsInitial } from '@/lib/menu-store';
 
 type MenuContextType = {
   menuItems: MenuItem[];
@@ -17,8 +16,8 @@ type MenuContextType = {
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
 export function MenuProvider({ children }: { children: ReactNode }) {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => getMenuItemsInitial());
-  const [isLoading, setIsLoading] = useState(false);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchMenu = useCallback(async () => {
@@ -35,8 +34,10 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     }
   }, [toast]);
 
-  // We are now loading initial data synchronously, so we only fetch on updates.
-  // This can be further optimized, but for now it ensures data consistency.
+  useEffect(() => {
+    fetchMenu();
+  }, [fetchMenu]);
+
 
   const addMenuItem = useCallback(async (itemData: Omit<MenuItem, 'id'| 'aiHint' | 'isAvailable' | 'isFeatured'>) => {
     try {

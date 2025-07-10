@@ -4,7 +4,6 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { BrandInfo, DeliveryArea } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
-import { getBrandInfo as getBrandInfoInitial } from '@/lib/brand-store';
 
 type BrandContextType = {
   brandInfo: BrandInfo | null;
@@ -20,9 +19,38 @@ type BrandContextType = {
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
 export function BrandProvider({ children }: { children: ReactNode }) {
-  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(() => getBrandInfoInitial());
-  const [isLoading, setIsLoading] = useState(false);
+  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  const fetchBrandInfo = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/brand');
+      if (!response.ok) {
+        throw new Error('Failed to fetch brand information');
+      }
+      const data = await response.json();
+      if (data.success) {
+        setBrandInfoState(data.brandInfo);
+      } else {
+        throw new Error(data.message || 'An unknown error occurred');
+      }
+    } catch (error) {
+        console.error("Failed to load brand info:", error);
+        toast({
+            title: 'Error',
+            description: 'Could not load restaurant information. Please try again later.',
+            variant: 'destructive'
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    fetchBrandInfo();
+  }, [fetchBrandInfo]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
     setIsLoading(true);

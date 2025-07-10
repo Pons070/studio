@@ -1,45 +1,40 @@
 
+import fs from 'fs';
+import path from 'path';
 import type { Order } from './types';
-import { firestore } from './firebase';
 
-const ordersCollection = firestore.collection('orders');
+const dataFilePath = path.join(process.cwd(), 'data/orders.json');
 
-export async function getOrders(): Promise<Order[]> {
-  try {
-    const snapshot = await ordersCollection.get();
-    return snapshot.docs.map(doc => doc.data() as Order);
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    return [];
-  }
+function readData(): Order[] {
+    const jsonData = fs.readFileSync(dataFilePath, 'utf-8');
+    return JSON.parse(jsonData);
 }
 
-export async function findOrderById(orderId: string): Promise<Order | undefined> {
-  try {
-    const doc = await ordersCollection.doc(orderId).get();
-    return doc.exists ? doc.data() as Order : undefined;
-  } catch (error) {
-    console.error(`Error fetching order ${orderId}:`, error);
-    return undefined;
-  }
+function writeData(data: Order[]): void {
+    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2));
 }
 
-export async function addOrderToStore(newOrder: Order): Promise<void> {
-  try {
-    await ordersCollection.doc(newOrder.id).set(newOrder);
-  } catch (error) {
-    console.error("Error adding order:", error);
-  }
+export function getOrders(): Order[] {
+  return readData();
 }
 
-export async function updateOrderInStore(orderId: string, updates: Partial<Order>): Promise<Order | null> {
-  try {
-    const docRef = ordersCollection.doc(orderId);
-    await docRef.update(updates);
-    const updatedDoc = await docRef.get();
-    return updatedDoc.data() as Order;
-  } catch (error) {
-    console.error(`Error updating order ${orderId}:`, error);
-    return null;
+export function findOrderById(orderId: string): Order | undefined {
+    return readData().find(order => order.id === orderId);
+}
+
+export function addOrderToStore(newOrder: Order): void {
+  const orders = readData();
+  orders.push(newOrder);
+  writeData(orders);
+}
+
+export function updateOrderInStore(orderId: string, updates: Partial<Order>): Order | null {
+  const orders = readData();
+  const index = orders.findIndex(order => order.id === orderId);
+  if (index !== -1) {
+    orders[index] = { ...orders[index], ...updates };
+    writeData(orders);
+    return orders[index];
   }
+  return null;
 }
