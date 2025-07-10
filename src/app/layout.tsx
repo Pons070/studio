@@ -14,6 +14,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { BrandProvider } from '@/store/brand';
 import { ReviewProvider } from '@/store/reviews';
 import { getBrandInfo } from '@/lib/brand-store';
+import { ThemeInjector } from '@/components/theme-injector';
 
 export default async function RootLayout({
   children,
@@ -22,22 +23,7 @@ export default async function RootLayout({
 }>) {
   
   const brandInfo = await getBrandInfo();
-  const theme = brandInfo.theme;
   
-  const themeStyle = theme ? `
-    :root {
-      --primary: ${theme.primaryColor};
-      ${theme.primaryForegroundColor ? `--primary-foreground: ${theme.primaryForegroundColor};` : ''}
-      --background: ${theme.backgroundColor};
-      --accent: ${theme.accentColor};
-      ${theme.accentForegroundColor ? `--accent-foreground: ${theme.accentForegroundColor};` : ''}
-      --card: hsl(${theme.cardColor});
-      --card-alpha: ${theme.cardOpacity};
-      --radius: ${theme.borderRadius}rem;
-      --background-image: ${theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : 'none'};
-    }
-  ` : '';
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -47,7 +33,6 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Open+Sans:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
-        {theme && <style dangerouslySetInnerHTML={{ __html: themeStyle }} />}
       </head>
       <body className="font-body antialiased">
         <ThemeProvider
@@ -57,6 +42,7 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <BrandProvider>
+            <ThemeInjector />
             <AuthProvider>
               <MenuProvider>
                 <PromotionProvider>
