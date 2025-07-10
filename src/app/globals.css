@@ -74,6 +74,7 @@
 }
 
 @layer components {
+    /* Ensures card components have their own solid background, respecting opacity */
     .bg-card {
         background-color: hsl(var(--card) / var(--card-opacity, 1.0));
     }
