@@ -59,7 +59,8 @@
 }
 
 @layer components {
-    .bg-card {
+    .bg-card-opac {
         background-color: hsla(var(--card), var(--card-opacity, 1.0));
     }
 }
+
