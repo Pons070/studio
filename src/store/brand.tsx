@@ -4,7 +4,6 @@
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { BrandInfo, DeliveryArea } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
-import { getBrandInfo, setBrandInfo } from '@/lib/brand-store';
 
 type BrandContextType = {
   brandInfo: BrandInfo | null;
@@ -20,12 +19,31 @@ type BrandContextType = {
 const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
 export function BrandProvider({ children }: { children: ReactNode }) {
-  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(getBrandInfo());
+  const [brandInfo, setBrandInfoState] = useState<BrandInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  const fetchBrandInfo = useCallback(async () => {
+    try {
+      const response = await fetch('/api/brand');
+      if (!response.ok) {
+        throw new Error('Failed to fetch brand information');
+      }
+      const data = await response.json();
+      setBrandInfoState(data.brandInfo);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Could not load brand information.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
-    // This effect synchronizes the brand theme with the CSS variables by injecting a <style> tag.
-    // This is a robust method for dynamic, app-wide theming.
+    fetchBrandInfo();
+  }, [fetchBrandInfo]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
@@ -33,7 +51,6 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     const styleId = 'dynamic-theme-styles';
     let styleTag = document.getElementById(styleId) as HTMLStyleElement | null;
 
-    // Create the style tag if it doesn't exist
     if (!styleTag) {
       styleTag = document.createElement('style');
       styleTag.id = styleId;
@@ -43,12 +60,10 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     const theme = brandInfo?.theme;
 
     if (!theme) {
-        // If no theme, ensure the style tag is empty
         styleTag.innerHTML = '';
         return;
     }
 
-    // Build the CSS string from the theme object
     const css = `
       :root {
         ${theme.primaryColor ? `--primary: ${theme.primaryColor};` : ''}
@@ -60,15 +75,18 @@ export function BrandProvider({ children }: { children: ReactNode }) {
         ${theme.backgroundImageUrl ? `--background-image: url(${theme.backgroundImageUrl});` : '--background-image: none;'}
       }
     `;
-
-    // Apply the styles by updating the content of the style tag
     styleTag.innerHTML = css;
     
   }, [brandInfo?.theme]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
     try {
-        setBrandInfo(updatedInfo);
+        const response = await fetch('/api/brand', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedInfo),
+        });
+        if (!response.ok) throw new Error('Failed to update brand info on server');
         setBrandInfoState(updatedInfo);
         return true;
     } catch (error) {
@@ -135,7 +153,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [brandInfo, updateBrandInfoOnServer, toast]);
 
   return (
-    <BrandContext.Provider value={{ brandInfo, isLoading: false, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
+    <BrandContext.Provider value={{ brandInfo, isLoading, updateBrandInfo, blockCustomer, unblockCustomer, addDeliveryArea, updateDeliveryArea, deleteDeliveryArea }}>
       {children}
     </BrandContext.Provider>
   );

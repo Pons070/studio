@@ -1,82 +1,43 @@
 
 import type { Review } from './types';
+import { firestore } from './firebase';
 
-const initialReviews: Review[] = [
-  {
-    id: "REV-001",
-    orderId: "ORD-001",
-    customerName: "Alice",
-    rating: 5,
-    comment: "The Spaghetti Carbonara was absolutely divine! Best I have ever had. Will be ordering again soon!",
-    date: "2023-10-27",
-    adminReply: "Thank you so much, Alice! We are thrilled you enjoyed it and look forward to serving you again.",
-    isPublished: true
-  },
-  {
-    id: "REV-002",
-    orderId: "ORD-005",
-    customerName: "Bob",
-    rating: 4,
-    comment: "Great pizza and the Caprese salad was very fresh. The pickup process was quick and easy. Would recommend.",
-    date: "2024-02-11",
-    isPublished: true
-  },
-  {
-    id: "REV-003",
-    orderId: "ORD-003",
-    customerName: "Charlie",
-    rating: 5,
-    comment: "Delicious food and excellent service. The pre-order system is so convenient!",
-    date: "2023-12-02",
-    isPublished: true
-  },
-  {
-    id: "REV-004",
-    orderId: "ORD-002",
-    customerName: "Diana",
-    rating: 4,
-    comment: "The food was amazing, as always. A bit of a wait during pickup, but it was a busy night. Overall, a great experience.",
-    date: "2023-11-16",
-    adminReply: "Thank you for your feedback, Diana! We apologize for the delay and are working to improve our pickup times during peak hours.",
-    isPublished: true
-  },
-  {
-    id: "REV-005",
-    orderId: "ORD-004",
-    customerName: "Eve",
-    rating: 3,
-    comment: "Food was decent, but my order was slightly delayed. The staff was apologetic and friendly.",
-    date: "2024-01-06",
-    isPublished: false
+const reviewsCollection = firestore.collection('reviews');
+
+export async function getReviews(): Promise<Review[]> {
+  try {
+    const snapshot = await reviewsCollection.get();
+    return snapshot.docs.map(doc => doc.data() as Review);
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    return [];
   }
-];
-
-let reviews: Review[] = [...initialReviews];
-
-// ---- Public API for the Review Store ----
-
-export function getReviews(): Review[] {
-  return reviews;
 }
 
-export function addReviewToStore(newReview: Review): void {
-  reviews.unshift(newReview);
+export async function addReviewToStore(newReview: Review): Promise<void> {
+  try {
+    await reviewsCollection.doc(newReview.id).set(newReview);
+  } catch (error) {
+    console.error("Error adding review:", error);
+  }
 }
 
-export function updateReviewInStore(updatedReview: Review): Review | null {
-    const index = reviews.findIndex(r => r.id === updatedReview.id);
-    if (index === -1) {
-        return null;
-    }
-    reviews[index] = updatedReview;
+export async function updateReviewInStore(updatedReview: Review): Promise<Review | null> {
+  try {
+    await reviewsCollection.doc(updatedReview.id).set(updatedReview, { merge: true });
     return updatedReview;
+  } catch (error) {
+    console.error(`Error updating review ${updatedReview.id}:`, error);
+    return null;
+  }
 }
 
-export function deleteReviewFromStore(reviewId: string): boolean {
-    const index = reviews.findIndex(r => r.id === reviewId);
-    if (index === -1) {
-        return false;
-    }
-    reviews.splice(index, 1);
+export async function deleteReviewFromStore(reviewId: string): Promise<boolean> {
+  try {
+    await reviewsCollection.doc(reviewId).delete();
     return true;
+  } catch (error) {
+    console.error(`Error deleting review ${reviewId}:`, error);
+    return false;
+  }
 }

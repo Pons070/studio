@@ -15,8 +15,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required order information.' }, { status: 400 });
     }
     
-    const brandInfo = getBrandInfo();
-    const adminEmail = brandInfo.adminEmail;
+    const brandInfo = await getBrandInfo();
+    const adminEmail = brandInfo?.adminEmail || 'admin@example.com';
     
     const newOrder: Order = {
       ...orderInput,
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       status: 'Pending',
     };
     
-    addOrderToStore(newOrder);
+    await addOrderToStore(newOrder);
 
     // Send notifications without waiting for them to complete
     Promise.all([

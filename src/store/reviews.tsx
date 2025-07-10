@@ -1,11 +1,10 @@
 
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { Review } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from './auth';
-import { addReviewToStore, deleteReviewFromStore, getReviews, updateReviewInStore } from '@/lib/review-store';
 import { useOrders } from './orders';
 
 type ReviewContextType = {
@@ -20,66 +19,108 @@ type ReviewContextType = {
 const ReviewContext = createContext<ReviewContextType | undefined>(undefined);
 
 export function ReviewProvider({ children }: { children: ReactNode }) {
-  const [reviews, setReviews] = useState<Review[]>(getReviews());
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
   const { addReviewToOrder: linkReviewToOrder, removeReviewIdFromOrder } = useOrders();
   const { toast } = useToast();
 
+  const fetchReviews = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/reviews');
+      if (!response.ok) throw new Error('Failed to fetch reviews');
+      const data = await response.json();
+      setReviews(data.reviews || []);
+    } catch (error) {
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
+
   const addReview = useCallback(async (orderId: string, rating: number, comment: string) => {
-    const reviewData: Omit<Review, 'id' | 'date' | 'isPublished'> = {
-      orderId,
-      rating,
-      comment,
+    const reviewData = {
+      orderId, rating, comment,
       customerName: currentUser?.name || 'Guest User',
     };
     
-    const newReview: Review = {
-      ...reviewData,
-      id: `REV-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      isPublished: false,
-    };
-    
-    addReviewToStore(newReview);
-    linkReviewToOrder(orderId, newReview.id);
-    setReviews(getReviews());
-    
-    toast({
-      title: "Review Submitted!",
-      description: "Thank you for your valuable feedback.",
-      variant: "success",
-    });
-  }, [toast, currentUser, linkReviewToOrder]);
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewData),
+      });
+      if (!response.ok) throw new Error('Failed to submit review');
+      const { review: newReview } = await response.json();
+      
+      linkReviewToOrder(orderId, newReview.id);
+      fetchReviews();
+      
+      toast({
+        title: "Review Submitted!",
+        description: "Thank you for your valuable feedback.",
+        variant: "success",
+      });
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
+  }, [toast, currentUser, linkReviewToOrder, fetchReviews]);
 
   const addAdminReply = useCallback(async (reviewId: string, reply: string) => {
     const reviewToUpdate = reviews.find(r => r.id === reviewId);
     if (!reviewToUpdate) return;
     
-    const updatedReview = { ...reviewToUpdate, adminReply: reply };
-    updateReviewInStore(updatedReview);
-    setReviews(getReviews());
-    toast({ title: "Reply Sent" });
-  }, [reviews, toast]);
+    try {
+      await fetch('/api/reviews', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...reviewToUpdate, adminReply: reply }),
+      });
+      fetchReviews();
+      toast({ title: "Reply Sent" });
+    } catch (error) {
+       toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
+  }, [reviews, toast, fetchReviews]);
 
   const togglePublishStatus = useCallback(async (reviewId: string) => {
     const reviewToUpdate = reviews.find(r => r.id === reviewId);
     if (!reviewToUpdate) return;
-
-    const updatedReview = { ...reviewToUpdate, isPublished: !reviewToUpdate.isPublished };
-    updateReviewInStore(updatedReview);
-    setReviews(getReviews());
-    toast({ title: "Review Updated" });
-  }, [reviews, toast]);
+    
+    try {
+      await fetch('/api/reviews', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...reviewToUpdate, isPublished: !reviewToUpdate.isPublished }),
+      });
+      fetchReviews();
+      toast({ title: "Review Updated" });
+    } catch (error) {
+       toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
+  }, [reviews, toast, fetchReviews]);
 
   const deleteReview = useCallback(async (reviewId: string, orderId: string) => {
-    deleteReviewFromStore(reviewId);
-    removeReviewIdFromOrder(orderId);
-    setReviews(getReviews());
-    toast({ title: "Review Deleted", variant: "destructive" });
-  }, [toast, removeReviewIdFromOrder]);
+    try {
+      await fetch('/api/reviews', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reviewId, orderId }),
+      });
+      fetchReviews();
+      toast({ title: "Review Deleted", variant: "destructive" });
+    } catch (error) {
+       toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
+  }, [toast, fetchReviews]);
 
   return (
-    <ReviewContext.Provider value={{ reviews, addReview, addAdminReply, togglePublishStatus, deleteReview, isLoading: false }}>
+    <ReviewContext.Provider value={{ reviews, addReview, addAdminReply, togglePublishStatus, deleteReview, isLoading }}>
       {children}
     </ReviewContext.Provider>
   );

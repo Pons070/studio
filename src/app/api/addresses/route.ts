@@ -12,7 +12,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
 
-    const user = findUserById(userId);
+    const user = await findUserById(userId);
     if (!user) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     };
     
     const updatedAddresses = [...(user.addresses || []), newAddress];
-    updateUser({ ...user, addresses: updatedAddresses });
+    await updateUser({ ...user, addresses: updatedAddresses });
 
     return NextResponse.json({ success: true, user: { ...user, addresses: updatedAddresses } });
   } catch (error) {
@@ -42,7 +42,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required.' }, { status: 400 });
         }
         
-        const user = findUserById(userId);
+        const user = await findUserById(userId);
         if (!user) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
@@ -61,7 +61,7 @@ export async function PUT(request: Request) {
         addresses[addressIndex] = { ...addresses[addressIndex], ...addressData };
 
         const updatedUser = { ...user, addresses };
-        updateUser(updatedUser);
+        await updateUser(updatedUser);
         
         return NextResponse.json({ success: true, user: updatedUser });
 
@@ -78,7 +78,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID and Address ID are required.' }, { status: 400 });
         }
 
-        const user = findUserById(userId);
+        const user = await findUserById(userId);
         if (!user) {
             return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
@@ -97,7 +97,7 @@ export async function DELETE(request: Request) {
         }
         
         const updatedUser = { ...user, addresses: updatedAddresses };
-        updateUser(updatedUser);
+        await updateUser(updatedUser);
 
         return NextResponse.json({ success: true, user: updatedUser });
     } catch (error) {

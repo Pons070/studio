@@ -25,7 +25,7 @@ const UpdatePromotionSchema = CreatePromotionSchema.extend({
 
 export async function GET() {
   try {
-    const promotions = getPromotions();
+    const promotions = await getPromotions();
     return NextResponse.json({ success: true, promotions });
   } catch (error) {
     console.error("Error in GET /api/promotions:", error);
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         id: `PROMO-${Date.now()}`,
     };
 
-    addPromotionToStore(newPromo);
+    await addPromotionToStore(newPromo);
     
     return NextResponse.json({ success: true, promotion: newPromo });
   } catch (error) {
@@ -64,7 +64,7 @@ export async function PUT(request: Request) {
         }
 
         const promoData = validationResult.data;
-        const updatedPromo = updatePromotionInStore(promoData);
+        const updatedPromo = await updatePromotionInStore(promoData);
         if (!updatedPromo) {
             return NextResponse.json({ success: false, message: 'Promotion not found.' }, { status: 404 });
         }
@@ -83,7 +83,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Promotion ID is required.' }, { status: 400 });
         }
         
-        const deleted = deletePromotionFromStore(id);
+        const deleted = await deletePromotionFromStore(id);
         if (!deleted) {
             return NextResponse.json({ success: false, message: 'Promotion not found.' }, { status: 404 });
         }

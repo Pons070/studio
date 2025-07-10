@@ -1,187 +1,74 @@
 
 import type { User } from './types';
+import { firestore } from './firebase';
 
-const initialUsers: User[] = [
-  {
-    id: "user-admin",
-    name: "Admin",
-    email: "admin@example.com",
-    phone: "5550100",
-    addresses: [],
-    createdAt: "2024-07-30T12:00:00.000Z",
-    updatedAt: "2024-07-30T12:00:00.000Z"
-  },
-  {
-    id: "user-alice",
-    name: "Alice",
-    email: "alice@example.com",
-    phone: "5550101",
-    addresses: [
-      {
-        id: "addr-alice-1",
-        label: "Home",
-        isDefault: true,
-        doorNumber: "4A",
-        apartmentName: "Wonderland Apts",
-        area: "Rabbit Hole District",
-        city: "Curious City",
-        state: "Imagi Nation",
-        pincode: "12345",
-        latitude: 34.0522,
-        longitude: -118.2437
-      }
-    ],
-    createdAt: "2024-07-30T12:00:00.000Z",
-    updatedAt: "2024-07-30T12:00:00.000Z"
-  },
-  {
-    id: "user-diana",
-    name: "Diana",
-    email: "diana@example.com",
-    phone: "5550102",
-    addresses: [
-      {
-        id: "addr-diana-1",
-        label: "Home",
-        isDefault: true,
-        doorNumber: "100",
-        apartmentName: "Olympus Towers",
-        area: "Themyscira Plaza",
-        city: "Paradise Island",
-        state: "Amazonia",
-        pincode: "23456"
-      }
-    ],
-    createdAt: "2024-07-30T12:00:00.000Z",
-    updatedAt: "2024-07-30T12:00:00.000Z"
-  },
-  {
-    id: "user-charlie",
-    name: "Charlie",
-    email: "charlie@example.com",
-    phone: "5550103",
-    addresses: [
-      {
-        id: "addr-charlie-1",
-        label: "Work",
-        isDefault: true,
-        doorNumber: "22B",
-        apartmentName: "Chocolate Factory",
-        area: "Sweet Street",
-        city: "Confectionville",
-        state: "Sugarland",
-        pincode: "34567",
-        latitude: 40.7128,
-        longitude: -74.006
-      }
-    ],
-    createdAt: "2024-07-30T12:00:00.000Z",
-    updatedAt: "2024-07-30T12:00:00.000Z"
-  },
-  {
-    id: "user-eve",
-    name: "Eve",
-    email: "eve@example.com",
-    phone: "5550104",
-    addresses: [
-      {
-        id: "addr-eve-1",
-        label: "Home",
-        isDefault: true,
-        doorNumber: "1",
-        apartmentName: "Garden House",
-        area: "Eden Estates",
-        city: "First City",
-        state: "Genesis",
-        pincode: "45678"
-      }
-    ],
-    createdAt: "2024-07-30T12:00:00.000Z",
-    updatedAt: "2024-07-30T12:00:00.000Z"
-  },
-  {
-    id: "user-bob",
-    name: "Bob",
-    email: "bob@example.com",
-    phone: "5550105",
-    addresses: [
-      {
-        id: "addr-bob-1",
-        label: "Home",
-        isDefault: true,
-        doorNumber: "B2",
-        apartmentName: "Builder Complex",
-        area: "Construct Lane",
-        city: "Tool-Town",
-        state: "Handy State",
-        pincode: "56789"
-      }
-    ],
-    createdAt: "2024-07-30T12:00:00.000Z",
-    updatedAt: "2024-07-30T12:00:00.000Z"
-  },
-  {
-    id: "user-frank",
-    name: "Frank",
-    email: "frank@example.com",
-    phone: "5550106",
-    addresses: [
-      {
-        id: "addr-frank-1",
-        label: "Home",
-        isDefault: true,
-        doorNumber: "C-3",
-        apartmentName: "Castle Apartments",
-        area: "Kingdom Valley",
-        city: "Nobleburg",
-        state: "Regalia",
-        pincode: "67890",
-        latitude: 51.5074,
-        longitude: -0.1278
-      }
-    ],
-    createdAt: "2024-07-30T12:00:00.000Z",
-    updatedAt: "2024-07-30T12:00:00.000Z"
-  }
-];
+const usersCollection = firestore.collection('users');
 
-let users: User[] = [...initialUsers];
-
-export const getUsers = (): User[] => {
-    return users.map(u => ({ ...u }));
+export async function getUsers(): Promise<User[]> {
+    try {
+        const snapshot = await usersCollection.get();
+        return snapshot.docs.map(doc => doc.data() as User);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        return [];
+    }
 }
 
-export const findUserBy = (predicate: (user: User) => boolean): User | undefined => {
-    const user = users.find(predicate);
+export async function findUserBy(predicate: (user: User) => boolean): Promise<User | undefined> {
+    const allUsers = await getUsers();
+    const user = allUsers.find(predicate);
     return user ? { ...user } : undefined;
 };
 
-export const findUserById = (id: string): User | undefined => {
-    return findUserBy(user => user.id === id);
-};
-
-export const findUserByPhone = (phone: string): User | undefined => {
-    return findUserBy(user => user.phone === phone && !user.deletedAt);
-};
-
-export const addUser = (user: User): void => {
-    users.push(user);
-};
-
-export const updateUser = (updatedUser: User): boolean => {
-    const index = users.findIndex(u => u.id === updatedUser.id);
-    if (index !== -1) {
-        users[index] = updatedUser;
-        return true;
+export async function findUserById(id: string): Promise<User | undefined> {
+    try {
+        const doc = await usersCollection.doc(id).get();
+        return doc.exists ? doc.data() as User : undefined;
+    } catch (error) {
+        console.error(`Error fetching user ${id}:`, error);
+        return undefined;
     }
-    return false;
 };
 
-export const deleteUserPermanently = (id: string): boolean => {
-    const index = users.findIndex(u => u.id === id);
-    if (index !== -1) {
-        users.splice(index, 1);
-        return true;
+export async function findUserByPhone(phone: string): Promise<User | undefined> {
+    try {
+        const snapshot = await usersCollection.where('phone', '==', phone).where('deletedAt', '==', null).limit(1).get();
+        if (snapshot.empty) {
+            return undefined;
+        }
+        return snapshot.docs[0].data() as User;
+    } catch (error) {
+        // Firestore requires an index for this query. If it doesn't exist, it will throw.
+        // We'll fall back to client-side filtering as a backup.
+        console.warn("Firestore query for phone number failed (likely missing index), falling back to client-side filter.");
+        return findUserBy(user => user.phone === phone && !user.deletedAt);
     }
-    return false;
+};
+
+export async function addUser(user: User): Promise<void> {
+    try {
+        await usersCollection.doc(user.id).set(user);
+    } catch (error) {
+        console.error("Error adding user:", error);
+    }
+};
+
+export async function updateUser(updatedUser: User): Promise<boolean> {
+    try {
+        await usersCollection.doc(updatedUser.id).set(updatedUser, { merge: true });
+        return true;
+    } catch (error) {
+        console.error(`Error updating user ${updatedUser.id}:`, error);
+        return false;
+    }
+};
+
+export async function deleteUserPermanently(id: string): Promise<boolean> {
+    try {
+        await usersCollection.doc(id).delete();
+        return true;
+    } catch (error) {
+        console.error(`Error deleting user ${id}:`, error);
+        return false;
+    }
 }

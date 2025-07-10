@@ -1,54 +1,47 @@
 
+import { firestore } from './firebase';
+
 type UserFavorites = {
     itemIds: string[];
     orderIds: string[];
 };
 
-type FavoritesStore = Record<string, UserFavorites>;
+const favoritesCollection = firestore.collection('favorites');
 
-const initialFavorites = {
-  "user-alice": {
-    itemIds: ["3", "6"],
-    orderIds: ["ORD-001"]
-  },
-  "user-diana": {
-    itemIds: ["5"],
-    orderIds: []
-  }
-};
-
-const favoritesStore: FavoritesStore = { ...initialFavorites };
-
-// ---- Public API for the Favorites Store ----
-
-export function getFavorites(userId: string): UserFavorites {
-    if (!favoritesStore[userId]) {
-        favoritesStore[userId] = { itemIds: [], orderIds: [] };
+export async function getFavorites(userId: string): Promise<UserFavorites> {
+    try {
+        const doc = await favoritesCollection.doc(userId).get();
+        if (doc.exists) {
+            return doc.data() as UserFavorites;
+        }
+        return { itemIds: [], orderIds: [] };
+    } catch (error) {
+        console.error(`Error fetching favorites for user ${userId}:`, error);
+        return { itemIds: [], orderIds: [] };
     }
-    return favoritesStore[userId];
 }
 
-export function toggleFavorite(userId: string, type: 'item' | 'order', id: string, forceAdd?: boolean): void {
-    if (!favoritesStore[userId]) {
-        favoritesStore[userId] = { itemIds: [], orderIds: [] };
-    }
-    
-    const idList = type === 'item' ? favoritesStore[userId].itemIds : favoritesStore[userId].orderIds;
-    const isFavorite = idList.includes(id);
+export async function toggleFavorite(userId: string, type: 'item' | 'order', id: string, forceAdd?: boolean): Promise<void> {
+    try {
+        const docRef = favoritesCollection.doc(userId);
+        const doc = await docRef.get();
+        const currentFavorites = doc.exists ? doc.data() as UserFavorites : { itemIds: [], orderIds: [] };
 
-    if (forceAdd === true) {
-        if (!isFavorite) idList.push(id);
-    } else if (forceAdd === false) {
-        if (isFavorite) {
-            const index = idList.indexOf(id);
-            idList.splice(index, 1);
-        }
-    } else { // Toggle
-        if (isFavorite) {
-            const index = idList.indexOf(id);
-            idList.splice(index, 1);
+        const key = type === 'item' ? 'itemIds' : 'orderIds';
+        const idList = currentFavorites[key] || [];
+        const isFavorite = idList.includes(id);
+
+        let newList;
+        if (forceAdd === true) {
+            newList = isFavorite ? idList : [...idList, id];
+        } else if (forceAdd === false) {
+            newList = isFavorite ? idList.filter(i => i !== id) : idList;
         } else {
-            idList.push(id);
+            newList = isFavorite ? idList.filter(i => i !== id) : [...idList, id];
         }
+        
+        await docRef.set({ ...currentFavorites, [key]: newList }, { merge: true });
+    } catch (error) {
+        console.error(`Error toggling favorite for user ${userId}:`, error);
     }
 }

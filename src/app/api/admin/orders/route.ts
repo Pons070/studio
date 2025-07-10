@@ -5,7 +5,7 @@ import type { Order } from '@/lib/types';
 
 export async function GET() {
   try {
-    const orders = getOrders();
+    const orders = await getOrders();
     return NextResponse.json({ success: true, orders: orders });
   } catch (error) {
     console.error("Error in GET /api/admin/orders:", error);

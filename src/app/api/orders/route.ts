@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
   
   try {
-    const allOrders = getOrders();
+    const allOrders = await getOrders();
     const userOrders = allOrders.filter(order => order.customerId === userId);
     return NextResponse.json({ success: true, orders: userOrders });
   } catch (error) {
@@ -30,7 +30,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Order ID is required.' }, { status: 400 });
         }
         
-        const updatedOrder = updateOrderInStore(orderId, updates);
+        const updatedOrder = await updateOrderInStore(orderId, updates);
 
         if (!updatedOrder) {
              return NextResponse.json({ success: false, message: 'Order not found.' }, { status: 404 });

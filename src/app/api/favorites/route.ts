@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     try {
-        const favorites = getFavorites(userId);
+        const favorites = await getFavorites(userId);
         return NextResponse.json({ success: true, favorites });
     } catch (error) {
         console.error("Error in GET /api/favorites:", error);
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
              return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
         }
 
-        toggleFavorite(userId, type, id, true); // forceAdd = true
+        await toggleFavorite(userId, type, id, true); // forceAdd = true
         
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -42,7 +42,7 @@ export async function DELETE(request: Request) {
              return NextResponse.json({ success: false, message: 'Missing required fields.' }, { status: 400 });
         }
         
-        toggleFavorite(userId, type, id, false); // forceAdd = false (so it removes)
+        await toggleFavorite(userId, type, id, false); // forceAdd = false (so it removes)
         
         return NextResponse.json({ success: true });
     } catch (error) {

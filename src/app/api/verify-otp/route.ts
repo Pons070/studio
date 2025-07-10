@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       // OTP is correct, clear it
       delete otpStore[phoneNumber];
 
-      let user = findUserByPhone(phoneNumber);
+      let user = await findUserByPhone(phoneNumber);
 
       if (!user) {
         // This is a new user, create an account
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        addUser(newUser);
+        await addUser(newUser);
         user = newUser;
       }
       

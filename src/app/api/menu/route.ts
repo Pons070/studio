@@ -5,7 +5,7 @@ import type { MenuItem } from '@/lib/types';
 
 export async function GET() {
   try {
-    const menuItems = getMenuItems();
+    const menuItems = await getMenuItems();
     return NextResponse.json({ success: true, menuItems });
   } catch (error) {
     console.error("Error in GET /api/menu:", error);
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       imageUrl: body.imageUrl || 'https://placehold.co/600x400.png',
     };
     
-    addMenuItemToStore(newItem);
+    await addMenuItemToStore(newItem);
     
     return NextResponse.json({ success: true, menuItem: newItem });
   } catch (error) {
@@ -45,7 +45,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Menu item ID is required.' }, { status: 400 });
         }
         
-        const updatedItem = updateMenuItemInStore(body);
+        const updatedItem = await updateMenuItemInStore(body);
         if (!updatedItem) {
             return NextResponse.json({ success: false, message: 'Menu item not found.' }, { status: 404 });
         }
@@ -64,7 +64,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Menu item ID is required.' }, { status: 400 });
         }
         
-        const deleted = deleteMenuItemFromStore(id);
+        const deleted = await deleteMenuItemFromStore(id);
         if (!deleted) {
              return NextResponse.json({ success: false, message: 'Menu item not found.' }, { status: 404 });
         }

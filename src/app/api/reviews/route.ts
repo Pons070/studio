@@ -6,7 +6,7 @@ import type { Review } from '@/lib/types';
 
 export async function GET() {
   try {
-    const reviews = getReviews();
+    const reviews = await getReviews();
     return NextResponse.json({ success: true, reviews });
   } catch (error) {
     console.error("Error in GET /api/reviews:", error);
@@ -28,10 +28,10 @@ export async function POST(request: Request) {
       isPublished: false,
     };
     
-    addReviewToStore(newReview);
+    await addReviewToStore(newReview);
     
     // Also update the related order with the new reviewId
-    updateOrderInStore(body.orderId, { reviewId: newReview.id });
+    await updateOrderInStore(body.orderId, { reviewId: newReview.id });
 
     return NextResponse.json({ success: true, review: newReview });
   } catch (error) {
@@ -47,7 +47,7 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, message: 'Review ID is required.' }, { status: 400 });
         }
         
-        const updatedReview = updateReviewInStore(body);
+        const updatedReview = await updateReviewInStore(body);
         if (!updatedReview) {
             return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
         }
@@ -66,14 +66,14 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'Review ID is required.' }, { status: 400 });
         }
         
-        const deleted = deleteReviewFromStore(id);
+        const deleted = await deleteReviewFromStore(id);
         if (!deleted) {
             return NextResponse.json({ success: false, message: 'Review not found.' }, { status: 404 });
         }
 
         // Unlink review from order
         if (orderId) {
-            updateOrderInStore(orderId, { reviewId: undefined });
+            await updateOrderInStore(orderId, { reviewId: undefined });
         }
         
         return NextResponse.json({ success: true, id });

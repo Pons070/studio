@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Invalid phone number provided.' }, { status: 400 });
     }
 
-    const existingUser = findUserByPhone(phoneNumber);
+    const existingUser = await findUserByPhone(phoneNumber);
     const isNewUser = !existingUser;
 
     // Generate a 6-digit OTP

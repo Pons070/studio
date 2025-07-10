@@ -1,76 +1,43 @@
 
 import type { Promotion } from './types';
+import { firestore } from './firebase';
 
-const initialPromotions: Promotion[] = [
-  {
-    id: "PROMO-1",
-    title: "🎉 Welcome Offer for New Customers!",
-    description: "Get 15% off your first order with us. We are so happy to have you!",
-    targetAudience: "new",
-    isActive: true,
-    couponCode: "WELCOME15",
-    discountType: "percentage",
-    discountValue: 15
-  },
-  {
-    id: "PROMO-2",
-    title: "Weekday Special for Regulars!",
-    description: "Enjoy a free dessert on us as a thank you for your continued support. Valid on weekdays.",
-    targetAudience: "existing",
-    isActive: true,
-    couponCode: "SWEETTREAT",
-    discountType: "flat",
-    discountValue: 7.5,
-    minOrderValue: 20,
-    startDate: "2024-06-01",
-    activeDays: [
-      1,
-      2,
-      3,
-      4,
-      5
-    ]
-  },
-  {
-    id: "PROMO-3",
-    title: "Summer Special - All Customers",
-    description: "Get a free drink with any main course ordered this month.",
-    targetAudience: "all",
-    isActive: false,
-    couponCode: "SUMMERDRINK",
-    discountType: "flat",
-    discountValue: 3,
-    startDate: "2023-07-01",
-    endDate: "2023-07-31"
+const promotionsCollection = firestore.collection('promotions');
+
+export async function getPromotions(): Promise<Promotion[]> {
+  try {
+    const snapshot = await promotionsCollection.get();
+    return snapshot.docs.map(doc => doc.data() as Promotion);
+  } catch (error) {
+    console.error("Error fetching promotions:", error);
+    return [];
   }
-];
-
-let promotions: Promotion[] = [...initialPromotions];
-
-// ---- Public API for the Promotion Store ----
-
-export function getPromotions(): Promotion[] {
-  return promotions;
 }
 
-export function addPromotionToStore(newPromotion: Promotion): void {
-  promotions.unshift(newPromotion);
+export async function addPromotionToStore(newPromotion: Promotion): Promise<void> {
+  try {
+    await promotionsCollection.doc(newPromotion.id).set(newPromotion);
+  } catch (error) {
+    console.error("Error adding promotion:", error);
+  }
 }
 
-export function updatePromotionInStore(updatedPromotion: Promotion): Promotion | null {
-    const index = promotions.findIndex(p => p.id === updatedPromotion.id);
-    if (index === -1) {
-        return null;
-    }
-    promotions[index] = updatedPromotion;
+export async function updatePromotionInStore(updatedPromotion: Promotion): Promise<Promotion | null> {
+  try {
+    await promotionsCollection.doc(updatedPromotion.id).set(updatedPromotion, { merge: true });
     return updatedPromotion;
+  } catch (error) {
+    console.error(`Error updating promotion ${updatedPromotion.id}:`, error);
+    return null;
+  }
 }
 
-export function deletePromotionFromStore(promotionId: string): boolean {
-    const index = promotions.findIndex(p => p.id === promotionId);
-    if (index === -1) {
-        return false;
-    }
-    promotions.splice(index, 1);
+export async function deletePromotionFromStore(promotionId: string): Promise<boolean> {
+  try {
+    await promotionsCollection.doc(promotionId).delete();
     return true;
+  } catch (error) {
+    console.error(`Error deleting promotion ${promotionId}:`, error);
+    return false;
+  }
 }

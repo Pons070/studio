@@ -1,73 +1,27 @@
 
-"use client";
-
 import type { BrandInfo } from './types';
+import { firestore } from './firebase';
 
-const initialBrandInfo: BrandInfo = {
-  name: "CulinaPreOrder",
-  logoUrl: "",
-  logoShape: "square",
-  phone: "123-456-7890",
-  adminEmail: "admin@example.com",
-  showAddressInAbout: true,
-  showPhoneInAbout: true,
-  address: {
-    label: "Main Branch",
-    doorNumber: "123",
-    apartmentName: "Foodie Building",
-    area: "Flavor Town",
-    city: "Metropolis",
-    state: "Culinary State",
-    pincode: "12345"
-  },
-  about: "CulinaPreOrder was born from a passion for exquisite food and a desire to make fine dining accessible. We believe in quality ingredients, handcrafted recipes, and the convenience of pre-ordering, allowing you to enjoy gourmet meals without the wait.",
-  businessHours: {
-    status: "open",
-    message: "We are temporarily closed. Please check back later!"
-  },
-  youtubeUrl: "",
-  instagramUrl: "",
-  allowOrderUpdates: true,
-  theme: {
-    primaryColor: "32 85% 67%",
-    backgroundColor: "30 67% 92%",
-    accentColor: "14 72% 62%",
-    cardColor: "0 0% 100%",
-    cardOpacity: 1,
-    borderRadius: 0.5,
-    backgroundImageUrl: ""
-  },
-  blockedCustomerEmails: [],
-  deliveryAreas: [
-    {
-      id: "da-1",
-      pincode: "12345",
-      areaName: "Flavor Town",
-      cost: 50
-    },
-    {
-      id: "da-2",
-      pincode: "23456",
-      areaName: "Paradise Island",
-      cost: 75
-    },
-    {
-      id: "da-3",
-      pincode: "34567",
-      areaName: "Confectionville",
-      cost: 60
+const BRAND_DOC_ID = 'main_brand_info';
+
+export async function getBrandInfo(): Promise<BrandInfo | null> {
+  try {
+    const doc = await firestore.collection('brand').doc(BRAND_DOC_ID).get();
+    if (!doc.exists) {
+      console.warn("Brand document not found in Firestore.");
+      return null;
     }
-  ]
-};
-
-let brandInfo: BrandInfo = { ...initialBrandInfo };
-
-// ---- Public API for the Brand Store ----
-
-export function getBrandInfo(): BrandInfo {
-  return brandInfo;
+    return doc.data() as BrandInfo;
+  } catch (error) {
+    console.error("Error fetching brand info:", error);
+    return null;
+  }
 }
 
-export function setBrandInfo(newBrandInfo: BrandInfo): void {
-  brandInfo = newBrandInfo;
+export async function setBrandInfo(newBrandInfo: BrandInfo): Promise<void> {
+  try {
+    await firestore.collection('brand').doc(BRAND_DOC_ID).set(newBrandInfo, { merge: true });
+  } catch (error) {
+    console.error("Error setting brand info:", error);
+  }
 }

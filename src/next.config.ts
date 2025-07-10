@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -20,7 +21,7 @@ const nextConfig: NextConfig = {
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals.push('@genkit-ai/googleai', 'genkit', 'zod');
+      config.externals.push('@genkit-ai/googleai', 'genkit', 'zod', 'firebase-admin');
     }
     return config;
   },

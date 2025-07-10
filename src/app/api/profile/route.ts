@@ -11,13 +11,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
     }
     
-    const user = findUserById(userId);
+    const user = await findUserById(userId);
     if (!user) {
         return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
     }
 
     const updatedUser = { ...user, ...profileData, updatedAt: new Date().toISOString() };
-    updateUserInStore(updatedUser);
+    await updateUserInStore(updatedUser);
 
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {
@@ -33,7 +33,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, message: 'User ID is required.' }, { status: 400 });
         }
         
-        const user = findUserById(userId);
+        const user = await findUserById(userId);
         if (!user) {
              return NextResponse.json({ success: false, message: 'User not found.' }, { status: 404 });
         }
@@ -44,7 +44,7 @@ export async function DELETE(request: Request) {
         
         // Soft delete the user
         const updatedUser = { ...user, deletedAt: new Date().toISOString() };
-        updateUserInStore(updatedUser);
+        await updateUserInStore(updatedUser);
         
         return NextResponse.json({ success: true, userId });
     } catch (error) {

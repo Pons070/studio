@@ -1,138 +1,53 @@
 
 import type { MenuItem } from './types';
+import { firestore } from './firebase';
 
-const initialMenuItems: MenuItem[] = [
-  {
-    id: "1",
-    name: "Bruschetta",
-    description: "Toasted bread with tomatoes, garlic, and basil.",
-    price: 8.99,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "bruschetta appetizer",
-    category: "Appetizers",
-    isAvailable: true,
-    isFeatured: false
-  },
-  {
-    id: "2",
-    name: "Caprese Salad",
-    description: "Fresh mozzarella, tomatoes, and basil.",
-    price: 10.5,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "caprese salad",
-    category: "Appetizers",
-    isAvailable: true,
-    isFeatured: false
-  },
-  {
-    id: "3",
-    name: "Spaghetti Carbonara",
-    description: "Pasta with eggs, cheese, pancetta, and pepper.",
-    price: 15.99,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "spaghetti carbonara",
-    category: "Main Courses",
-    isAvailable: true,
-    isFeatured: true
-  },
-  {
-    id: "4",
-    name: "Margherita Pizza",
-    description: "Classic pizza with tomatoes, mozzarella, and basil.",
-    price: 14.5,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "margherita pizza",
-    category: "Main Courses",
-    isAvailable: true,
-    isFeatured: true
-  },
-  {
-    id: "5",
-    name: "Grilled Salmon",
-    description: "Served with asparagus and lemon butter sauce.",
-    price: 22,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "grilled salmon",
-    category: "Main Courses",
-    isAvailable: true,
-    isFeatured: true
-  },
-  {
-    id: "6",
-    name: "Tiramisu",
-    description: "Coffee-flavored Italian dessert.",
-    price: 7.5,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "tiramisu dessert",
-    category: "Desserts",
-    isAvailable: true,
-    isFeatured: false
-  },
-  {
-    id: "7",
-    name: "Panna Cotta",
-    description: "Sweetened cream thickened with gelatin.",
-    price: 6.99,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "panna cotta",
-    category: "Desserts",
-    isAvailable: true,
-    isFeatured: false
-  },
-  {
-    id: "8",
-    name: "Mineral Water",
-    description: "Still or sparkling water.",
-    price: 3,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "water bottle",
-    category: "Drinks",
-    isAvailable: true,
-    isFeatured: false
-  },
-  {
-    id: "9",
-    name: "Fresh Orange Juice",
-    description: "Freshly squeezed orange juice.",
-    price: 5.5,
-    imageUrl: "https://placehold.co/600x400.png",
-    aiHint: "orange juice",
-    category: "Drinks",
-    isAvailable: true,
-    isFeatured: false
+const menuCollection = firestore.collection('menu');
+
+export async function getMenuItems(): Promise<MenuItem[]> {
+  try {
+    const snapshot = await menuCollection.get();
+    return snapshot.docs.map(doc => doc.data() as MenuItem);
+  } catch (error) {
+    console.error("Error fetching menu items:", error);
+    return [];
   }
-];
-
-let menuItems: MenuItem[] = [...initialMenuItems];
-
-// ---- Public API for the Menu Store ----
-
-export function getMenuItems(): MenuItem[] {
-  return menuItems;
 }
 
-export function findMenuItemById(id: string): MenuItem | undefined {
-    return menuItems.find(item => item.id === id);
+export async function findMenuItemById(id: string): Promise<MenuItem | undefined> {
+  try {
+    const doc = await menuCollection.doc(id).get();
+    return doc.exists ? doc.data() as MenuItem : undefined;
+  } catch (error) {
+    console.error(`Error fetching menu item ${id}:`, error);
+    return undefined;
+  }
 }
 
-export function addMenuItemToStore(newItem: MenuItem): void {
-  menuItems.unshift(newItem);
+export async function addMenuItemToStore(newItem: MenuItem): Promise<void> {
+  try {
+    await menuCollection.doc(newItem.id).set(newItem);
+  } catch (error) {
+    console.error("Error adding menu item:", error);
+  }
 }
 
-export function updateMenuItemInStore(updatedItem: MenuItem): MenuItem | null {
-    const index = menuItems.findIndex(item => item.id === updatedItem.id);
-    if (index === -1) {
-        return null;
-    }
-    menuItems[index] = updatedItem;
+export async function updateMenuItemInStore(updatedItem: MenuItem): Promise<MenuItem | null> {
+  try {
+    await menuCollection.doc(updatedItem.id).set(updatedItem, { merge: true });
     return updatedItem;
+  } catch (error) {
+    console.error(`Error updating menu item ${updatedItem.id}:`, error);
+    return null;
+  }
 }
 
-export function deleteMenuItemFromStore(itemId: string): boolean {
-    const index = menuItems.findIndex(item => item.id === itemId);
-    if (index === -1) {
-        return false;
-    }
-    menuItems.splice(index, 1);
+export async function deleteMenuItemFromStore(itemId: string): Promise<boolean> {
+  try {
+    await menuCollection.doc(itemId).delete();
     return true;
+  } catch (error) {
+    console.error(`Error deleting menu item ${itemId}:`, error);
+    return false;
+  }
 }

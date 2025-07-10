@@ -1,10 +1,9 @@
 
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { MenuItem } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
-import { addMenuItemToStore, deleteMenuItemFromStore, getMenuItems, updateMenuItemInStore } from '@/lib/menu-store';
 
 type MenuContextType = {
   menuItems: MenuItem[];
@@ -17,37 +16,75 @@ type MenuContextType = {
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
 export function MenuProvider({ children }: { children: ReactNode }) {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(getMenuItems());
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const addMenuItem = useCallback(async (itemData: Omit<MenuItem, 'id'| 'aiHint' | 'isAvailable' | 'isFeatured'>) => {
-    const newItem: MenuItem = {
-      ...itemData,
-      id: `ITEM-${Date.now()}`,
-      aiHint: itemData.name.toLowerCase(),
-      isAvailable: true,
-      isFeatured: false,
-      imageUrl: itemData.imageUrl || 'https://placehold.co/600x400.png',
-    };
-    addMenuItemToStore(newItem);
-    setMenuItems(getMenuItems());
-    toast({ title: "Menu Item Added", description: `${newItem.name} has been added to the menu.` });
+  const fetchMenu = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/menu');
+      if (!response.ok) throw new Error("Failed to fetch menu");
+      const data = await response.json();
+      setMenuItems(data.menuItems);
+    } catch (error) {
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
   }, [toast]);
+
+  useEffect(() => {
+    fetchMenu();
+  }, [fetchMenu]);
+
+  const addMenuItem = useCallback(async (itemData: Omit<MenuItem, 'id'| 'aiHint' | 'isAvailable' | 'isFeatured'>) => {
+    try {
+        const response = await fetch('/api/menu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(itemData),
+        });
+        if (!response.ok) throw new Error('Failed to add item');
+        fetchMenu();
+        toast({ title: "Menu Item Added", description: `${itemData.name} has been added to the menu.` });
+    } catch (error) {
+        toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
+  }, [toast, fetchMenu]);
 
   const updateMenuItem = useCallback(async (itemData: MenuItem) => {
-    updateMenuItemInStore(itemData);
-    setMenuItems(getMenuItems());
-    toast({ title: "Menu Item Updated", description: `${itemData.name} has been updated.` });
-  }, [toast]);
+    try {
+        const response = await fetch('/api/menu', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(itemData),
+        });
+        if (!response.ok) throw new Error('Failed to update item');
+        fetchMenu();
+        toast({ title: "Menu Item Updated", description: `${itemData.name} has been updated.` });
+    } catch (error) {
+        toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
+  }, [toast, fetchMenu]);
 
   const deleteMenuItem = useCallback(async (itemId: string) => {
-    deleteMenuItemFromStore(itemId);
-    setMenuItems(getMenuItems());
-    toast({ title: "Menu Item Deleted", description: `The item has been removed from the menu.` });
-  }, [toast]);
+    try {
+        const response = await fetch('/api/menu', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: itemId }),
+        });
+        if (!response.ok) throw new Error('Failed to delete item');
+        fetchMenu();
+        toast({ title: "Menu Item Deleted", description: `The item has been removed from the menu.` });
+    } catch (error) {
+        toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
+  }, [toast, fetchMenu]);
 
   return (
-    <MenuContext.Provider value={{ menuItems, addMenuItem, updateMenuItem, deleteMenuItem, isLoading: false }}>
+    <MenuContext.Provider value={{ menuItems, addMenuItem, updateMenuItem, deleteMenuItem, isLoading }}>
       {children}
     </MenuContext.Provider>
   );
