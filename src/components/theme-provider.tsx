@@ -12,24 +12,17 @@ type CustomThemeProviderProps = ThemeProviderProps & {
 
 export function ThemeProvider({ children, dynamicTheme, ...props }: CustomThemeProviderProps) {
     React.useEffect(() => {
+    const root = document.documentElement;
     if (dynamicTheme) {
-      const root = document.documentElement;
-      root.classList.add('theme-dynamic');
-      
-      const theme = dynamicTheme;
-      root.style.setProperty('--dynamic-primary', theme.primaryColor || '');
-      root.style.setProperty('--dynamic-primary-foreground', theme.primaryForegroundColor || '');
-      root.style.setProperty('--dynamic-background', theme.backgroundColor || '');
-      root.style.setProperty('--dynamic-accent', theme.accentColor || '');
-      root.style.setProperty('--dynamic-accent-foreground', theme.accentForegroundColor || '');
-      root.style.setProperty('--dynamic-card', `hsl(${theme.cardColor || '0 0% 100%'})`);
-      root.style.setProperty('--dynamic-radius', `${theme.borderRadius || 0.5}rem`);
-      root.style.setProperty('--dynamic-background-image', theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : 'none');
-      
-      // We set card with opacity directly on the element in globals.css now.
-      // Card Alpha is handled by the `bg-card` class with opacity modifier.
-    } else {
-        document.documentElement.classList.remove('theme-dynamic');
+      root.style.setProperty('--dynamic-primary', dynamicTheme.primaryColor || '');
+      root.style.setProperty('--dynamic-primary-foreground', dynamicTheme.primaryForegroundColor || '');
+      root.style.setProperty('--dynamic-background', dynamicTheme.backgroundColor || '');
+      root.style.setProperty('--dynamic-accent', dynamicTheme.accentColor || '');
+      root.style.setProperty('--dynamic-accent-foreground', dynamicTheme.accentForegroundColor || '');
+      root.style.setProperty('--dynamic-card', `hsl(${dynamicTheme.cardColor || '0 0% 100%'})`);
+      root.style.setProperty('--dynamic-radius', `${dynamicTheme.borderRadius || 0.5}rem`);
+      root.style.setProperty('--dynamic-background-image', dynamicTheme.backgroundImageUrl ? `url(${dynamicTheme.backgroundImageUrl})` : 'none');
+      root.style.setProperty('--dynamic-card-opacity', String(dynamicTheme.cardOpacity ?? 1));
     }
   }, [dynamicTheme]);
 

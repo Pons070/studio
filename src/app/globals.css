@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -31,6 +32,28 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    /* DYNAMIC PROPERTIES */
+    --dynamic-background: var(--background);
+    --dynamic-foreground: var(--foreground);
+    --dynamic-card: var(--card);
+    --dynamic-card-foreground: var(--card-foreground);
+    --dynamic-popover: var(--popover);
+    --dynamic-popover-foreground: var(--popover-foreground);
+    --dynamic-primary: var(--primary);
+    --dynamic-primary-foreground: var(--primary-foreground);
+    --dynamic-secondary: var(--secondary);
+    --dynamic-secondary-foreground: var(--secondary-foreground);
+    --dynamic-muted: var(--muted);
+    --dynamic-muted-foreground: var(--muted-foreground);
+    --dynamic-accent: var(--accent);
+    --dynamic-accent-foreground: var(--accent-foreground);
+    --dynamic-border: var(--border);
+    --dynamic-input: var(--input);
+    --dynamic-ring: var(--ring);
+    --dynamic-radius: var(--radius);
+    --dynamic-card-opacity: 1;
+    --dynamic-background-image: none;
   }
 
   .dark {
@@ -63,29 +86,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--dynamic-background));
+    color: hsl(var(--dynamic-foreground));
+    background-image: var(--dynamic-background-image);
+    border-radius: var(--dynamic-radius);
   }
-}
-
-/* Custom styles for dynamic theme from brand.json */
-.theme-dynamic {
-  --background: var(--dynamic-background, 210 40% 98%);
-  --foreground: var(--dynamic-foreground, 222.2 47.4% 11.2%);
-  --card: var(--dynamic-card, 0 0% 100%);
-  --card-foreground: var(--dynamic-card-foreground, 222.2 47.4% 11.2%);
-  --popover: var(--dynamic-popover, 0 0% 100%);
-  --popover-foreground: var(--dynamic-popover-foreground, 222.2 47.4% 11.2%);
-  --primary: var(--dynamic-primary, 222.2 47.4% 11.2%);
-  --primary-foreground: var(--dynamic-primary-foreground, 210 40% 98%);
-  --secondary: var(--dynamic-secondary, 210 40% 96.1%);
-  --secondary-foreground: var(--dynamic-secondary-foreground, 222.2 47.4% 11.2%);
-  --muted: var(--dynamic-muted, 210 40% 96.1%);
-  --muted-foreground: var(--dynamic-muted-foreground, 215.4 16.3% 46.9%);
-  --accent: var(--dynamic-accent, 210 40% 96.1%);
-  --accent-foreground: var(--dynamic-accent-foreground, 222.2 47.4% 11.2%);
-  --border: var(--dynamic-border, 214.3 31.8% 91.4%);
-  --input: var(--dynamic-input, 214.3 31.8% 91.4%);
-  --ring: var(--dynamic-ring, 222.2 47.4% 11.2%);
-  --radius: var(--dynamic-radius, 0.5rem);
-  background-image: var(--dynamic-background-image, none);
 }
