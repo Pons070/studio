@@ -64,8 +64,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    background-image: var(--background-image);
+    background-image: var(--background-image, none);
+    background-color: hsl(var(--background));
+    @apply text-foreground;
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -74,6 +75,6 @@
 
 @layer components {
     .bg-card {
-        background-color: hsl(var(--card) / var(--card-opacity, 1));
+        background-color: hsl(var(--card) / var(--card-opacity, 1.0));
     }
 }

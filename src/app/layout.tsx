@@ -14,7 +14,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { BrandProvider } from '@/store/brand';
 import { ReviewProvider } from '@/store/reviews';
 import { getBrandInfo } from '@/lib/brand-store';
-import type { ThemeSettings } from '@/lib/types';
+import { ThemeInjector } from '@/components/theme-injector';
 
 
 export default async function RootLayout({
@@ -41,9 +41,9 @@ export default async function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
-          theme={brandInfo.theme}
         >
           <BrandProvider initialBrandInfo={brandInfo}>
+            <ThemeInjector />
             <AuthProvider>
               <MenuProvider>
                 <PromotionProvider>
