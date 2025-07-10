@@ -1,18 +1,16 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, Star, AlertTriangle } from 'lucide-react';
+import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FloatingRecommendButton } from '@/components/floating-recommend-button';
 import { getMenuItems } from '@/lib/menu-store';
 import { getBrandInfo } from '@/lib/brand-store';
 import { getReviews } from '@/lib/review-store';
 import type { BrandInfo, MenuItem, Review } from '@/lib/types';
-import { PageClient } from './page.client';
+import { HomePageClient } from '@/components/home-page-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +108,7 @@ export default async function HomePage() {
           </div>
         </section>
         
-        <PageClient reviews={featuredReviews}/>
+        <HomePageClient reviews={featuredReviews}/>
         
       </div>
       <FloatingRecommendButton shareUrl="/" />
