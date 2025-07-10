@@ -16,12 +16,7 @@ export function PromotionBanner() {
   const { orders } = useOrders();
   const [isVisible, setIsVisible] = useState(true);
   const [activePromotion, setActivePromotion] = useState<Promotion | null>(null);
-  const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const customerType = useMemo(() => {
     if (!isAuthenticated || !currentUser) return 'new';
@@ -30,10 +25,6 @@ export function PromotionBanner() {
   }, [isAuthenticated, currentUser, orders]);
 
   useEffect(() => {
-    if (!isClient) {
-      return;
-    }
-
     const isDateActive = (promo: Promotion) => {
         const todayStr = new Date().toISOString().split('T')[0];
 
@@ -65,9 +56,9 @@ export function PromotionBanner() {
     const allUsersPromotion = activePromos.find(p => p.targetAudience === 'all');
     setActivePromotion(allUsersPromotion || null);
 
-  }, [promotions, customerType, isAuthenticated, currentUser, orders, isClient]);
+  }, [promotions, customerType, isAuthenticated, currentUser, orders]);
   
-  if (pathname.startsWith('/admin') || !activePromotion || !isVisible || !isClient) {
+  if (pathname.startsWith('/admin') || !activePromotion || !isVisible) {
     return null;
   }
 
