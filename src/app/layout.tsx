@@ -14,7 +14,6 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { BrandProvider } from '@/store/brand';
 import { ReviewProvider } from '@/store/reviews';
 import { getBrandInfo } from '@/lib/brand-store';
-import { ThemeInjector } from '@/components/theme-injector';
 
 export default async function RootLayout({
   children,
@@ -40,9 +39,9 @@ export default async function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          dynamicTheme={brandInfo.theme}
         >
           <BrandProvider>
-            <ThemeInjector />
             <AuthProvider>
               <MenuProvider>
                 <PromotionProvider>
