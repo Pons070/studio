@@ -1,14 +1,14 @@
 
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import type { BrandInfo } from './types';
 
 const dataFilePath = path.join(process.cwd(), 'data/brand.json');
 
 // This function is intended for SERVER-SIDE USE ONLY.
-export function getBrandInfo(): BrandInfo {
+export async function getBrandInfo(): Promise<BrandInfo> {
   try {
-    const jsonData = fs.readFileSync(dataFilePath, 'utf-8');
+    const jsonData = await fs.readFile(dataFilePath, 'utf-8');
     return JSON.parse(jsonData);
   } catch (error) {
     console.error("Error reading brand info:", error);
@@ -39,10 +39,11 @@ export function getBrandInfo(): BrandInfo {
 }
 
 // This function is intended for SERVER-SIDE USE ONLY.
-export function setBrandInfo(newBrandInfo: BrandInfo): void {
+export async function setBrandInfo(newBrandInfo: BrandInfo): Promise<void> {
   try {
-    fs.writeFileSync(dataFilePath, JSON.stringify(newBrandInfo, null, 2));
+    await fs.writeFile(dataFilePath, JSON.stringify(newBrandInfo, null, 2));
   } catch (error) {
     console.error("Error writing brand info:", error);
+    throw new Error("Could not save brand information.");
   }
 }

@@ -1,19 +1,13 @@
 
 import { NextResponse } from 'next/server';
+import { getBrandInfo, setBrandInfo } from '@/lib/brand-store';
 import type { BrandInfo } from '@/lib/types';
-import fs from 'fs/promises';
-import path from 'path';
 
-const dataFilePath = path.join(process.cwd(), 'data/brand.json');
-
-async function getBrandData(): Promise<BrandInfo> {
-    const jsonData = await fs.readFile(dataFilePath, 'utf-8');
-    return JSON.parse(jsonData);
-}
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const brandInfo = await getBrandData();
+    const brandInfo = await getBrandInfo();
     return NextResponse.json({ success: true, brandInfo });
   } catch (error) {
     console.error("Error in GET /api/brand:", error);
@@ -24,7 +18,7 @@ export async function GET() {
 export async function PUT(request: Request) {
     try {
         const newBrandInfo: BrandInfo = await request.json();
-        await fs.writeFile(dataFilePath, JSON.stringify(newBrandInfo, null, 2));
+        await setBrandInfo(newBrandInfo);
         return NextResponse.json({ success: true, brandInfo: newBrandInfo });
     } catch (error) {
         console.error("Error in PUT /api/brand:", error);

@@ -1,10 +1,13 @@
 
+"use client";
+
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Star, Quote } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getReviews } from '@/lib/review-store';
-import { getBrandInfo } from '@/lib/brand-store';
+import { useReviews } from '@/store/reviews';
+import { useBrand } from '@/store/brand';
 import type { Review } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -22,11 +25,38 @@ function StarDisplay({ rating }: { rating: number }) {
   );
 }
 
-export const dynamic = 'force-dynamic';
 
 export default function ReviewsPage() {
-  const reviews = getReviews();
-  const brandInfo = getBrandInfo();
+  const { reviews, isLoading: isReviewsLoading } = useReviews();
+  const { brandInfo, isLoading: isBrandLoading } = useBrand();
+
+  const isLoading = isReviewsLoading || isBrandLoading;
+  
+  if (isLoading || !brandInfo) {
+    return (
+      <div className="space-y-12">
+        <div className="text-center">
+          <Skeleton className="h-12 w-2/3 mx-auto" />
+          <Skeleton className="h-6 w-1/2 mx-auto mt-4" />
+        </div>
+         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-16 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+      </div>
+    );
+  }
   
   const publishedReviews = reviews.filter(r => r.isPublished);
 

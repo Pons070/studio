@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, ChefHat, UtensilsCrossed, Smartphone, AlertTriangle } from 'lucide-react';
@@ -6,17 +8,66 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FloatingRecommendButton } from '@/components/floating-recommend-button';
-import { getMenuItems } from '@/lib/menu-store';
-import { getBrandInfo } from '@/lib/brand-store';
-import { getReviews } from '@/lib/review-store';
 import { HomePageClient } from '@/components/home-page-client';
-
-export const dynamic = 'force-dynamic';
+import { useMenu } from '@/store/menu';
+import { useBrand } from '@/store/brand';
+import { useReviews } from '@/store/reviews';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
-  const brandInfo = getBrandInfo();
-  const menuItems = getMenuItems();
-  const reviews = getReviews();
+  const { brandInfo, isLoading: isBrandLoading } = useBrand();
+  const { menuItems, isLoading: isMenuLoading } = useMenu();
+  const { reviews, isLoading: isReviewsLoading } = useReviews();
+  
+  const isLoading = isBrandLoading || isMenuLoading || isReviewsLoading;
+  
+  if (isLoading || !brandInfo) {
+    return (
+      <div className="space-y-20">
+        {/* Hero Skeleton */}
+        <section className="text-center bg-card p-8 md:p-12 rounded-lg shadow-lg">
+          <Skeleton className="h-16 w-3/4 mx-auto mb-8" />
+          <Skeleton className="h-12 w-48 mx-auto" />
+        </section>
+
+        {/* Featured Items Skeleton */}
+        <section>
+          <h2 className="text-3xl font-headline font-bold text-center mb-10 text-foreground">Featured Dishes</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="flex flex-col">
+                <CardHeader className="p-0">
+                  <Skeleton className="aspect-video w-full" />
+                </CardHeader>
+                <CardContent className="flex-grow pt-6 space-y-2">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                </CardContent>
+                <CardFooter className="flex justify-between items-center">
+                  <Skeleton className="h-7 w-1/4" />
+                  <Skeleton className="h-10 w-32" />
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* How It Works Skeleton */}
+         <section className="bg-card rounded-lg p-8 md:p-12 shadow-lg">
+          <h2 className="text-3xl font-headline font-bold text-center mb-10"><Skeleton className="h-8 w-64 mx-auto" /></h2>
+          <div className="grid md:grid-cols-3 gap-8 text-center">
+             {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex flex-col items-center">
+                  <Skeleton className="h-16 w-16 rounded-full mb-4" />
+                  <Skeleton className="h-6 w-1/2 mb-2" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
   
   const featuredItems = menuItems.filter(item => item.isFeatured).slice(0, 3);
   const featuredReviews = reviews.filter(r => r.isPublished).slice(0, 6);

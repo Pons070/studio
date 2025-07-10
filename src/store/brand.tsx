@@ -53,24 +53,24 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   }, [fetchBrandInfo]);
 
   const updateBrandInfoOnServer = useCallback(async (updatedInfo: BrandInfo) => {
-    setIsLoading(true);
     try {
         const response = await fetch('/api/brand', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatedInfo),
         });
-        if (!response.ok) throw new Error('Failed to update brand info on server');
-        setBrandInfoState(updatedInfo);
-        setIsLoading(false);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'Failed to update brand info on server');
+        setBrandInfoState(result.brandInfo);
         return true;
     } catch (error) {
         console.error("Failed to update brand info on server", error);
         toast({ title: 'Update Failed', description: (error as Error).message, variant: 'destructive' });
-        setIsLoading(false);
+        // Refetch to get the last known good state from the server
+        await fetchBrandInfo();
         return false;
     }
-  }, [toast]);
+  }, [toast, fetchBrandInfo]);
 
   const updateBrandInfo = useCallback(async (newInfo: BrandInfo) => {
     const success = await updateBrandInfoOnServer(newInfo);

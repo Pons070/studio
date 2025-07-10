@@ -5,19 +5,22 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Utensils, Instagram, Youtube } from "lucide-react";
 import Image from "next/image";
-import type { Address, BrandInfo } from "@/lib/types";
+import type { Address } from "@/lib/types";
 import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { useBrand } from "@/store/brand";
+import { Skeleton } from "./ui/skeleton";
 
-const formatAddress = (address: Address) => {
+const formatAddress = (address?: Address) => {
     if (!address) return '';
     const { doorNumber, apartmentName, area, city, state, pincode } = address;
     return `${doorNumber} ${apartmentName}\n${area}, ${city}\n${state} ${pincode}`;
 };
 
-export function Footer({ brandInfo }: { brandInfo: BrandInfo }) {
+export function Footer() {
   const pathname = usePathname();
   const router = useRouter();
+  const { brandInfo, isLoading } = useBrand();
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -41,6 +44,21 @@ export function Footer({ brandInfo }: { brandInfo: BrandInfo }) {
 
   if (pathname.startsWith('/admin')) {
     return null;
+  }
+  
+  if (isLoading || !brandInfo) {
+      return (
+        <footer className="bg-card border-t mt-12">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <Skeleton className="h-10 w-48" />
+                <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-48" /><Skeleton className="h-4 w-32" /></div>
+                <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-32" /><Skeleton className="h-4 w-24" /></div>
+                <div className="space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-20" /></div>
+              </div>
+            </div>
+        </footer>
+      )
   }
 
   return (

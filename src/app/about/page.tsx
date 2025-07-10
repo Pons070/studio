@@ -1,12 +1,58 @@
 
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Quote, Building, Phone } from 'lucide-react';
-import { getBrandInfo } from '@/lib/brand-store';
-
-export const dynamic = 'force-dynamic';
+import { useBrand } from '@/store/brand';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AboutPage() {
-  const brandInfo = getBrandInfo();
+  const { brandInfo, isLoading } = useBrand();
+
+  if (isLoading || !brandInfo) {
+    return (
+      <div className="space-y-12">
+        <div className="text-center">
+          <Skeleton className="h-12 w-2/3 mx-auto" />
+          <Skeleton className="h-6 w-1/2 mx-auto mt-4" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="md:col-span-2">
+            <Card className="h-full">
+              <CardHeader>
+                <Skeleton className="h-8 w-48" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-5 w-3/4" />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </CardContent>
+            </Card>
+             <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-32" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12">
