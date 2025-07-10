@@ -18,6 +18,7 @@ type AuthContextType = {
   users: User[]; // For admin view
   requestOtp: (phone: string) => Promise<OtpRequestResult>;
   verifyOtpAndLogin: (phone: string, otp: string, name?: string) => Promise<boolean>;
+  loginAdmin: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (data: Partial<Omit<User, 'id' | 'password' | 'addresses'>>) => Promise<void>;
   addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => Promise<void>;
@@ -108,6 +109,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         toast({ title: 'Login Failed', description: (error as Error).message, variant: 'destructive' });
         return false;
     }
+  }, [toast]);
+
+  const loginAdmin = useCallback(async (email: string, password: string): Promise<boolean> => {
+    // This is a mock admin login. In a real app, this would be a secure API call.
+    if (email === 'admin@example.com' && password === 'password') {
+        const response = await fetch('/api/admin/users?admin=true'); // A way to get the admin user
+        const { user } = await response.json();
+        if (user) {
+            setCurrentUser(user);
+            toast({ title: "Welcome, Admin!", variant: "success" });
+            return true;
+        }
+    }
+    return false;
   }, [toast]);
 
   const logout = useCallback(async () => {
@@ -235,7 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [toast, refreshUsers]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!currentUser, currentUser, users, requestOtp, verifyOtpAndLogin, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById, isLoading }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!currentUser, currentUser, users, requestOtp, verifyOtpAndLogin, loginAdmin, logout, updateUser, addAddress, updateAddress, deleteAddress, setDefaultAddress, deleteUser, deleteUserById, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

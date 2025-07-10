@@ -1,11 +1,18 @@
 
 import { NextResponse } from 'next/server';
-import { getUsers, updateUser, findUserById } from '@/lib/user-store';
+import { getUsers, findUserById, updateUser } from '@/lib/user-store';
 
-export async function GET() {
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const getAdmin = searchParams.get('admin');
+
     try {
         const users = await getUsers();
-        // Filter out admin and soft-deleted users
+        if (getAdmin === 'true') {
+            const adminUser = users.find(user => user.email === 'admin@example.com');
+            return NextResponse.json({ success: true, user: adminUser });
+        }
+        
         const customers = users.filter(user => user.email !== 'admin@example.com' && !user.deletedAt);
         return NextResponse.json({ success: true, users: customers });
     } catch (error) {

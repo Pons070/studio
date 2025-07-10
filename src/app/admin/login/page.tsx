@@ -8,15 +8,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from 'next/navigation';
 import { Shield, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/store/auth';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { loginAdmin } = useAuth();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('admin@example.com');
+  const [password, setPassword] = useState('password');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd have authentication logic here
-    router.push('/admin/dashboard');
+    setIsSubmitting(true);
+    const success = await loginAdmin(email, password);
+    if (success) {
+      router.push('/admin/dashboard');
+    } else {
+      toast({
+        title: 'Login Failed',
+        description: 'Invalid email or password.',
+        variant: 'destructive',
+      });
+    }
+    setIsSubmitting(false);
   };
 
   return (
@@ -33,7 +50,7 @@ export default function AdminLoginPage() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="admin@example.com" required defaultValue="admin@example.com" />
+              <Input id="email" type="email" placeholder="admin@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -42,7 +59,8 @@ export default function AdminLoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   required
-                  defaultValue="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="pr-10"
                 />
                 <Button
@@ -57,8 +75,8 @@ export default function AdminLoginPage() {
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full text-lg">
-              Log In
+            <Button type="submit" className="w-full text-lg" disabled={isSubmitting}>
+              {isSubmitting ? 'Logging In...' : 'Log In'}
             </Button>
           </form>
         </CardContent>
