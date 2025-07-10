@@ -63,18 +63,28 @@
   * {
     @apply border-border;
   }
-  body {
+  
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    z-index: -10;
     background-image: var(--background-image, none);
-    background-color: hsl(var(--background));
-    @apply text-foreground;
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
   }
+
+  body {
+    background-color: hsl(var(--background));
+    @apply text-foreground;
+  }
 }
 
 @layer components {
-    /* Ensures card components have their own solid background, respecting opacity */
     .bg-card {
         background-color: hsl(var(--card) / var(--card-opacity, 1.0));
     }

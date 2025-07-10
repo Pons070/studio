@@ -18,9 +18,7 @@ export function ThemeInjector() {
         '--background-image': theme.backgroundImageUrl ? `url(${theme.backgroundImageUrl})` : 'none',
         '--background': theme.backgroundColor,
         '--primary': theme.primaryColor,
-        '--primary-foreground': theme.primaryForegroundColor,
         '--accent': theme.accentColor,
-        '--accent-foreground': theme.accentForegroundColor,
         '--card': theme.cardColor,
       };
 
@@ -28,8 +26,6 @@ export function ThemeInjector() {
         if (value) {
           root.style.setProperty(property, value);
         } else {
-            // If a value from the theme is empty, remove the inline style
-            // so it can fall back to the stylesheet default.
             root.style.removeProperty(property);
         }
       }
