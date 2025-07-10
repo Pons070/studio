@@ -32,6 +32,8 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    --card-opacity: 1.0;
   }
 
   .dark {
@@ -64,6 +66,10 @@
     @apply border-border;
   }
   
+  body {
+    @apply bg-background text-foreground;
+  }
+  
   body::before {
     content: '';
     position: fixed;
@@ -77,15 +83,10 @@
     background-position: center;
     background-attachment: fixed;
   }
-
-  body {
-    background-color: hsl(var(--background));
-    @apply text-foreground;
-  }
 }
 
 @layer components {
     .bg-card {
-        background-color: hsl(var(--card) / var(--card-opacity, 1.0));
+        background-color: hsla(var(--card), var(--card-opacity, 1.0));
     }
 }

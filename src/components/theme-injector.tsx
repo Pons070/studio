@@ -24,9 +24,9 @@ export function ThemeInjector() {
 
       for (const [property, value] of Object.entries(styleMap)) {
         if (value) {
-          root.style.setProperty(property, value);
+          root.style.setProperty(property, String(value));
         } else {
-            root.style.removeProperty(property);
+          root.style.removeProperty(property);
         }
       }
     }
