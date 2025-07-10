@@ -71,7 +71,7 @@ export default function HomePage() {
   
   const featuredItems = menuItems.filter(item => item.isFeatured).slice(0, 3);
   const featuredReviews = reviews.filter(r => r.isPublished).slice(0, 6);
-  const isClosed = brandInfo.businessHours.status === 'closed';
+  const isClosed = brandInfo?.businessHours?.status === 'closed';
 
   return (
     <>
