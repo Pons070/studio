@@ -1271,7 +1271,7 @@ function ReviewManagement() {
   );
 }
 
-const initialAddressState: Address = {
+const initialAddressState: Omit<Address, 'id' | 'isDefault'> = {
     label: '',
     doorNumber: '',
     apartmentName: '',
@@ -1466,22 +1466,22 @@ function DeliveryAreaDialog({ isOpen, onOpenChange, onSave, area }: { isOpen: bo
 
 function BrandManagement() {
   const { brandInfo, updateBrandInfo } = useBrand();
-  const [name, setName] = useState(brandInfo?.name || '');
-  const [logoUrl, setLogoUrl] = useState(brandInfo?.logoUrl || '');
-  const [phone, setPhone] = useState(brandInfo?.phone || '');
-  const [adminEmail, setAdminEmail] = useState(brandInfo?.adminEmail || '');
-  const [address, setAddress] = useState<Address>(brandInfo?.address || initialAddressState);
-  const [about, setAbout] = useState(brandInfo?.about || '');
-  const [youtubeUrl, setYoutubeUrl] = useState(brandInfo?.youtubeUrl || '');
-  const [instagramUrl, setInstagramUrl] = useState(brandInfo?.instagramUrl || '');
-  const [businessStatus, setBusinessStatus] = useState(brandInfo?.businessHours?.status || 'open');
-  const [closureMessage, setClosureMessage] = useState(brandInfo?.businessHours?.message || '');
-  const [allowOrderUpdates, setAllowOrderUpdates] = useState(brandInfo?.allowOrderUpdates ?? true);
-  const [showAddress, setShowAddress] = useState(brandInfo?.showAddressInAbout ?? true);
-  const [showPhone, setShowPhone] = useState(brandInfo?.showPhoneInAbout ?? true);
-  const [theme, setTheme] = useState<ThemeSettings>(brandInfo?.theme || initialThemeState);
+  const [name, setName] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [phone, setPhone] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [address, setAddress] = useState<Omit<Address, 'id' | 'isDefault'>>(initialAddressState);
+  const [about, setAbout] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [businessStatus, setBusinessStatus] = useState('open');
+  const [closureMessage, setClosureMessage] = useState('');
+  const [allowOrderUpdates, setAllowOrderUpdates] = useState(true);
+  const [showAddress, setShowAddress] = useState(true);
+  const [showPhone, setShowPhone] = useState(true);
+  const [theme, setTheme] = useState<ThemeSettings>(initialThemeState);
   const [isSaving, setIsSaving] = useState(false);
-  const [logoShape, setLogoShape] = useState(brandInfo?.logoShape || 'square');
+  const [logoShape, setLogoShape] = useState('square');
   
   const [isCropDialogOpen, setCropDialogOpen] = useState(false);
   const [imgSrcToCrop, setImgSrcToCrop] = useState('');
@@ -1529,16 +1529,16 @@ function BrandManagement() {
 
   useEffect(() => {
     if (brandInfo) {
-      setName(brandInfo.name);
-      setLogoUrl(brandInfo.logoUrl);
-      setPhone(brandInfo.phone);
-      setAdminEmail(brandInfo.adminEmail);
+      setName(brandInfo.name || '');
+      setLogoUrl(brandInfo.logoUrl || '');
+      setPhone(brandInfo.phone || '');
+      setAdminEmail(brandInfo.adminEmail || '');
       setAddress(brandInfo.address || initialAddressState);
       setAbout(brandInfo.about || '');
       setYoutubeUrl(brandInfo.youtubeUrl || '');
       setInstagramUrl(brandInfo.instagramUrl || '');
-      setBusinessStatus(brandInfo.businessHours.status);
-      setClosureMessage(brandInfo.businessHours.message);
+      setBusinessStatus(brandInfo.businessHours?.status || 'open');
+      setClosureMessage(brandInfo.businessHours?.message || '');
       setAllowOrderUpdates(brandInfo.allowOrderUpdates ?? true);
       setShowAddress(brandInfo.showAddressInAbout ?? true);
       setShowPhone(brandInfo.showPhoneInAbout ?? true);
@@ -1576,7 +1576,7 @@ function BrandManagement() {
       ...brandInfo,
       name,
       logoUrl,
-      logoShape,
+      logoShape: logoShape as 'square' | 'circle',
       phone,
       adminEmail,
       address,
@@ -1584,7 +1584,7 @@ function BrandManagement() {
       youtubeUrl,
       instagramUrl,
       businessHours: {
-        status: businessStatus,
+        status: businessStatus as 'open' | 'closed',
         message: closureMessage
       },
       allowOrderUpdates,
@@ -1605,8 +1605,8 @@ function BrandManagement() {
     about !== (brandInfo.about || '') ||
     youtubeUrl !== (brandInfo.youtubeUrl || '') ||
     instagramUrl !== (brandInfo.instagramUrl || '') ||
-    businessStatus !== brandInfo.businessHours.status ||
-    (businessStatus === 'closed' && closureMessage !== brandInfo.businessHours.message) ||
+    businessStatus !== (brandInfo.businessHours?.status || 'open') ||
+    (businessStatus === 'closed' && closureMessage !== (brandInfo.businessHours?.message || '')) ||
     allowOrderUpdates !== (brandInfo.allowOrderUpdates ?? true) ||
     showAddress !== (brandInfo.showAddressInAbout ?? true) ||
     showPhone !== (brandInfo.showPhoneInAbout ?? true) ||
@@ -1924,7 +1924,7 @@ function BrandManagement() {
         isOpen={isCropDialogOpen}
         onOpenChange={setCropDialogOpen}
         imgSrc={imgSrcToCrop}
-        shape={cropType === 'logo' ? logoShape : undefined}
+        shape={cropType === 'logo' ? logoShape as 'square' | 'circle' : undefined}
         title={cropType === 'logo' ? 'Crop Your Logo' : 'Crop Background Image'}
         onSave={(dataUrl) => {
           if (cropType === 'logo') {
@@ -2300,7 +2300,7 @@ function PromotionManagement() {
       <Card>
         <CardHeader>
           <CardTitle className="font-headline">Manage Promotions</CardTitle>
-          <CardDescription>Create and manage promotional offers for your customers.</CardDescription>
+          <CardDescription>Create and manage special offers for your customers.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-right mb-4">
@@ -3419,7 +3419,7 @@ function AnalyticsAndReports() {
         isOpen={!!orderToCancel}
         onOpenChange={(open) => !open && setOrderToCancel(null)}
         onConfirm={confirmCancelAction}
-    />
+      />
     </>
   );
 }
